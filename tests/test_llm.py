@@ -1,0 +1,150 @@
+from __future__ import annotations
+
+import json
+from datetime import date
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from lib.llm import propose_enrichment
+
+
+def _mock_response(text: str):
+    content_block = MagicMock()
+    content_block.text = text
+    response = MagicMock()
+    response.content = [content_block]
+    return response
+
+
+def _patch_call(text: str):
+    return patch("lib.llm._call", return_value=text)
+
+
+# ---------------------------------------------------------------------------
+# propose_enrichment
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_propose_enrichment_returns_task():
+    payload = json.dumps(
+        {
+            "title": "Renew car insurance",
+            "notes": "Check with current provider first",
+            "due_date": "2026-04-10",
+            "priority": "p2",
+            "labels": ["finance"],
+            "duration_minutes": 30,
+        }
+    )
+    with _patch_call(payload):
+        task = await propose_enrichment("renew car insurance")
+
+    assert task.title == "Renew car insurance"
+    assert task.due_date == date(2026, 4, 10)
+    assert task.priority == "p2"
+    assert task.labels == ["finance"]
+    assert task.duration_minutes == 30
+    assert task.notes == "Check with current provider first"
+
+
+@pytest.mark.asyncio
+async def test_propose_enrichment_handles_null_fields():
+    payload = json.dumps(
+        {
+            "title": "Buy milk",
+            "notes": "",
+            "due_date": None,
+            "priority": "p4",
+            "labels": [],
+            "duration_minutes": None,
+        }
+    )
+    with _patch_call(payload):
+        task = await propose_enrichment("buy milk")
+
+    assert task.due_date is None
+    assert task.duration_minutes is None
+    assert task.labels == []
+
+
+@pytest.mark.asyncio
+async def test_propose_enrichment_drops_unknown_labels():
+    payload = json.dumps(
+        {
+            "title": "Task",
+            "notes": "",
+            "due_date": None,
+            "priority": "p3",
+            "labels": ["work", "invalid_label", "health"],
+            "duration_minutes": None,
+        }
+    )
+    with _patch_call(payload):
+        task = await propose_enrichment("task")
+
+    assert "invalid_label" not in task.labels
+    assert "work" in task.labels
+    assert "health" in task.labels
+
+
+@pytest.mark.asyncio
+async def test_propose_enrichment_raises_on_invalid_json():
+    with _patch_call("this is not json"):
+        with pytest.raises(ValueError, match="invalid JSON"):
+            await propose_enrichment("something")
+
+
+@pytest.mark.asyncio
+async def test_propose_enrichment_invalid_priority_defaults_to_p4():
+    payload = json.dumps(
+        {
+            "title": "Task",
+            "notes": "",
+            "due_date": None,
+            "priority": "urgent",  # invalid
+            "labels": [],
+            "duration_minutes": None,
+        }
+    )
+    with _patch_call(payload):
+        task = await propose_enrichment("task")
+
+    assert task.priority == "p4"
+
+
+@pytest.mark.asyncio
+async def test_propose_enrichment_invalid_due_date_ignored():
+    payload = json.dumps(
+        {
+            "title": "Task",
+            "notes": "",
+            "due_date": "not-a-date",
+            "priority": "p3",
+            "labels": [],
+            "duration_minutes": None,
+        }
+    )
+    with _patch_call(payload):
+        task = await propose_enrichment("task")
+
+    assert task.due_date is None
+
+
+@pytest.mark.asyncio
+async def test_propose_enrichment_falls_back_to_raw_title_on_missing_title():
+    payload = json.dumps(
+        {
+            "title": "",
+            "notes": "",
+            "due_date": None,
+            "priority": "p4",
+            "labels": [],
+            "duration_minutes": None,
+        }
+    )
+    with _patch_call(payload):
+        task = await propose_enrichment("original title")
+
+    assert task.title == "original title"
