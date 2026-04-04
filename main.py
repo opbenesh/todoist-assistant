@@ -5,6 +5,7 @@ from telegram.ext import Application, CommandHandler
 
 from lib.config import DEBUG_LOGGING, TELEGRAM_BOT_KEY, TELEGRAM_USER_ID
 from lib.handlers.auth import WHITELIST_FILTER
+from lib.handlers.brainstorm import brainstorm_handler
 from lib.handlers.capture import done_handler, list_handler, task_conversation_handler
 from lib.handlers.common import help_cmd, start_cmd
 from lib.handlers.deepdive import deepdive_handler
@@ -53,6 +54,7 @@ _COMMANDS = [
     BotCommand("deepdive", "Deep-dive analysis on a single task"),
     BotCommand("insights", "Pattern insights: habits, workload, clusters"),
     BotCommand("project", "Project-level plan and next actions"),
+    BotCommand("brainstorm", "Extract tasks from free-form text"),
     BotCommand("help", "Show available commands"),
     BotCommand("cancel", "Cancel current operation"),
 ]
@@ -74,6 +76,7 @@ def main() -> None:
 
     app.add_handler(CommandHandler("start", start_cmd, WHITELIST_FILTER))
     app.add_handler(CommandHandler("help", help_cmd, WHITELIST_FILTER))
+    app.add_handler(brainstorm_handler)
     app.add_handler(task_conversation_handler)
     app.add_handler(list_handler)
     app.add_handler(done_handler)

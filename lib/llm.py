@@ -92,6 +92,51 @@ _DEFAULT_GUIDELINES = (
     "A task is untriaged if: priority is p4, project is Inbox, or no due date is set."
 )
 
+_BRAINSTORM_SYSTEM = """You are a task extraction assistant.
+The user will write free-form text describing what they want or need to do.
+Extract every distinct actionable task and return them as a JSON array of short, clean task titles.
+Rules:
+- Each title should be clear and actionable (start with a verb where natural)
+- Fix typos and capitalise properly
+- Omit vague filler phrases ("maybe", "probably") but include the task if there's real intent
+- Titles under 80 characters each
+- Return ONLY a valid JSON array of strings, no prose, no markdown fences.
+Example input: "wash all dishes, take the garbage out, clean the fridge, maybe deal with kzradio"
+Example output: ["Wash all dishes", "Take the garbage out", "Clean the fridge",
+  "Deal with kzradio"]"""
+
+_ACTIONABILITY_JUDGE_SYSTEM = """You are a task actionability judge.
+For each task determine whether it is actionable: atomic, achievable, and unambiguous.
+Examples — actionable: "Wash the dishes", "Call dad", "Buy groceries at Tiv Taam".
+Examples — NOT actionable: "Plan vacation" (too large), "Deal with tax stuff" (ambiguous),
+  "Handle work things" (vague).
+
+For EVERY task also return a clean_title: fix typos, capitalise properly, and add a single
+context-appropriate leading emoji (e.g. 🍽️ Wash the dishes, 📞 Call dad).
+If the title is formatted as [description](url), only rewrite the description part and keep
+the url: [New description](original_url). Always include a leading emoji in clean_title.
+
+Return a JSON array — one object per input task — with exactly these fields:
+- "id": string (the task id, unchanged)
+- "actionable": boolean
+- "reason": string (3–6 words explaining why NOT actionable; empty string if actionable)
+- "clean_title": string (always populated — cleaned title with leading emoji)
+
+Return ONLY valid JSON array, no prose, no markdown fences.
+Today is {today}."""
+
+_BREAKDOWN_OPTIMIZE_SYSTEM = """You are a task breakdown assistant helping convert a \
+non-actionable task into the minimum number of concrete, atomic, actionable subtasks.
+
+Rules:
+- Lean strongly toward ONE subtask unless the work genuinely requires separate atomic steps
+- Each subtask must be actionable: specific, achievable, unambiguous
+- Pick ONE context-appropriate emoji for the parent task and start EVERY subtask title with it
+- Subtask titles under 80 chars each
+- Return ONLY a valid JSON array of strings, no prose, no markdown fences.
+
+Original task context will be provided alongside the user's free-form plan."""
+
 _BREAKDOWN_SYSTEM = """You are a task planning assistant.
 Given a task, break it down into 2–5 concrete, actionable subtasks.
 Return a JSON array of strings, each a short subtask title (under 60 chars).
@@ -130,7 +175,7 @@ Use Markdown. Under 500 words."""
 _MD_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
 
 
-def _restore_links(original: str, proposed: str) -> str:
+def restore_links(original: str, proposed: str) -> str:
     """Re-inject markdown links from original into proposed title.
 
     If the original title contains markdown links and the proposed title has
@@ -236,7 +281,7 @@ def propose_task_optimization(task: dict, projects: list[str]) -> dict:
             return {}
         result: dict = {}
         if "title" in data and isinstance(data["title"], str) and data["title"]:
-            result["title"] = _restore_links(task.get("title", ""), data["title"])
+            result["title"] = restore_links(task.get("title", ""), data["title"])
         if "priority" in data and data["priority"] in VALID_PRIORITIES:
             result["priority"] = data["priority"]
         if "project" in data and isinstance(data["project"], str) and data["project"] in projects:
@@ -347,6 +392,70 @@ async def generate_plan(
         return {"plan_markdown": raw, "push_tasks": []}
 
 
+async def generate_planning_questions(tasks: list[dict]) -> list[dict]:
+    """Generate 2-3 planning questions with multiple-choice answers (Haiku).
+
+    Returns a list of dicts: [{"question": str, "options": list[str]}, ...]
+    """
+    system = (
+        "You are a concise daily planning assistant. Based on the tasks below, "
+        "generate exactly 2-3 short clarifying questions to help plan the day. "
+        "Cover: energy/capacity, hard time constraints (meetings/appointments), "
+        "and any task-specific context that affects scheduling. "
+        "For each question provide 3-4 short button-friendly answer options "
+        "(max 20 chars each). "
+        'Return ONLY a JSON array, e.g.: '
+        '[{"question": "Energy level?", "options": ["High", "Medium", "Low"]}]'
+    )
+    content = f"Today's tasks:\n{json.dumps(tasks, default=str)}"
+    raw = await asyncio.to_thread(_call, HAIKU, system, content, 300)
+    try:
+        data = json.loads(_strip_fences(raw))
+        if isinstance(data, list):
+            result = []
+            for item in data:
+                if (
+                    isinstance(item, dict)
+                    and item.get("question")
+                    and isinstance(item.get("options"), list)
+                ):
+                    result.append({
+                        "question": str(item["question"]),
+                        "options": [str(o) for o in item["options"] if o],
+                    })
+            if result:
+                return result
+    except (json.JSONDecodeError, TypeError) as exc:
+        logger.warning("generate_planning_questions: failed to parse JSON: %s", exc)
+    # Fallback questions
+    return [
+        {
+            "question": "How's your energy today?",
+            "options": ["High", "Medium", "Low"],
+        },
+        {
+            "question": "Any meetings or hard time blocks?",
+            "options": ["None", "Morning", "Afternoon", "All day"],
+        },
+    ]
+
+
+async def brainstorm_extract_tasks(text: str) -> list[str]:
+    """Extract actionable task titles from free-form brainstorm text using Haiku.
+
+    Returns a list of task title strings, empty on failure.
+    """
+    raw = await asyncio.to_thread(_call, HAIKU, _BRAINSTORM_SYSTEM, text, 400)
+    try:
+        data = json.loads(_strip_fences(raw))
+        if isinstance(data, list):
+            return [s for s in data if isinstance(s, str) and s]
+        return []
+    except json.JSONDecodeError as exc:
+        logger.warning("brainstorm_extract_tasks: invalid JSON: %s — raw: %s", exc, raw)
+        return []
+
+
 async def generate_insights(
     completed: list[dict], overdue: list[dict], all_active: list[dict]
 ) -> str:
@@ -357,3 +466,74 @@ async def generate_insights(
         f"All active tasks:\n{json.dumps(all_active, default=str)}"
     )
     return await asyncio.to_thread(_call, SONNET, _INSIGHTS_SYSTEM, content, 1000)
+
+
+_JUDGE_CHUNK_SIZE = 15
+
+
+async def judge_tasks(tasks: list[dict]) -> list[dict]:
+    """Judge a list of tasks for actionability using Haiku.
+
+    Processes in chunks of 15. Returns list of:
+      {"id": str, "actionable": bool, "reason": str, "clean_title": str}
+    On parse failure for a chunk, defaults all tasks in that chunk to actionable=True.
+    """
+    today = date.today().isoformat()
+    system = _ACTIONABILITY_JUDGE_SYSTEM.format(today=today)
+
+    def _judge_chunk(chunk: list[dict]) -> list[dict]:
+        content = json.dumps(
+            [{"id": t["id"], "title": t["title"], "notes": t.get("notes", "")} for t in chunk],
+            default=str,
+        )
+        raw = _call(HAIKU, system, content, 800)
+        try:
+            data = json.loads(_strip_fences(raw))
+            if not isinstance(data, list):
+                raise ValueError("expected list")
+            results = []
+            for item in data:
+                if not isinstance(item, dict) or not item.get("id"):
+                    continue
+                results.append({
+                    "id": str(item["id"]),
+                    "actionable": bool(item.get("actionable", True)),
+                    "reason": str(item.get("reason", "")),
+                    "clean_title": str(item.get("clean_title", "")) or None,
+                })
+            return results
+        except (json.JSONDecodeError, ValueError) as exc:
+            logger.warning("judge_tasks: parse error: %s — raw: %s", exc, raw[:200])
+            return [
+                {"id": t["id"], "actionable": True, "reason": "", "clean_title": None}
+                for t in chunk
+            ]
+
+    chunks = [
+        tasks[i : i + _JUDGE_CHUNK_SIZE] for i in range(0, len(tasks), _JUDGE_CHUNK_SIZE)
+    ]
+    chunk_results = await asyncio.gather(
+        *[asyncio.to_thread(_judge_chunk, chunk) for chunk in chunks]
+    )
+    return [item for chunk in chunk_results for item in chunk]
+
+
+async def breakdown_tasks_for_optimize(original_task: dict, user_plan: str) -> list[str]:
+    """Propose minimum atomic breakdown tasks for a non-actionable task using Haiku.
+
+    Returns list of task title strings (with emoji prefix), empty on failure.
+    """
+    task_summary = json.dumps(
+        {"title": original_task["title"], "notes": original_task.get("notes", "")},
+        default=str,
+    )
+    content = f"Original task: {task_summary}\n\nUser's plan: {user_plan}"
+    raw = await asyncio.to_thread(_call, HAIKU, _BREAKDOWN_OPTIMIZE_SYSTEM, content, 400)
+    try:
+        data = json.loads(_strip_fences(raw))
+        if isinstance(data, list):
+            return [s for s in data if isinstance(s, str) and s]
+        return []
+    except json.JSONDecodeError as exc:
+        logger.warning("breakdown_tasks_for_optimize: invalid JSON: %s — raw: %s", exc, raw)
+        return []
