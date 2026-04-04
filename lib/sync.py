@@ -9,6 +9,7 @@ from lib.models import DEFAULT_PRIORITY, Task, TaskStore
 from lib.obsidian import (
     daily_note_path,
     format_task_line,
+    is_day_planned,
     parse_task_line,
     read_tasks_section,
     write_tasks_section,
@@ -16,7 +17,7 @@ from lib.obsidian import (
 
 logger = logging.getLogger(__name__)
 
-_store = TaskStore()
+store = TaskStore()
 
 
 async def run_sync() -> None:
@@ -28,8 +29,11 @@ async def run_sync() -> None:
 
 
 def _sync() -> None:
+    if not is_day_planned():
+        return  # tasks only appear in daily note after /plan is run
+
     now = time.time()
-    last_sync_ts = _store.last_sync_ts or 0.0
+    last_sync_ts = store.last_sync_ts or 0.0
 
     raw_lines = read_tasks_section()
     obsidian_tasks: dict[str, bool] = {}
@@ -104,5 +108,5 @@ def _sync() -> None:
     if dirty or updated_lines != raw_lines:
         write_tasks_section(updated_lines)
 
-    _store.last_sync_ts = now
-    _store.save()
+    store.last_sync_ts = now
+    store.save()

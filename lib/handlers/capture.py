@@ -21,7 +21,7 @@ from lib.models import VALID_PRIORITIES, EnrichmentState, Task
 logger = logging.getLogger(__name__)
 
 # Conversation states
-CONFIRM_OR_EDIT, EDIT_TITLE, EDIT_DUE, EDIT_PRIORITY, EDIT_DURATION = range(5)
+CONFIRM_OR_EDIT, EDIT_TITLE, EDIT_DUE, EDIT_PRIORITY, EDIT_DURATION, BREAKDOWN = range(6)
 
 # In-memory session store keyed by chat_id
 _sessions: dict[int, EnrichmentState] = {}
@@ -61,7 +61,10 @@ def _enrichment_keyboard() -> InlineKeyboardMarkup:
                 InlineKeyboardButton("⏱ Edit duration", callback_data="edit:duration"),
                 InlineKeyboardButton("✏️ Edit title", callback_data="edit:title"),
             ],
-            [InlineKeyboardButton("❌ Cancel", callback_data="cancel")],
+            [
+                InlineKeyboardButton("🔀 Break down", callback_data="breakdown"),
+                InlineKeyboardButton("❌ Cancel", callback_data="cancel"),
+            ],
         ]
     )
 
@@ -225,6 +228,84 @@ async def receive_duration(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return CONFIRM_OR_EDIT
 
 
+async def breakdown_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Ask LLM to break the task into subtasks, then show confirmation."""
+    query = update.callback_query
+    await query.answer()
+    state = _get_session(update)
+    if not state or not state.task:
+        return ConversationHandler.END
+
+    await query.edit_message_text("Breaking down task…")
+
+    try:
+        subtasks = await asyncio.to_thread(llm.propose_breakdown, state.task)
+    except Exception as exc:
+        logger.error("Breakdown failed: %s", exc)
+        subtasks = []
+
+    if not subtasks:
+        await query.edit_message_text("Couldn't generate subtasks. Try again.")
+        await _show_proposal(update, state, edit=False)
+        return CONFIRM_OR_EDIT
+
+    state.subtasks = subtasks
+    numbered = "\n".join(f"{i}. {s}" for i, s in enumerate(subtasks, 1))
+    keyboard = InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("✅ Create all", callback_data="breakdown:confirm")],
+            [InlineKeyboardButton("❌ Cancel", callback_data="breakdown:cancel")],
+        ]
+    )
+    await query.edit_message_text(
+        f"*{state.task.title}*\n\nSubtasks:\n{numbered}",
+        reply_markup=keyboard,
+        parse_mode="Markdown",
+    )
+    return BREAKDOWN
+
+
+async def breakdown_confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Create parent task then all subtasks in Todoist."""
+    query = update.callback_query
+    await query.answer()
+    state = _sessions.pop(query.message.chat_id, None)
+    if not state or not state.task:
+        return ConversationHandler.END
+
+    try:
+        parent_id = await asyncio.to_thread(todoist.create_todoist_task, state.task)
+        for title in state.subtasks:
+            sub = Task(
+                title=title,
+                priority=state.task.priority,
+                labels=state.task.labels,
+                due_date=state.task.due_date,
+            )
+            await asyncio.to_thread(todoist.create_todoist_task, sub, parent_id)
+        await query.edit_message_text(
+            f"Created *{state.task.title}* with {len(state.subtasks)} subtasks.",
+            parse_mode="Markdown",
+        )
+    except Exception as exc:
+        logger.error("Failed to create breakdown tasks: %s", exc)
+        await query.edit_message_text("Failed to create tasks. Please try again.")
+
+    return ConversationHandler.END
+
+
+async def breakdown_cancel_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Return to the enrichment proposal."""
+    query = update.callback_query
+    await query.answer()
+    state = _get_session(update)
+    if not state:
+        return ConversationHandler.END
+    state.subtasks = []
+    await _show_proposal(update, state, edit=True)
+    return CONFIRM_OR_EDIT
+
+
 async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     _sessions.pop(update.effective_chat.id, None)
     await update.message.reply_text("Cancelled.")
@@ -282,11 +363,16 @@ task_conversation_handler = ConversationHandler(
             CallbackQueryHandler(confirm_callback, pattern="^confirm$"),
             CallbackQueryHandler(cancel_callback, pattern="^cancel$"),
             CallbackQueryHandler(edit_field_callback, pattern="^edit:"),
+            CallbackQueryHandler(breakdown_callback, pattern="^breakdown$"),
         ],
         EDIT_TITLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_title)],
         EDIT_DUE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_due)],
         EDIT_PRIORITY: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_priority)],
         EDIT_DURATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_duration)],
+        BREAKDOWN: [
+            CallbackQueryHandler(breakdown_confirm_callback, pattern="^breakdown:confirm$"),
+            CallbackQueryHandler(breakdown_cancel_callback, pattern="^breakdown:cancel$"),
+        ],
     },
     fallbacks=[CommandHandler("cancel", cancel_cmd, WHITELIST_FILTER)],
     per_chat=True,

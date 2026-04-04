@@ -16,6 +16,7 @@ import lib.llm as llm
 import lib.todoist as todoist
 from lib.handlers.auth import WHITELIST_FILTER
 from lib.models import PRIORITY_TO_TODOIST
+from lib.sync import store as _store
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,8 @@ def _keyboard() -> InlineKeyboardMarkup:
 def _fetch_data() -> tuple[list[dict], list[str], dict[str, str]]:
     """Sync: fetch tasks to optimize and project info."""
     projects_id_to_name = todoist.get_all_projects()
-    tasks = todoist.get_tasks_to_optimize(projects_id_to_name)
+    exclude_ids = _store.recently_optimized_ids()
+    tasks = todoist.get_tasks_to_optimize(projects_id_to_name, exclude_ids=exclude_ids)
     project_names = sorted(projects_id_to_name.values())
     projects_name_to_id = {v: k for k, v in projects_id_to_name.items()}
     return tasks, project_names, projects_name_to_id
@@ -109,6 +111,12 @@ async def _advance(update: Update, context: ContextTypes.DEFAULT_TYPE, chat_id: 
         proposal = await asyncio.to_thread(llm.propose_task_optimization, task, session.projects)
         if proposal:
             session.current_proposal = proposal
+            logger.info(
+                "[optimize] showing task %s '%s' — suggestions: %s",
+                task["id"],
+                task["title"][:60],
+                list(proposal),
+            )
             text = _format_message(session)
             keyboard = _keyboard()
             if update.callback_query:
@@ -121,6 +129,9 @@ async def _advance(update: Update, context: ContextTypes.DEFAULT_TYPE, chat_id: 
         # LLM found nothing to improve — silently move on
 
     # All tasks exhausted
+    logger.info(
+        "[optimize] session ended — applied=%d skipped=%d", session.applied, session.skipped
+    )
     summary = f"✅ All done! Applied: {session.applied}, skipped by you: {session.skipped}."
     _sessions.pop(chat_id, None)
     if update.callback_query:
@@ -187,6 +198,8 @@ async def apply_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     try:
         await asyncio.to_thread(todoist.update_todoist_task, task_id, **kwargs)
         session.applied += 1
+        _store.mark_optimized(task_id)
+        logger.info("[optimize] applied task %s '%s'", task_id, session.current_task["title"][:60])
     except Exception as exc:
         logger.error("Failed to update task %s: %s", task_id, exc)
         await query.answer("Failed to update task.", show_alert=True)
@@ -222,6 +235,8 @@ async def archive_confirm_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
     try:
         await asyncio.to_thread(todoist.delete_todoist_task, task_id)
         session.applied += 1
+        _store.mark_optimized(task_id)
+        logger.info("[optimize] archived task %s '%s'", task_id, session.current_task["title"][:60])
     except Exception as exc:
         logger.error("Failed to delete task %s: %s", task_id, exc)
         await query.answer("Failed to delete task.", show_alert=True)
@@ -244,6 +259,11 @@ async def skip_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     session = _sessions.get(chat_id)
     if session:
         session.skipped += 1
+        logger.info(
+            "[optimize] skipped task %s '%s'",
+            session.current_task["id"] if session.current_task else "?",
+            (session.current_task or {}).get("title", "")[:60],
+        )
     return await _advance(update, context, chat_id)
 
 
@@ -252,7 +272,13 @@ async def stop_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.answer()
     chat_id = query.message.chat_id
     session = _sessions.pop(chat_id, None)
-    counts = f"Applied: {session.applied}, skipped: {session.skipped}." if session else ""
+    if session:
+        logger.info(
+            "[optimize] session ended — applied=%d skipped=%d", session.applied, session.skipped
+        )
+        counts = f"Applied: {session.applied}, skipped: {session.skipped}."
+    else:
+        counts = ""
     await query.edit_message_text(f"Stopped. {counts}")
     return ConversationHandler.END
 

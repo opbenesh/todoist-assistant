@@ -76,7 +76,7 @@ def write_tasks_section(task_lines: list[str], day: date | None = None) -> None:
     if path.exists():
         text = path.read_text(encoding="utf-8")
     else:
-        text = f"# {day.strftime('%A, %B %d')}\n\n"
+        text = ""
 
     new_section = "## Tasks\n" + "\n".join(task_lines) + "\n"
 
@@ -93,18 +93,25 @@ def write_tasks_section(task_lines: list[str], day: date | None = None) -> None:
     _atomic_write(path, text)
 
 
-def append_digest(content: str, day: date | None = None) -> None:
-    """Append the morning digest to today's daily note."""
+def _append_section(heading: str, content: str, day: date | None = None) -> None:
     path = daily_note_path(day)
     day = day or date.today()
-
     if path.exists():
         text = path.read_text(encoding="utf-8")
     else:
-        text = f"# {day.strftime('%A, %B %d')}\n\n"
-
-    text = text.rstrip("\n") + f"\n\n## Morning Digest\n{content}\n"
+        text = ""
+    text = text.rstrip("\n") + f"\n\n## {heading}\n{content}\n"
     _atomic_write(path, text)
+
+
+def append_digest(content: str, day: date | None = None) -> None:
+    """Append the morning digest to today's daily note."""
+    _append_section("Morning Digest", content, day)
+
+
+def append_plan(content: str, day: date | None = None) -> None:
+    """Append the daily plan to today's daily note."""
+    _append_section("Daily Plan", content, day)
 
 
 def read_task_guidelines() -> str:
@@ -125,6 +132,19 @@ def write_insight(filename: str, content: str) -> None:
     assistant_dir.mkdir(exist_ok=True)
     path = assistant_dir / filename
     _atomic_write(path, content)
+
+
+def is_day_planned(day: date | None = None) -> bool:
+    """Return True if today's Tasks section has real tasks (not just the 'Unplanned' marker)."""
+    lines = read_tasks_section(day)
+    if not lines:
+        return False
+    return not (len(lines) == 1 and lines[0].strip() == "Unplanned")
+
+
+def mark_day_unplanned(day: date | None = None) -> None:
+    """Write a single 'Unplanned' marker to the Tasks section."""
+    write_tasks_section(["Unplanned"], day)
 
 
 def _atomic_write(path: Path, content: str) -> None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -34,6 +35,7 @@ class EnrichmentState:
     raw_title: str
     task: Task | None = None
     step: str = "awaiting_proposal"
+    subtasks: list[str] = field(default_factory=list)
 
 
 class TaskStore:
@@ -72,3 +74,16 @@ class TaskStore:
     @last_sync_ts.setter
     def last_sync_ts(self, value: float) -> None:
         self._data["last_sync_ts"] = value
+
+    def mark_optimized(self, task_id: str) -> None:
+        """Record that a task was handled in an optimize session."""
+        ids = self._data.setdefault("optimized_task_ids", {})
+        ids[task_id] = time.time()
+        cutoff = time.time() - 24 * 3600
+        self._data["optimized_task_ids"] = {k: v for k, v in ids.items() if v > cutoff}
+        self.save()
+
+    def recently_optimized_ids(self, cutoff_hours: int = 24) -> set[str]:
+        """Return task IDs handled within the last cutoff_hours."""
+        cutoff = time.time() - cutoff_hours * 3600
+        return {k for k, v in self._data.get("optimized_task_ids", {}).items() if v > cutoff}

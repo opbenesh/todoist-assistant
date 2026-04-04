@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import date, time
+from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 from telegram.ext import Application
@@ -24,6 +24,10 @@ def configure(settings: UserSettings) -> None:
     _settings = settings
 
 
+def get_settings() -> UserSettings:
+    return _settings
+
+
 def attach_scheduler(app: Application) -> None:
     jq = app.job_queue
     tz = ZoneInfo(_settings.timezone)
@@ -37,15 +41,22 @@ def attach_scheduler(app: Application) -> None:
     jq.run_daily(
         weekly_review_job,
         time=time(20, 0, tzinfo=tz),
-        days=(6,),  # Sunday (PTB: Mon=0 … Sun=6)
+        days=(4,),  # Friday (PTB: Mon=0 … Sun=6)
         chat_id=TELEGRAM_USER_ID,
         name="weekly_review",
     )
     jq.run_daily(
-        stale_nudge_job,
-        time=time(15, 0, tzinfo=tz),
+        plan_reminder_job,
+        time=time(9, 0, tzinfo=tz),
         chat_id=TELEGRAM_USER_ID,
-        name="stale_nudge",
+        name="plan_reminder",
+    )
+    jq.run_repeating(
+        plan_nag_job,
+        interval=3600,
+        first=time(10, 0, tzinfo=tz),
+        chat_id=TELEGRAM_USER_ID,
+        name="plan_nag",
     )
     jq.run_repeating(
         obsidian_sync_job,
@@ -63,6 +74,8 @@ async def morning_digest_job(context) -> None:
         digest = await llm.generate_digest(tasks)
         await context.bot.send_message(chat_id=TELEGRAM_USER_ID, text=digest, parse_mode="Markdown")
         await asyncio.to_thread(obsidian.append_digest, digest)
+        if not await asyncio.to_thread(obsidian.is_day_planned):
+            await asyncio.to_thread(obsidian.mark_day_unplanned)
     except Exception as exc:
         logger.error("Morning digest failed: %s", exc)
 
@@ -70,7 +83,7 @@ async def morning_digest_job(context) -> None:
 async def weekly_review_job(context) -> None:
     try:
         completed, overdue = await asyncio.gather(
-            asyncio.to_thread(todoist.get_today_tasks),
+            asyncio.to_thread(todoist.get_completed_tasks, 7),
             asyncio.to_thread(todoist.get_overdue_tasks),
         )
         review = await llm.generate_weekly_review(completed, overdue)
@@ -82,15 +95,30 @@ async def weekly_review_job(context) -> None:
         logger.error("Weekly review failed: %s", exc)
 
 
-async def stale_nudge_job(context) -> None:
+async def plan_reminder_job(context) -> None:
     try:
-        overdue = await asyncio.to_thread(todoist.get_overdue_tasks)
-        if not overdue:
-            return
-        nudge = await llm.generate_nudge(overdue)
-        await context.bot.send_message(chat_id=TELEGRAM_USER_ID, text=nudge)
+        if not await asyncio.to_thread(obsidian.is_day_planned):
+            await context.bot.send_message(
+                chat_id=TELEGRAM_USER_ID,
+                text="Time to plan your day! Use /plan",
+            )
     except Exception as exc:
-        logger.error("Stale nudge failed: %s", exc)
+        logger.error("Plan reminder failed: %s", exc)
+
+
+async def plan_nag_job(context) -> None:
+    try:
+        if await asyncio.to_thread(obsidian.is_day_planned):
+            return
+        tz = ZoneInfo(_settings.timezone)
+        hour = datetime.now(tz).hour
+        if 9 <= hour < 21:
+            await context.bot.send_message(
+                chat_id=TELEGRAM_USER_ID,
+                text="Hey — you still haven't planned your day. Use /plan when you're ready.",
+            )
+    except Exception as exc:
+        logger.error("Plan nag failed: %s", exc)
 
 
 async def obsidian_sync_job(context) -> None:

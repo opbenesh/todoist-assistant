@@ -7,9 +7,12 @@ from lib.config import DEBUG_LOGGING, TELEGRAM_BOT_KEY, TELEGRAM_USER_ID
 from lib.handlers.auth import WHITELIST_FILTER
 from lib.handlers.capture import done_handler, list_handler, task_conversation_handler
 from lib.handlers.common import help_cmd, start_cmd
+from lib.handlers.deepdive import deepdive_handler
 from lib.handlers.digest import digest_handler
+from lib.handlers.insights import insights_handler
 from lib.handlers.optimize import optimize_conversation_handler
 from lib.handlers.plan import plan_handler
+from lib.handlers.project_plan import project_handler
 from lib.obsidian import read_tasks_section  # noqa: F401 — ensure vault is accessible
 from lib.scheduler import attach_scheduler, configure
 from lib.todoist import build_user_settings, get_user_settings
@@ -47,6 +50,9 @@ _COMMANDS = [
     BotCommand("plan", "Generate a timeblocked plan for today"),
     BotCommand("digest", "Get today's task digest"),
     BotCommand("optimize", "Review and improve task hygiene"),
+    BotCommand("deepdive", "Deep-dive analysis on a single task"),
+    BotCommand("insights", "Pattern insights: habits, workload, clusters"),
+    BotCommand("project", "Project-level plan and next actions"),
     BotCommand("help", "Show available commands"),
     BotCommand("cancel", "Cancel current operation"),
 ]
@@ -74,6 +80,9 @@ def main() -> None:
     app.add_handler(plan_handler)
     app.add_handler(digest_handler)
     app.add_handler(optimize_conversation_handler)
+    app.add_handler(deepdive_handler)
+    app.add_handler(insights_handler)
+    app.add_handler(project_handler)
 
     attach_scheduler(app)
 

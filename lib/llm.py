@@ -39,10 +39,23 @@ a suggested morning focus.
 Maximum 200 words. Today is {today}, {weekday}."""
 
 _PLAN_SYSTEM = """You are a personal productivity coach creating a realistic daily plan.
-Organize tasks into Morning, Afternoon, and Evening blocks.
-Consider duration estimates when assigning blocks.
-Flag any tasks that seem too ambitious for one day.
-Use Markdown with clear ## headers for each block.
+
+Each task has a "due_date" (when it was scheduled for today) and optionally a "deadline"
+(hard cutoff date).
+Rules:
+- Tasks with deadline == today or deadline in the past MUST be kept for today.
+- Tasks with no deadline or a future deadline are candidates to push.
+- Be aggressive: prefer a small, achievable today list. If the total duration of today tasks
+  exceeds the available time blocks, push the excess. When in doubt, push.
+- Use duration_minutes and the time blocks to judge realistic capacity.
+
+Return ONLY a valid JSON object with exactly two keys:
+- "plan_markdown": string — the human-readable plan in Markdown with ## Morning / ## Afternoon /
+  ## Evening headers listing only the tasks kept for today, plus a brief focus note.
+- "push_tasks": array of objects with "id" and "title" — tasks recommended to defer.
+  Each object must include the exact task id string from the input.
+
+Return ONLY valid JSON, no prose, no code fences.
 Today is {today}, {weekday}.
 Schedule context: morning {morning}, afternoon {afternoon}, evening {evening}."""
 
@@ -78,6 +91,40 @@ Today is {today}. Available projects: {projects}."""
 _DEFAULT_GUIDELINES = (
     "A task is untriaged if: priority is p4, project is Inbox, or no due date is set."
 )
+
+_BREAKDOWN_SYSTEM = """You are a task planning assistant.
+Given a task, break it down into 2–5 concrete, actionable subtasks.
+Return a JSON array of strings, each a short subtask title (under 60 chars).
+Return ONLY valid JSON array, no prose, no markdown fences."""
+
+_DEEPDIVE_SYSTEM = """You are a personal productivity coach doing a deep-dive on a single task.
+Provide:
+1. **Clarified goal & success criteria** — what done looks like
+2. **Concrete steps** — 3–6 ordered actions
+3. **Likely blockers / unknowns** — what could slow this down
+4. **Recommended next action** — the single thing to do right now
+
+Use Markdown. Be specific and actionable. Under 300 words."""
+
+_PROJECT_PLAN_SYSTEM = """You are a project manager reviewing a Todoist project.
+Given all open tasks in the project, produce:
+1. **State summary** — task count, age spread, priority breakdown
+2. **Next 3 actions** — highest-leverage tasks to tackle first
+3. **Blocked/stale items** — tasks needing attention or removal
+4. **Rough effort estimate** — total estimated time if available
+
+Use Markdown with clear sections. Under 400 words. Today is {today}."""
+
+_INSIGHTS_SYSTEM = """You are a productivity analyst writing a formal insights report.
+Analyse:
+- **Habit gaps** — recurring tasks frequently pushed or missed
+- **Workload** — completion rate, overdue ratio
+- **Topic clusters** — which projects/labels accumulated most debt
+- **Recommendations** — 2–3 concrete changes for next week
+
+Tone: strictly formal and analytical throughout — no motivational language, no direct address,
+no rhetorical questions, no informal asides. State observations and recommendations as facts.
+Use Markdown. Under 500 words."""
 
 
 _MD_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
@@ -213,17 +260,6 @@ async def generate_digest(tasks: list[dict]) -> str:
     return await asyncio.to_thread(_call, HAIKU, system, f"Today's tasks:\n{tasks_text}", 400)
 
 
-async def generate_plan(tasks: list[dict], settings=None) -> str:
-    """Generate a timeblocked daily plan using Sonnet."""
-    morning = settings.morning_block if settings else "09:00-12:00"
-    afternoon = settings.afternoon_block if settings else "12:00-17:00"
-    evening = settings.evening_block if settings else "17:00-21:00"
-    system = _PLAN_SYSTEM.format(
-        **_today_fmt(), morning=morning, afternoon=afternoon, evening=evening
-    )
-    tasks_text = json.dumps(tasks, default=str)
-    return await asyncio.to_thread(_call, SONNET, system, f"Tasks:\n{tasks_text}", 800)
-
 
 async def generate_weekly_review(completed: list[dict], overdue: list[dict]) -> str:
     """Generate a weekly review using Sonnet."""
@@ -238,3 +274,86 @@ async def generate_nudge(overdue: list[dict]) -> str:
     """Generate a short motivating nudge for overdue tasks using Haiku."""
     content = f"Overdue tasks:\n{json.dumps(overdue, default=str)}"
     return await asyncio.to_thread(_call, HAIKU, _NUDGE_SYSTEM, content, 150)
+
+
+def propose_breakdown(task: Task) -> list[str]:
+    """Sync: break a task into 2–5 subtask titles using Haiku.
+
+    Returns list of subtask title strings, empty on failure.
+    Call via asyncio.to_thread at the call site.
+    """
+    content = f"Task: {task.title}"
+    if task.notes:
+        content += f"\nNotes: {task.notes}"
+    raw_json = _call(HAIKU, _BREAKDOWN_SYSTEM, content, 300)
+    try:
+        data = json.loads(_strip_fences(raw_json))
+        if isinstance(data, list):
+            return [s for s in data if isinstance(s, str) and s][:5]
+        return []
+    except json.JSONDecodeError as exc:
+        logger.warning("Breakdown LLM returned invalid JSON: %s — raw: %s", exc, raw_json)
+        return []
+
+
+async def generate_deepdive(task: dict) -> str:
+    """Generate a deep-dive analysis for a single task using Sonnet."""
+    content = f"Task:\n{json.dumps(task, default=str)}"
+    return await asyncio.to_thread(_call, SONNET, _DEEPDIVE_SYSTEM, content, 600)
+
+
+async def generate_project_plan(project_name: str, tasks: list[dict]) -> str:
+    """Generate a project-level plan using Sonnet."""
+    system = _PROJECT_PLAN_SYSTEM.format(**_today_fmt())
+    content = f"Project: {project_name}\n\nTasks:\n{json.dumps(tasks, default=str)}"
+    return await asyncio.to_thread(_call, SONNET, system, content, 800)
+
+
+async def generate_plan(
+    tasks: list[dict], settings=None, context: str = ""
+) -> dict:
+    """Generate a timeblocked daily plan using Sonnet.
+
+    Returns dict with keys:
+      "plan_markdown": str  — human-readable plan
+      "push_tasks": list[{"id": str, "title": str}]  — tasks to defer
+    Falls back to plan_markdown=raw_text, push_tasks=[] on parse failure.
+    """
+    morning = settings.morning_block if settings else "09:00-12:00"
+    afternoon = settings.afternoon_block if settings else "12:00-17:00"
+    evening = settings.evening_block if settings else "17:00-21:00"
+    system = _PLAN_SYSTEM.format(
+        **_today_fmt(), morning=morning, afternoon=afternoon, evening=evening
+    )
+    tasks_text = json.dumps(tasks, default=str)
+    user_content = f"Tasks:\n{tasks_text}"
+    if context:
+        user_content += f"\n\nAdditional context: {context}"
+
+    raw = await asyncio.to_thread(_call, SONNET, system, user_content, 1000)
+
+    try:
+        data = json.loads(_strip_fences(raw))
+        plan_md = str(data.get("plan_markdown") or "")
+        push_raw = data.get("push_tasks") or []
+        push_tasks = [
+            {"id": str(t["id"]), "title": str(t["title"])}
+            for t in push_raw
+            if isinstance(t, dict) and t.get("id") and t.get("title")
+        ]
+        return {"plan_markdown": plan_md, "push_tasks": push_tasks}
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        logger.warning("generate_plan: failed to parse JSON response: %s", exc)
+        return {"plan_markdown": raw, "push_tasks": []}
+
+
+async def generate_insights(
+    completed: list[dict], overdue: list[dict], all_active: list[dict]
+) -> str:
+    """Generate a deep insights report using Sonnet."""
+    content = (
+        f"Completed recently:\n{json.dumps(completed, default=str)}\n\n"
+        f"Overdue:\n{json.dumps(overdue, default=str)}\n\n"
+        f"All active tasks:\n{json.dumps(all_active, default=str)}"
+    )
+    return await asyncio.to_thread(_call, SONNET, _INSIGHTS_SYSTEM, content, 1000)

@@ -77,7 +77,7 @@ def build_user_settings(todoist_data: dict, profile: dict) -> UserSettings:
 # ---------------------------------------------------------------------------
 
 
-def create_todoist_task(task: Task) -> str:
+def create_todoist_task(task: Task, parent_id: str | None = None) -> str:
     """Create a task in Todoist. Returns the new task's id."""
     kwargs: dict = {
         "priority": PRIORITY_TO_TODOIST[task.priority],
@@ -90,6 +90,8 @@ def create_todoist_task(task: Task) -> str:
     if task.duration_minutes:
         kwargs["duration"] = task.duration_minutes
         kwargs["duration_unit"] = "minute"
+    if parent_id:
+        kwargs["parent_id"] = parent_id
 
     result = _api.add_task(task.title, **kwargs)  # content is positional in v4
     return result.id
@@ -105,6 +107,52 @@ def get_overdue_tasks() -> list[dict]:
     """Return only overdue tasks (due before today)."""
     paginator = _api.filter_tasks(query="overdue")
     return [_task_to_dict(t) for page in paginator for t in page]
+
+
+def get_all_tasks() -> list[dict]:
+    """Return all active (non-completed) tasks across all projects."""
+    paginator = _api.get_tasks()
+    return [_task_to_dict(t) for page in paginator for t in page]
+
+
+def get_task_by_id(task_id: str) -> dict:
+    """Fetch a single task by ID."""
+    t = _api.get_task(task_id)
+    return _task_to_dict(t)
+
+
+def get_tasks_by_project(project_id: str) -> list[dict]:
+    """Return all active tasks in a given project."""
+    paginator = _api.get_tasks(project_id=project_id)
+    return [_task_to_dict(t) for page in paginator for t in page]
+
+
+def get_completed_tasks(since_days: int = 7) -> list[dict]:
+    """Return tasks completed in the last since_days days via Todoist v1 API."""
+    from datetime import datetime, timedelta, timezone
+
+    since = datetime.now(timezone.utc) - timedelta(days=since_days)
+    try:
+        r = httpx.get(
+            "https://api.todoist.com/api/v1/tasks/completed/get_all",
+            headers={"Authorization": f"Bearer {TODOIST_KEY}"},
+            params={"since": since.strftime("%Y-%m-%dT%H:%M:%SZ"), "limit": 100},
+            timeout=15,
+        )
+        r.raise_for_status()
+        items = r.json().get("items", [])
+        return [
+            {
+                "id": item.get("task_id", ""),
+                "title": item.get("content", ""),
+                "completed_at": item.get("completed_at", ""),
+                "project_id": item.get("project_id", ""),
+            }
+            for item in items
+        ]
+    except Exception as exc:
+        logger.warning("Could not fetch completed tasks: %s", exc)
+        return []
 
 
 def complete_todoist_task(task_id: str) -> None:
@@ -125,18 +173,26 @@ def get_all_projects() -> dict[str, str]:
     return {p.id: p.name for page in paginator for p in page}
 
 
-def get_tasks_to_optimize(projects: dict[str, str] | None = None) -> list[dict]:
+def get_tasks_to_optimize(
+    projects: dict[str, str] | None = None,
+    exclude_ids: set[str] = frozenset(),
+) -> list[dict]:
     """Return tasks needing hygiene improvements, sorted by neediness (cap 20).
 
     Untriaged criteria (any one triggers): p4 priority, Inbox project, no due date,
     or title longer than 60 chars.
+    Tasks in exclude_ids (recently optimized) are skipped.
     """
     if projects is None:
         projects = get_all_projects()
     paginator = _api.get_tasks()
     tasks = []
+    seen: set[str] = set()
     for page in paginator:
         for t in page:
+            if t.id in seen or t.id in exclude_ids:
+                continue
+            seen.add(t.id)
             d = _task_to_dict(t)
             d["project_id"] = t.project_id
             d["project"] = projects.get(t.project_id, "Unknown")
@@ -158,8 +214,14 @@ def get_tasks_to_optimize(projects: dict[str, str] | None = None) -> list[dict]:
     return tasks[:20]
 
 
+def remove_task_due_date(task_id: str) -> None:
+    """Remove the due date from a task (clears it from today's list)."""
+    _api.update_task(task_id, due_string="")
+
+
 def _task_to_dict(t) -> dict:
     due = t.due.date if t.due else None
+    deadline = t.deadline.date if t.deadline else None
     return {
         "id": t.id,
         "title": t.content,
@@ -167,6 +229,7 @@ def _task_to_dict(t) -> dict:
         "priority": TODOIST_TO_PRIORITY.get(t.priority, "p4"),
         "labels": t.labels or [],
         "due_date": due.isoformat() if due else None,
+        "deadline": deadline.isoformat() if deadline else None,
         "duration_minutes": t.duration.amount if t.duration else None,
         "is_completed": t.is_completed,
     }
