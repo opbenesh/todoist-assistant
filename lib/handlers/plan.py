@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 TRIAGING = 0
 AWAITING_ANSWER = 1
-REVIEWING_PUSHES = 2
 
 
 @dataclass
@@ -42,16 +41,8 @@ class PlanningQASession:
     current_q: int = 0
 
 
-@dataclass
-class PlanSession:
-    push_tasks: list[dict]               # [{"id": str, "title": str}, ...]
-    pushed: int = 0
-    kept: int = 0
-
-
 _triage_sessions: dict[int, TriageSession] = {}
 _qa_sessions: dict[int, PlanningQASession] = {}
-_plan_sessions: dict[int, PlanSession] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -277,19 +268,12 @@ async def _finalize_planning(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -
 
     await context.bot.send_message(chat_id, "Generating your plan…")
     try:
-        result = await llm.generate_plan(tasks, _settings, context_str)
-        plan_md = result["plan_markdown"]
-        push_tasks = result["push_tasks"]
+        plan_md = await llm.generate_plan(tasks, _settings, context_str)
 
         await asyncio.gather(
             context.bot.send_message(chat_id, plan_md, parse_mode="Markdown"),
             asyncio.to_thread(obsidian.append_plan, plan_md),
         )
-
-        if push_tasks:
-            _plan_sessions[chat_id] = PlanSession(push_tasks=list(push_tasks))
-            return await _advance_push_bot(chat_id, context.bot)
-
         await _write_planned_tasks()
 
     except Exception as exc:
@@ -312,131 +296,6 @@ async def _write_planned_tasks() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Push review loop
-# ---------------------------------------------------------------------------
-
-
-def _push_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("✅ Keep today", callback_data="plan:keep"),
-            InlineKeyboardButton("⏭ Push", callback_data="plan:push"),
-        ],
-        [InlineKeyboardButton("🛑 Done", callback_data="plan:done")],
-    ])
-
-
-async def _advance_push_bot(chat_id: int, bot) -> int:
-    session = _plan_sessions.get(chat_id)
-    if not session or not session.push_tasks:
-        return await _finish_push_bot(chat_id, bot)
-
-    task = session.push_tasks[0]
-    remaining = len(session.push_tasks)
-    text = (
-        f"Push forward?\n\n"
-        f"📌 *{task['title']}*\n"
-        f"No hard deadline — due date will be removed.\n\n"
-        f"_{remaining} task{'s' if remaining > 1 else ''} remaining_"
-    )
-    await bot.send_message(
-        chat_id, text, reply_markup=_push_keyboard(), parse_mode="Markdown"
-    )
-    return REVIEWING_PUSHES
-
-
-async def _advance_push(update: Update, chat_id: int) -> int:
-    session = _plan_sessions.get(chat_id)
-    if not session or not session.push_tasks:
-        return await _finish_push(update, chat_id)
-
-    task = session.push_tasks[0]
-    remaining = len(session.push_tasks)
-    text = (
-        f"Push forward?\n\n"
-        f"📌 *{task['title']}*\n"
-        f"No hard deadline — due date will be removed.\n\n"
-        f"_{remaining} task{'s' if remaining > 1 else ''} remaining_"
-    )
-    if update.callback_query:
-        await update.callback_query.edit_message_text(
-            text, reply_markup=_push_keyboard(), parse_mode="Markdown"
-        )
-    else:
-        await update.message.reply_text(
-            text, reply_markup=_push_keyboard(), parse_mode="Markdown"
-        )
-    return REVIEWING_PUSHES
-
-
-async def _finish_push_bot(chat_id: int, bot) -> int:
-    session = _plan_sessions.pop(chat_id, None)
-    pushed = session.pushed if session else 0
-    kept = session.kept if session else 0
-    await bot.send_message(chat_id, f"Done. Pushed {pushed}, kept {kept} for today.")
-    await _write_planned_tasks()
-    return ConversationHandler.END
-
-
-async def _finish_push(update: Update, chat_id: int) -> int:
-    session = _plan_sessions.pop(chat_id, None)
-    pushed = session.pushed if session else 0
-    kept = session.kept if session else 0
-    summary = f"Done. Pushed {pushed}, kept {kept} for today."
-    if update.callback_query:
-        await update.callback_query.edit_message_text(summary)
-    else:
-        await update.message.reply_text(summary)
-    await _write_planned_tasks()
-    return ConversationHandler.END
-
-
-async def push_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    chat_id = query.message.chat_id
-    session = _plan_sessions.get(chat_id)
-    if not session or not session.push_tasks:
-        return ConversationHandler.END
-
-    task = session.push_tasks.pop(0)
-    try:
-        await asyncio.to_thread(todoist.remove_task_due_date, task["id"])
-        session.pushed += 1
-        logger.info("[plan] pushed task %s '%s'", task["id"], task["title"][:60])
-    except Exception as exc:
-        logger.error("Failed to remove due date for task %s: %s", task["id"], exc)
-        await query.answer("Failed to update task.", show_alert=True)
-
-    return await _advance_push(update, chat_id)
-
-
-async def keep_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    chat_id = query.message.chat_id
-    session = _plan_sessions.get(chat_id)
-    if session and session.push_tasks:
-        task = session.push_tasks.pop(0)
-        session.kept += 1
-        try:
-            await asyncio.to_thread(todoist.reschedule_task_to_today, task["id"])
-            logger.info(
-                "[plan] kept task %s '%s' → rescheduled to today",
-                task["id"], task["title"][:60],
-            )
-        except Exception as exc:
-            logger.error("Failed to reschedule task %s: %s", task["id"], exc)
-    return await _advance_push(update, chat_id)
-
-
-async def done_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    return await _finish_push(update, query.message.chat_id)
-
-
-# ---------------------------------------------------------------------------
 # Fallback
 # ---------------------------------------------------------------------------
 
@@ -445,7 +304,6 @@ async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = update.effective_chat.id
     _triage_sessions.pop(chat_id, None)
     _qa_sessions.pop(chat_id, None)
-    _plan_sessions.pop(chat_id, None)
     await update.message.reply_text("Cancelled.")
     return ConversationHandler.END
 
@@ -464,11 +322,6 @@ plan_handler = ConversationHandler(
         AWAITING_ANSWER: [
             CallbackQueryHandler(qa_button_cb, pattern="^plan_qa:"),
             MessageHandler(filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, qa_text_cb),
-        ],
-        REVIEWING_PUSHES: [
-            CallbackQueryHandler(push_cb, pattern="^plan:push$"),
-            CallbackQueryHandler(keep_cb, pattern="^plan:keep$"),
-            CallbackQueryHandler(done_cb, pattern="^plan:done$"),
         ],
     },
     fallbacks=[CommandHandler("cancel", cancel_cmd, WHITELIST_FILTER)],

@@ -42,18 +42,11 @@ _PLAN_SYSTEM = """You are a personal productivity coach creating a realistic dai
 
 Each task has a "due_date" (when it was scheduled for today) and optionally a "deadline"
 (hard cutoff date).
-Rules:
-- Tasks with deadline == today or deadline in the past MUST be kept for today.
-- Tasks with no deadline or a future deadline are candidates to push.
-- Be aggressive: prefer a small, achievable today list. If the total duration of today tasks
-  exceeds the available time blocks, push the excess. When in doubt, push.
-- Use duration_minutes and the time blocks to judge realistic capacity.
+Use duration_minutes and the time blocks to judge realistic capacity.
 
-Return ONLY a valid JSON object with exactly two keys:
+Return ONLY a valid JSON object with exactly one key:
 - "plan_markdown": string — the human-readable plan in Markdown with ## Morning / ## Afternoon /
-  ## Evening headers listing only the tasks kept for today, plus a brief focus note.
-- "push_tasks": array of objects with "id" and "title" — tasks recommended to defer.
-  Each object must include the exact task id string from the input.
+  ## Evening headers listing tasks across time blocks, plus a brief focus note.
 
 Return ONLY valid JSON, no prose, no code fences.
 Today is {today}, {weekday}.
@@ -356,14 +349,8 @@ async def generate_project_plan(project_name: str, tasks: list[dict]) -> str:
 
 async def generate_plan(
     tasks: list[dict], settings=None, context: str = ""
-) -> dict:
-    """Generate a timeblocked daily plan using Sonnet.
-
-    Returns dict with keys:
-      "plan_markdown": str  — human-readable plan
-      "push_tasks": list[{"id": str, "title": str}]  — tasks to defer
-    Falls back to plan_markdown=raw_text, push_tasks=[] on parse failure.
-    """
+) -> str:
+    """Generate a timeblocked daily plan using Sonnet. Returns plan markdown."""
     morning = settings.morning_block if settings else "09:00-12:00"
     afternoon = settings.afternoon_block if settings else "12:00-17:00"
     evening = settings.evening_block if settings else "17:00-21:00"
@@ -379,17 +366,10 @@ async def generate_plan(
 
     try:
         data = json.loads(_strip_fences(raw))
-        plan_md = str(data.get("plan_markdown") or "")
-        push_raw = data.get("push_tasks") or []
-        push_tasks = [
-            {"id": str(t["id"]), "title": str(t["title"])}
-            for t in push_raw
-            if isinstance(t, dict) and t.get("id") and t.get("title")
-        ]
-        return {"plan_markdown": plan_md, "push_tasks": push_tasks}
+        return str(data.get("plan_markdown") or "")
     except (json.JSONDecodeError, KeyError, TypeError) as exc:
         logger.warning("generate_plan: failed to parse JSON response: %s", exc)
-        return {"plan_markdown": raw, "push_tasks": []}
+        return raw
 
 
 async def generate_planning_questions(tasks: list[dict]) -> list[dict]:

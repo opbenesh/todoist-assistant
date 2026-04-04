@@ -235,11 +235,6 @@ def remove_task_due_date(task_id: str) -> None:
     r.raise_for_status()
 
 
-def reschedule_task_to_today(task_id: str) -> None:
-    """Set a task's due date to today."""
-    _api.update_task(task_id, due_string="today")
-
-
 def _task_to_dict(t) -> dict:
     due = t.due.date if t.due else None
     deadline = t.deadline.date if t.deadline else None
