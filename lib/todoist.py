@@ -103,6 +103,19 @@ def get_today_tasks() -> list[dict]:
     return [_task_to_dict(t) for page in paginator for t in page]
 
 
+def get_triage_tasks() -> list[dict]:
+    """Return tasks for triage: due today, overdue, or labeled 'postpone'. Deduplicated."""
+    paginator = _api.filter_tasks(query="today | overdue | label:postpone")
+    seen: set[str] = set()
+    result = []
+    for page in paginator:
+        for t in page:
+            if t.id not in seen:
+                seen.add(t.id)
+                result.append(_task_to_dict(t))
+    return result
+
+
 def get_overdue_tasks() -> list[dict]:
     """Return only overdue tasks (due before today)."""
     paginator = _api.filter_tasks(query="overdue")
