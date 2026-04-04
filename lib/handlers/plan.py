@@ -105,8 +105,8 @@ def _push_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton("✅ Push", callback_data="plan:push"),
-                InlineKeyboardButton("⏭ Keep today", callback_data="plan:keep"),
+                InlineKeyboardButton("✅ Keep today", callback_data="plan:keep"),
+                InlineKeyboardButton("⏭ Push", callback_data="plan:push"),
             ],
             [InlineKeyboardButton("🛑 Done", callback_data="plan:done")],
         ]
@@ -181,8 +181,13 @@ async def keep_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = query.message.chat_id
     session = _plan_sessions.get(chat_id)
     if session and session.push_tasks:
-        session.push_tasks.pop(0)
+        task = session.push_tasks.pop(0)
         session.kept += 1
+        try:
+            await asyncio.to_thread(todoist.reschedule_task_to_today, task["id"])
+            logger.info("[plan] kept task %s '%s' → rescheduled to today", task["id"], task["title"][:60])
+        except Exception as exc:
+            logger.error("Failed to reschedule task %s: %s", task["id"], exc)
     return await _advance_push(update, chat_id)
 
 

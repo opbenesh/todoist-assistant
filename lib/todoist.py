@@ -215,8 +215,29 @@ def get_tasks_to_optimize(
 
 
 def remove_task_due_date(task_id: str) -> None:
-    """Remove the due date from a task (clears it from today's list)."""
-    _api.update_task(task_id, due_string="")
+    """Remove the due date from a task via Sync API (due_string='' is ignored by REST)."""
+    import uuid
+
+    r = httpx.post(
+        "https://api.todoist.com/api/v1/sync",
+        headers={"Authorization": f"Bearer {TODOIST_KEY}"},
+        json={
+            "commands": [
+                {
+                    "type": "item_update",
+                    "uuid": str(uuid.uuid4()),
+                    "args": {"id": task_id, "due": None},
+                }
+            ]
+        },
+        timeout=10,
+    )
+    r.raise_for_status()
+
+
+def reschedule_task_to_today(task_id: str) -> None:
+    """Set a task's due date to today."""
+    _api.update_task(task_id, due_string="today")
 
 
 def _task_to_dict(t) -> dict:
