@@ -73,9 +73,6 @@ async def morning_digest_job(context) -> None:
         tasks = await asyncio.to_thread(todoist.get_today_tasks)
         digest = await llm.generate_digest(tasks)
         await context.bot.send_message(chat_id=TELEGRAM_USER_ID, text=digest, parse_mode="Markdown")
-        await asyncio.to_thread(obsidian.append_digest, digest)
-        if not await asyncio.to_thread(obsidian.is_day_planned):
-            await asyncio.to_thread(obsidian.mark_day_unplanned)
     except Exception as exc:
         logger.error("Morning digest failed: %s", exc)
 
