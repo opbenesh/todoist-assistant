@@ -29,6 +29,7 @@ BRAINSTORM_REVIEW = 2
 _OPT_CB = "opt:optimize"
 _SKIP_CB = "opt:skip"
 _DELETE_CB = "opt:delete"
+_OVERRIDE_CB = "opt:override"
 _ACCEPT_CB = "opt:accept"
 _REJECT_CB = "opt:reject"
 
@@ -126,11 +127,14 @@ async def optimize_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 
 def _review_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("⚙️ Optimize", callback_data=_OPT_CB),
-        InlineKeyboardButton("⏭ Skip", callback_data=_SKIP_CB),
-        InlineKeyboardButton("🗑 Delete", callback_data=_DELETE_CB),
-    ]])
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("⚙️ Optimize", callback_data=_OPT_CB),
+            InlineKeyboardButton("⏭ Skip", callback_data=_SKIP_CB),
+            InlineKeyboardButton("🗑 Delete", callback_data=_DELETE_CB),
+        ],
+        [InlineKeyboardButton("✅ It's actionable", callback_data=_OVERRIDE_CB)],
+    ])
 
 
 async def _show_review_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -197,6 +201,30 @@ async def delete_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     except Exception as exc:
         logger.error("[optimize] delete failed for %s: %s", task["id"], exc)
         await query.answer("Failed to delete task.", show_alert=True)
+
+    await query.edit_message_reply_markup(reply_markup=None)
+    await _show_review_task(chat_id, context)
+    return REVIEWING
+
+
+async def override_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session or not session.queue:
+        return ConversationHandler.END
+
+    task = session.queue.pop(0)
+    existing_labels = list(task.get("labels") or [])
+    if "actionable" not in existing_labels:
+        existing_labels.append("actionable")
+    try:
+        await asyncio.to_thread(todoist.update_todoist_task, task["id"], labels=existing_labels)
+        logger.info("[optimize] override task %s '%s'", task["id"], task["title"][:60])
+    except Exception as exc:
+        logger.error("[optimize] override failed for %s: %s", task["id"], exc)
+        await query.answer("Failed to update task.", show_alert=True)
 
     await query.edit_message_reply_markup(reply_markup=None)
     await _show_review_task(chat_id, context)
@@ -396,6 +424,7 @@ optimize_conversation_handler = ConversationHandler(
             CallbackQueryHandler(optimize_task_cb, pattern=f"^{_OPT_CB}$"),
             CallbackQueryHandler(skip_cb, pattern=f"^{_SKIP_CB}$"),
             CallbackQueryHandler(delete_cb, pattern=f"^{_DELETE_CB}$"),
+            CallbackQueryHandler(override_cb, pattern=f"^{_OVERRIDE_CB}$"),
         ],
         BRAINSTORM_INPUT: [
             MessageHandler(

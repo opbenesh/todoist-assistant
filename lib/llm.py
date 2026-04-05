@@ -99,10 +99,16 @@ Example output: ["Wash all dishes", "Take the garbage out", "Clean the fridge",
   "Deal with kzradio"]"""
 
 _ACTIONABILITY_JUDGE_SYSTEM = """You are a task actionability judge.
-For each task determine whether it is actionable: atomic, achievable, and unambiguous.
-Examples — actionable: "Wash the dishes", "Call dad", "Buy groceries at Tiv Taam".
-Examples — NOT actionable: "Plan vacation" (too large), "Deal with tax stuff" (ambiguous),
-  "Handle work things" (vague).
+For each task determine whether it is actionable: you can start doing it immediately
+without any further planning, research, or clarification.
+Examples — actionable: "Wash the dishes", "Call dad", "Buy groceries at Tiv Taam",
+  "Tidy the living room", "Do the laundry", "Clean the kitchen".
+Examples — NOT actionable: "Plan vacation" (requires planning first),
+  "Deal with tax stuff" (too vague — unclear what to do),
+  "Handle work things" (no clear next action),
+  "Research project options" (open-ended, no clear completion).
+The bar is: could you open this task right now and immediately start working on it?
+If yes — actionable. If you'd need to think about what to do first — not actionable.
 
 For EVERY task also return a clean_title: fix typos, capitalise properly, and add a single
 context-appropriate leading emoji (e.g. 🍽️ Wash the dishes, 📞 Call dad).

@@ -64,16 +64,17 @@ async def _post_init(app: Application) -> None:
     await app.bot.set_my_commands(_COMMANDS)
 
 
-def main() -> None:
-    # Load user settings (Todoist API → profile.md fallback)
+def load_settings() -> None:
+    """Load user settings from Todoist API + profile.md and configure scheduler."""
     profile = _load_profile()
     todoist_data = get_user_settings()
     settings = build_user_settings(todoist_data, profile)
     configure(settings)
     logger.info("User settings: tz=%s, first_day=%s", settings.timezone, settings.first_day_of_week)
 
-    app = Application.builder().token(TELEGRAM_BOT_KEY).post_init(_post_init).build()
 
+def register_handlers(app: Application) -> None:
+    """Register all bot handlers onto the given Application."""
     app.add_handler(CommandHandler("start", start_cmd, WHITELIST_FILTER))
     app.add_handler(CommandHandler("help", help_cmd, WHITELIST_FILTER))
     app.add_handler(brainstorm_handler)
@@ -87,6 +88,13 @@ def main() -> None:
     app.add_handler(insights_handler)
     app.add_handler(project_handler)
 
+
+def main() -> None:
+    load_settings()
+
+    app = Application.builder().token(TELEGRAM_BOT_KEY).post_init(_post_init).build()
+
+    register_handlers(app)
     attach_scheduler(app)
 
     logger.info("Starting assistant bot (polling), user_id=%s", TELEGRAM_USER_ID)

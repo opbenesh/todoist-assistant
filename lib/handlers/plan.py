@@ -51,11 +51,12 @@ _BS_REJECT   = "pf:bs_reject"
 _BS_CONTINUE = "pf:bs_continue"
 _BS_NEXT     = "pf:bs_next"
 
-_OPT_START   = "pf:opt_start"
-_OPT_SKIP    = "pf:opt_skip"
-_OPT_OPT     = "pf:opt_optimize"
-_OPT_SKIP_T  = "pf:opt_skip_task"
-_OPT_DELETE  = "pf:opt_delete"
+_OPT_START    = "pf:opt_start"
+_OPT_SKIP     = "pf:opt_skip"
+_OPT_OPT      = "pf:opt_optimize"
+_OPT_SKIP_T   = "pf:opt_skip_task"
+_OPT_DELETE   = "pf:opt_delete"
+_OPT_OVERRIDE = "pf:opt_override"
 _OPT_ACCEPT  = "pf:opt_accept"
 _OPT_REJECT  = "pf:opt_reject"
 
@@ -102,6 +103,7 @@ _sessions: dict[int, PlanFlowSession] = {}
 
 async def plan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = update.effective_chat.id
+    logger.info("[plan] session started for chat %s", chat_id)
     _sessions[chat_id] = PlanFlowSession()
     await update.message.reply_text(
         "Starting your planning session.",
@@ -133,11 +135,12 @@ async def bs_prompt_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     chat_id = query.message.chat_id
     await query.edit_message_reply_markup(reply_markup=None)
     if query.data == _BS_START:
+        logger.info("[plan] phase=brainstorm chat=%s", chat_id)
         await context.bot.send_message(
             chat_id, "What's on your mind? Type freely:"
         )
         return BS_INPUT
-    # Skip
+    logger.info("[plan] phase=brainstorm skipped chat=%s", chat_id)
     await _show_optimize_prompt(chat_id, context)
     return OPTIMIZE_PROMPT
 
@@ -149,6 +152,7 @@ async def bs_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         return ConversationHandler.END
 
     proposed = await llm.brainstorm_extract_tasks(update.message.text.strip())
+    logger.info("[plan/bs] extracted %d tasks", len(proposed))
     if not proposed:
         await update.message.reply_text(
             "Couldn't find tasks in that — try again or tap Skip."
@@ -275,9 +279,10 @@ async def opt_prompt_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     chat_id = query.message.chat_id
     await query.edit_message_reply_markup(reply_markup=None)
     if query.data == _OPT_SKIP:
+        logger.info("[plan] phase=optimize skipped chat=%s", chat_id)
         await _start_triage(chat_id, context)
         return TRIAGING
-    # Start optimize
+    logger.info("[plan] phase=optimize chat=%s", chat_id)
     await context.bot.send_message(chat_id, "Fetching and judging tasks…")
     session = _sessions.get(chat_id)
     if not session:
@@ -328,11 +333,14 @@ async def opt_prompt_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
 
 def _opt_review_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("⚙️ Optimize", callback_data=_OPT_OPT),
-        InlineKeyboardButton("⏭ Skip", callback_data=_OPT_SKIP_T),
-        InlineKeyboardButton("🗑 Delete", callback_data=_OPT_DELETE),
-    ]])
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("⚙️ Optimize", callback_data=_OPT_OPT),
+            InlineKeyboardButton("⏭ Skip", callback_data=_OPT_SKIP_T),
+            InlineKeyboardButton("🗑 Delete", callback_data=_OPT_DELETE),
+        ],
+        [InlineKeyboardButton("✅ It's actionable", callback_data=_OPT_OVERRIDE)],
+    ])
 
 
 async def _show_opt_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -350,6 +358,30 @@ async def _show_opt_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> No
         reply_markup=_opt_review_keyboard(),
         parse_mode="Markdown",
     )
+
+
+async def opt_override_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session or not session.opt_queue:
+        return ConversationHandler.END
+
+    task = session.opt_queue.pop(0)
+    labels = list(task.get("labels") or [])
+    if "actionable" not in labels:
+        labels.append("actionable")
+    try:
+        await asyncio.to_thread(todoist.update_todoist_task, task["id"], labels=labels)
+        logger.info("[plan/opt] override task %s '%s'", task["id"], task["title"][:60])
+    except Exception as exc:
+        logger.error("[plan/opt] override failed for %s: %s", task["id"], exc)
+        await query.answer("Failed to update task.", show_alert=True)
+
+    await query.edit_message_reply_markup(reply_markup=None)
+    await _show_opt_task(chat_id, context)
+    return OPT_REVIEWING
 
 
 async def opt_optimize_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -539,6 +571,7 @@ async def _finish_optimize(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info("[plan] phase=triage chat=%s", chat_id)
     tasks = await asyncio.to_thread(todoist.get_triage_tasks)
     session = _sessions.get(chat_id)
     if not session:
@@ -574,8 +607,7 @@ def _triage_keyboard() -> InlineKeyboardMarkup:
 
 async def _show_triage_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
     session = _sessions.get(chat_id)
-    if not session or session.triage_index >= len(session.triage_tasks):
-        await _finish_triage(chat_id, context)
+    if not session:
         return
 
     task = session.triage_tasks[session.triage_index]
@@ -584,13 +616,10 @@ async def _show_triage_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) ->
     priority = task.get("priority", "p4").upper()
     due = task.get("due_date") or "no due date"
     duration = task.get("duration_minutes")
-    is_postponed = "postpone" in (task.get("labels") or [])
 
     meta = f"Priority: {priority} · Due: {due}"
     if duration:
         meta += f" · {duration}min"
-    if is_postponed:
-        meta += " · 📌 postponed"
 
     await context.bot.send_message(
         chat_id,
@@ -611,23 +640,15 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     task = session.triage_tasks[session.triage_index]
     task_id = task["id"]
     action = query.data.split(":")[1]
-    is_postponed = "postpone" in (task.get("labels") or [])
 
     try:
         if action in ("p1", "p2", "p3"):
-            kwargs: dict = {"priority": PRIORITY_TO_TODOIST[action]}
-            if is_postponed:
-                # Remove postpone label and commit to today
-                labels = [lb for lb in (task.get("labels") or []) if lb != "postpone"]
-                kwargs["labels"] = labels
-                kwargs["due_string"] = "today"
-            await asyncio.to_thread(todoist.update_todoist_task, task_id, **kwargs)
+            await asyncio.to_thread(
+                todoist.update_todoist_task, task_id,
+                priority=PRIORITY_TO_TODOIST[action], due_string="today",
+            )
             logger.info("[plan/triage] set %s → %s", task_id, action)
         elif action == "postpone":
-            labels = list(task.get("labels") or [])
-            if "postpone" not in labels:
-                labels.append("postpone")
-            await asyncio.to_thread(todoist.update_todoist_task, task_id, labels=labels)
             await asyncio.to_thread(todoist.remove_task_due_date, task_id)
             logger.info("[plan/triage] postponed %s", task_id)
         elif action == "delete":
@@ -639,11 +660,17 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await query.edit_message_reply_markup(reply_markup=None)
     session.triage_index += 1
+
+    if session.triage_index >= len(session.triage_tasks):
+        await _finish_triage(chat_id, context)
+        return ConversationHandler.END
+
     await _show_triage_task(chat_id, context)
     return TRIAGING
 
 
 async def _finish_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info("[plan] triage complete chat=%s", chat_id)
     await context.bot.send_message(chat_id, "Triage complete ✓")
     # Persist today's task list to daily note
     tasks = await asyncio.to_thread(todoist.get_today_tasks)
@@ -655,7 +682,7 @@ async def _finish_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> No
         for t in tasks
     ]
     await asyncio.to_thread(obsidian.write_tasks_section, lines)
-    await _start_qa(chat_id, context, tasks=tasks)
+    _sessions.pop(chat_id, None)
 
 
 # ---------------------------------------------------------------------------
@@ -666,6 +693,7 @@ async def _finish_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> No
 async def _start_qa(
     chat_id: int, context: ContextTypes.DEFAULT_TYPE, tasks: list[dict]
 ) -> None:
+    logger.info("[plan] phase=qa tasks=%d chat=%s", len(tasks), chat_id)
     session = _sessions.get(chat_id)
     if not session:
         return
@@ -750,6 +778,7 @@ async def qa_text_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def _finalize_planning(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> int:
+    logger.info("[plan] phase=generate chat=%s", chat_id)
     session = _sessions.pop(chat_id, None)
     if not session:
         return ConversationHandler.END
@@ -811,6 +840,7 @@ plan_handler = ConversationHandler(
             CallbackQueryHandler(opt_optimize_cb, pattern=f"^{_OPT_OPT}$"),
             CallbackQueryHandler(opt_skip_task_cb, pattern=f"^{_OPT_SKIP_T}$"),
             CallbackQueryHandler(opt_delete_cb, pattern=f"^{_OPT_DELETE}$"),
+            CallbackQueryHandler(opt_override_cb, pattern=f"^{_OPT_OVERRIDE}$"),
         ],
         OPT_BS_INPUT: [
             MessageHandler(
@@ -824,10 +854,7 @@ plan_handler = ConversationHandler(
         TRIAGING: [
             CallbackQueryHandler(triage_cb, pattern="^plan_triage:"),
         ],
-        AWAITING_ANSWER: [
-            CallbackQueryHandler(qa_button_cb, pattern="^plan_qa:"),
-            MessageHandler(filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, qa_text_cb),
-        ],
+        # AWAITING_ANSWER and plan generation states are wired up but not active yet
     },
     fallbacks=[CommandHandler("cancel", cancel_cmd, WHITELIST_FILTER)],
     per_chat=True,
