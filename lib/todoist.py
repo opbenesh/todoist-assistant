@@ -104,13 +104,13 @@ def get_today_tasks() -> list[dict]:
 
 
 def get_triage_tasks() -> list[dict]:
-    """Return tasks for triage: due today, overdue, or labeled 'postpone'. Deduplicated."""
-    paginator = _api.filter_tasks(query="today | overdue | label:postpone")
+    """Return tasks for triage: due today, overdue, or with no due date. Deduplicated."""
+    paginator = _api.filter_tasks(query="today | overdue | no date")
     seen: set[str] = set()
     result = []
     for page in paginator:
         for t in page:
-            if t.id not in seen:
+            if t.id not in seen and not t.is_completed:
                 seen.add(t.id)
                 result.append(_task_to_dict(t))
     return result
@@ -123,9 +123,16 @@ def get_overdue_tasks() -> list[dict]:
 
 
 def get_all_tasks() -> list[dict]:
-    """Return all active (non-completed) tasks across all projects."""
+    """Return all active (non-completed) tasks across all projects. Deduplicated."""
     paginator = _api.get_tasks()
-    return [_task_to_dict(t) for page in paginator for t in page]
+    seen: set[str] = set()
+    result = []
+    for page in paginator:
+        for t in page:
+            if t.id not in seen:
+                seen.add(t.id)
+                result.append(_task_to_dict(t))
+    return result
 
 
 def get_task_by_id(task_id: str) -> dict:
@@ -169,7 +176,11 @@ def get_completed_tasks(since_days: int = 7) -> list[dict]:
 
 
 def complete_todoist_task(task_id: str) -> None:
-    _api.close_task(task_id)
+    _api.complete_task(task_id)
+
+
+def uncomplete_todoist_task(task_id: str) -> None:
+    _api.uncomplete_task(task_id)
 
 
 def update_todoist_task(task_id: str, **kwargs) -> None:

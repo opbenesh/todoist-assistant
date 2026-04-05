@@ -67,7 +67,7 @@ def _sync() -> None:
                     if obs_checked:
                         todoist.complete_todoist_task(tod["id"])
                     else:
-                        todoist.update_todoist_task(tod["id"], is_completed=False)
+                        todoist.uncomplete_todoist_task(tod["id"])
                     logger.debug("Obsidian wins for '%s': checked=%s", title, obs_checked)
                 else:
                     obs_checked = tod_completed

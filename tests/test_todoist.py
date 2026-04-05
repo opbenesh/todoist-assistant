@@ -3,7 +3,13 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from lib.models import PRIORITY_TO_TODOIST, Task
-from lib.todoist import build_user_settings, create_todoist_task, get_user_settings
+from lib.todoist import (
+    build_user_settings,
+    create_todoist_task,
+    get_all_tasks,
+    get_triage_tasks,
+    get_user_settings,
+)
 
 # ---------------------------------------------------------------------------
 # Priority mapping
@@ -114,3 +120,76 @@ def test_build_user_settings_defaults_when_both_empty():
     assert settings.timezone == "UTC"
     assert settings.first_day_of_week == 0
     assert settings.default_project == "Inbox"
+
+
+# ---------------------------------------------------------------------------
+# Deduplication bugs
+# ---------------------------------------------------------------------------
+
+
+def _make_mock_task(
+    task_id: str = "T1",
+    title: str = "Test task",
+    is_completed: bool = False,
+    labels: list[str] | None = None,
+) -> MagicMock:
+    t = MagicMock()
+    t.id = task_id
+    t.content = title
+    t.description = ""
+    t.priority = 1
+    t.labels = labels or []
+    t.due = None
+    t.deadline = None
+    t.duration = None
+    t.is_completed = is_completed
+    return t
+
+
+def test_get_all_tasks_deduplicates_across_pages():
+    """get_all_tasks should return each task only once even if the paginator
+    yields the same task on multiple pages.
+
+    BUG: get_all_tasks() has no deduplication — unlike get_triage_tasks() which
+    guards with a `seen` set. When the Todoist SDK paginator returns the same task
+    on more than one page (possible for tasks that appear in multiple views or
+    during pagination boundary races), the optimize flow queues the task N times,
+    breaks it down N times, and produces N copies of the same sub-tasks.
+    """
+    task = _make_mock_task(task_id="dup-1", title="לשלם ליאיר!")
+    # Simulate the same task appearing on two pages of the paginator
+    mock_paginator = [[task], [task]]
+
+    with patch("lib.todoist._api") as mock_api:
+        mock_api.get_tasks.return_value = mock_paginator
+        result = get_all_tasks()
+
+    ids = [t["id"] for t in result]
+    assert ids.count("dup-1") == 1, (
+        f"Expected task 'dup-1' once, got {ids.count('dup-1')} copies. "
+        "get_all_tasks() does not deduplicate across pages, causing the optimize "
+        "flow to process and break down the same task multiple times."
+    )
+
+
+def test_get_triage_tasks_excludes_completed():
+    """get_triage_tasks should never surface a completed task.
+
+    BUG: _task_to_dict preserves is_completed from the API response and
+    get_triage_tasks() has no guard filtering it out. If the Todoist filter
+    endpoint ever returns a completed task (e.g., timing window, API quirk,
+    or a recurring-task edge case), it passes straight through to the triage
+    UI and the user sees 'items they've already completed' in their plan session.
+    """
+    completed = _make_mock_task(task_id="done-1", title="Already done", is_completed=True)
+    mock_paginator = [[completed]]
+
+    with patch("lib.todoist._api") as mock_api:
+        mock_api.filter_tasks.return_value = mock_paginator
+        result = get_triage_tasks()
+
+    completed_in_result = [t for t in result if t["is_completed"]]
+    assert completed_in_result == [], (
+        f"Expected no completed tasks in triage, got {completed_in_result}. "
+        "get_triage_tasks() does not filter is_completed=True tasks."
+    )
