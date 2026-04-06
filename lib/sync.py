@@ -50,6 +50,10 @@ def _sync() -> None:
     note_mtime = note_path.stat().st_mtime if note_path.exists() else 0.0
     note_changed = note_mtime > last_sync_ts
 
+    # All-task titles used to detect rescheduled tasks (avoid creating inbox duplicates)
+    all_tasks = todoist.get_all_tasks()
+    all_todoist_titles: set[str] = {t["title"] for t in all_tasks}
+
     updated_lines: list[str] = []
     processed_titles: set[str] = set()
     dirty = False
@@ -81,8 +85,16 @@ def _sync() -> None:
                     tod.get("duration_minutes"),
                 )
             )
+        elif title in all_todoist_titles:
+            # Task exists in Todoist but not due today (rescheduled) — keep Obsidian line as-is
+            logger.debug("Task '%s' exists in Todoist but not due today — skipping create", title)
+            updated_lines.append(format_task_line(title, obs_checked))
+        elif obs_checked:
+            # Checked in Obsidian but absent from Todoist — already completed, skip
+            logger.debug("Task '%s' checked in Obsidian but absent from Todoist — skipping", title)
+            updated_lines.append(format_task_line(title, obs_checked))
         else:
-            # Task exists in Obsidian but not Todoist — create it
+            # Unchecked task not in Todoist at all — create it
             task = Task(title=title)
             try:
                 task_id = todoist.create_todoist_task(task)
