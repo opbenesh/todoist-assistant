@@ -148,22 +148,23 @@ def get_tasks_by_project(project_id: str) -> list[dict]:
 
 
 def get_completed_tasks(since_days: int = 7) -> list[dict]:
-    """Return tasks completed in the last since_days days via Todoist v1 API."""
-    from datetime import datetime, timedelta, timezone
+    """Return tasks completed in the last since_days days.
 
-    since = datetime.now(timezone.utc) - timedelta(days=since_days)
+    Uses the filter API (filter=completed) since the dedicated completed
+    endpoint was removed. Results lack completed_at metadata.
+    """
     try:
         r = httpx.get(
-            "https://api.todoist.com/api/v1/tasks/completed/get_all",
+            "https://api.todoist.com/api/v1/tasks",
             headers={"Authorization": f"Bearer {TODOIST_KEY}"},
-            params={"since": since.strftime("%Y-%m-%dT%H:%M:%SZ"), "limit": 100},
+            params={"filter": "completed", "limit": 200},
             timeout=15,
         )
         r.raise_for_status()
-        items = r.json().get("items", [])
+        items = r.json().get("results", [])
         return [
             {
-                "id": item.get("task_id", ""),
+                "id": item.get("id", ""),
                 "title": item.get("content", ""),
                 "completed_at": item.get("completed_at", ""),
                 "project_id": item.get("project_id", ""),
@@ -199,7 +200,7 @@ def get_all_projects() -> dict[str, str]:
 
 def get_tasks_to_optimize(
     projects: dict[str, str] | None = None,
-    exclude_ids: set[str] = frozenset(),
+    exclude_ids: frozenset[str] = frozenset(),
 ) -> list[dict]:
     """Return tasks needing hygiene improvements, sorted by neediness (cap 20).
 

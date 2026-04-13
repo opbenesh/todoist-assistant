@@ -14,6 +14,7 @@ from telegram.ext import (
     filters,
 )
 
+import lib.audit as audit
 import lib.llm as llm
 import lib.todoist as todoist
 from lib.handlers.auth import WHITELIST_FILTER
@@ -96,6 +97,9 @@ async def optimize_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             kwargs["content"] = restore_links(raw_title, clean)
         try:
             await asyncio.to_thread(todoist.update_todoist_task, r["id"], **kwargs)
+            audit.log("update", source="optimize/auto_label", trigger="auto",
+                      task_id=r["id"], title=original.get("title", ""),
+                      changes=kwargs)
         except Exception as exc:
             logger.error("[optimize] failed to auto-label task %s: %s", r["id"], exc)
 
@@ -171,12 +175,12 @@ async def skip_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Apply title cleanup for skipped tasks (they stay in Todoist)
     clean = task.get("clean_title")
     if clean:
+        new_content = restore_links(task["title"], clean)
         try:
-            await asyncio.to_thread(
-                todoist.update_todoist_task,
-                task["id"],
-                content=restore_links(task["title"], clean),
-            )
+            await asyncio.to_thread(todoist.update_todoist_task, task["id"], content=new_content)
+            audit.log("update", source="optimize/skip", trigger="user_skip",
+                      task_id=task["id"], title=task["title"],
+                      changes={"content": new_content})
         except Exception as exc:
             logger.error("[optimize] skip title cleanup failed for %s: %s", task["id"], exc)
 
@@ -197,6 +201,8 @@ async def delete_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     session.deleted += 1
     try:
         await asyncio.to_thread(todoist.delete_todoist_task, task["id"])
+        audit.log("delete", source="optimize/delete", trigger="user_delete",
+                  task_id=task["id"], title=task["title"])
         logger.info("[optimize] deleted task %s '%s'", task["id"], task["title"][:60])
     except Exception as exc:
         logger.error("[optimize] delete failed for %s: %s", task["id"], exc)
@@ -221,6 +227,9 @@ async def override_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         existing_labels.append("actionable")
     try:
         await asyncio.to_thread(todoist.update_todoist_task, task["id"], labels=existing_labels)
+        audit.log("update", source="optimize/override", trigger="user_override",
+                  task_id=task["id"], title=task["title"],
+                  changes={"labels": existing_labels})
         logger.info("[optimize] override task %s '%s'", task["id"], task["title"][:60])
     except Exception as exc:
         logger.error("[optimize] override failed for %s: %s", task["id"], exc)
@@ -329,8 +338,11 @@ async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
         labels=["actionable"],
     )
     try:
-        await asyncio.to_thread(todoist.create_todoist_task, task)
+        task_id = await asyncio.to_thread(todoist.create_todoist_task, task)
         session.created += 1
+        audit.log("create", source="optimize/breakdown", trigger="user_accept",
+                  task_id=task_id, title=title, original_task_id=original["id"],
+                  original_title=original_title)
         logger.info("[optimize] created breakdown task: %s", title)
         await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
     except Exception as exc:
@@ -367,10 +379,14 @@ async def _finalize_breakdown(chat_id: int, context: ContextTypes.DEFAULT_TYPE) 
     if not session or not session.current_task:
         return
 
-    original_id = session.current_task["id"]
+    original = session.current_task
+    original_id = original["id"]
     try:
         await asyncio.to_thread(todoist.delete_todoist_task, original_id)
         session.broken_down += 1
+        audit.log("delete", source="optimize/breakdown_finalize", trigger="auto",
+                  task_id=original_id, title=original.get("title", ""),
+                  note="deleted after user broke it down into subtasks")
         logger.info("[optimize] deleted original task %s after breakdown", original_id)
     except Exception as exc:
         logger.error("[optimize] failed to delete original task %s: %s", original_id, exc)

@@ -14,6 +14,7 @@ from telegram.ext import (
     filters,
 )
 
+import lib.audit as audit
 import lib.llm as llm
 import lib.todoist as todoist
 from lib.handlers.auth import WHITELIST_FILTER
@@ -146,8 +147,10 @@ async def accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     title = session.proposed[session.index]
     try:
         task = Task(title=title)
-        await asyncio.to_thread(todoist.create_todoist_task, task)
+        task_id = await asyncio.to_thread(todoist.create_todoist_task, task)
         session.created += 1
+        audit.log("create", source="brainstorm", trigger="user_accept",
+                  task_id=task_id, title=title)
         logger.info("[brainstorm] created task: %s", title)
         await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
     except Exception as exc:

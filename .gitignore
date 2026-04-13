@@ -5,3 +5,4 @@ __pycache__/
 data/state.json
 .ruff_cache/
 .pytest_cache/
+docs/

@@ -6,7 +6,12 @@ from telegram.ext import Application, CommandHandler
 from lib.config import DEBUG_LOGGING, TELEGRAM_BOT_KEY, TELEGRAM_USER_ID
 from lib.handlers.auth import WHITELIST_FILTER
 from lib.handlers.brainstorm import brainstorm_handler
-from lib.handlers.capture import done_handler, list_handler, task_conversation_handler
+from lib.handlers.capture import (
+    completed_handler,
+    done_handler,
+    list_handler,
+    task_conversation_handler,
+)
 from lib.handlers.common import help_cmd, start_cmd
 from lib.handlers.deepdive import deepdive_handler
 from lib.handlers.digest import digest_handler
@@ -48,6 +53,7 @@ _COMMANDS = [
     BotCommand("task", "Add and enrich a new task"),
     BotCommand("list", "Show today's tasks"),
     BotCommand("done", "Complete a task by ID"),
+    BotCommand("completed", "List recently completed tasks"),
     BotCommand("plan", "Generate a timeblocked plan for today"),
     BotCommand("digest", "Get today's task digest"),
     BotCommand("optimize", "Review and improve task hygiene"),
@@ -81,6 +87,7 @@ def register_handlers(app: Application) -> None:
     app.add_handler(task_conversation_handler)
     app.add_handler(list_handler)
     app.add_handler(done_handler)
+    app.add_handler(completed_handler)
     app.add_handler(plan_handler)
     app.add_handler(digest_handler)
     app.add_handler(optimize_conversation_handler)

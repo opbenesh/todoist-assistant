@@ -4,6 +4,7 @@ import asyncio
 import logging
 import time
 
+import lib.audit as audit
 import lib.todoist as todoist
 from lib.models import DEFAULT_PRIORITY, Task, TaskStore
 from lib.obsidian import (
@@ -70,8 +71,12 @@ def _sync() -> None:
                 if note_changed:
                     if obs_checked:
                         todoist.complete_todoist_task(tod["id"])
+                        audit.log("complete", source="sync", trigger="obsidian_checked",
+                                  task_id=tod["id"], title=title)
                     else:
                         todoist.uncomplete_todoist_task(tod["id"])
+                        audit.log("uncomplete", source="sync", trigger="obsidian_unchecked",
+                                  task_id=tod["id"], title=title)
                     logger.debug("Obsidian wins for '%s': checked=%s", title, obs_checked)
                 else:
                     obs_checked = tod_completed
@@ -98,7 +103,11 @@ def _sync() -> None:
             task = Task(title=title)
             try:
                 task_id = todoist.create_todoist_task(task)
+                audit.log("create", source="sync", trigger="obsidian_new_task",
+                          task_id=task_id, title=title)
                 logger.info("Created Todoist task from Obsidian: '%s' (%s)", title, task_id)
+                # prevent double-create if title appears again this run
+                all_todoist_titles.add(title)
                 dirty = True
             except Exception as exc:
                 logger.error("Failed to create Todoist task '%s': %s", title, exc)

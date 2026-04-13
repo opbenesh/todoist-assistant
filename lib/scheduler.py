@@ -68,6 +68,17 @@ def attach_scheduler(app: Application) -> None:
     logger.info("Scheduler attached (tz=%s)", _settings.timezone)
 
 
+async def stale_nudge_job(context) -> None:
+    try:
+        overdue = await asyncio.to_thread(todoist.get_overdue_tasks)
+        if not overdue:
+            return
+        nudge = await llm.generate_nudge(overdue)
+        await context.bot.send_message(chat_id=TELEGRAM_USER_ID, text=nudge, parse_mode="Markdown")
+    except Exception as exc:
+        logger.error("Stale nudge failed: %s", exc)
+
+
 async def morning_digest_job(context) -> None:
     try:
         tasks = await asyncio.to_thread(todoist.get_today_tasks)

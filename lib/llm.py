@@ -7,6 +7,7 @@ import re
 from datetime import date
 
 import anthropic
+from anthropic.types import TextBlock
 
 from lib.config import ANTHROPIC_KEY
 from lib.models import DEFAULT_PRIORITY, VALID_PRIORITIES, Task
@@ -214,7 +215,9 @@ def _call(model: str, system: str, user_content: str, max_tokens: int = 500) -> 
         system=system,
         messages=[{"role": "user", "content": user_content}],
     )
-    return response.content[0].text
+    block = response.content[0]
+    assert isinstance(block, TextBlock), f"Unexpected content block type: {type(block)}"
+    return block.text
 
 
 async def propose_enrichment(raw_title: str) -> Task:

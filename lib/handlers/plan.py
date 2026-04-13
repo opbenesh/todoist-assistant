@@ -14,6 +14,7 @@ from telegram.ext import (
     filters,
 )
 
+import lib.audit as audit
 import lib.llm as llm
 import lib.obsidian as obsidian
 import lib.todoist as todoist
@@ -212,8 +213,10 @@ async def bs_accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
     title = session.bs_proposed[session.bs_index]
     try:
-        await asyncio.to_thread(todoist.create_todoist_task, Task(title=title))
+        task_id = await asyncio.to_thread(todoist.create_todoist_task, Task(title=title))
         session.bs_created += 1
+        audit.log("create", source="plan/brainstorm", trigger="user_accept",
+                  task_id=task_id, title=title)
         await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
     except Exception as exc:
         logger.error("[plan/bs] failed to create '%s': %s", title, exc)
@@ -312,6 +315,10 @@ async def opt_prompt_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
             kwargs["content"] = restore_links(original.get("title", ""), clean)
         try:
             await asyncio.to_thread(todoist.update_todoist_task, r["id"], **kwargs)
+            audit.log("update", source="plan/optimize/auto_label", trigger="auto",
+                      task_id=r["id"], title=original.get("title", ""),
+                      changes={**{k: v for k, v in kwargs.items() if k != "labels"},
+                               "labels": labels})
         except Exception as exc:
             logger.error("[plan/opt] auto-label failed for %s: %s", r["id"], exc)
 
@@ -374,6 +381,8 @@ async def opt_override_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         labels.append("actionable")
     try:
         await asyncio.to_thread(todoist.update_todoist_task, task["id"], labels=labels)
+        audit.log("update", source="plan/optimize/override", trigger="user_override",
+                  task_id=task["id"], title=task["title"], changes={"labels": labels})
         logger.info("[plan/opt] override task %s '%s'", task["id"], task["title"][:60])
     except Exception as exc:
         logger.error("[plan/opt] override failed for %s: %s", task["id"], exc)
@@ -414,11 +423,12 @@ async def opt_skip_task_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     task = session.opt_queue.pop(0)
     clean = task.get("clean_title")
     if clean:
+        new_content = restore_links(task["title"], clean)
         try:
-            await asyncio.to_thread(
-                todoist.update_todoist_task, task["id"],
-                content=restore_links(task["title"], clean),
-            )
+            await asyncio.to_thread(todoist.update_todoist_task, task["id"], content=new_content)
+            audit.log("update", source="plan/optimize/skip", trigger="user_skip",
+                      task_id=task["id"], title=task["title"],
+                      changes={"content": new_content})
         except Exception as exc:
             logger.error("[plan/opt] skip cleanup failed for %s: %s", task["id"], exc)
 
@@ -438,6 +448,8 @@ async def opt_delete_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     task = session.opt_queue.pop(0)
     try:
         await asyncio.to_thread(todoist.delete_todoist_task, task["id"])
+        audit.log("delete", source="plan/optimize/delete", trigger="user_delete",
+                  task_id=task["id"], title=task["title"])
     except Exception as exc:
         logger.error("[plan/opt] delete failed for %s: %s", task["id"], exc)
         await query.answer("Failed to delete task.", show_alert=True)
@@ -507,12 +519,15 @@ async def opt_accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         notes += f"\n\n{original['notes']}"
 
     try:
-        await asyncio.to_thread(
+        task_id = await asyncio.to_thread(
             todoist.create_todoist_task,
             Task(title=title, notes=notes, priority=original.get("priority", "p4"),
                  labels=["actionable"]),
         )
         session.opt_created += 1
+        audit.log("create", source="plan/optimize/breakdown", trigger="user_accept",
+                  task_id=task_id, title=title, original_task_id=original["id"],
+                  original_title=original_title)
         await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
     except Exception as exc:
         logger.error("[plan/opt] failed to create '%s': %s", title, exc)
@@ -542,9 +557,13 @@ async def _finalize_opt_breakdown(chat_id: int, context: ContextTypes.DEFAULT_TY
     session = _sessions.get(chat_id)
     if not session or not session.opt_current_task:
         return
+    task = session.opt_current_task
     try:
-        await asyncio.to_thread(todoist.delete_todoist_task, session.opt_current_task["id"])
+        await asyncio.to_thread(todoist.delete_todoist_task, task["id"])
         session.opt_broken_down += 1
+        audit.log("delete", source="plan/optimize/breakdown_finalize", trigger="auto",
+                  task_id=task["id"], title=task.get("title", ""),
+                  note="deleted after user broke it down into subtasks")
     except Exception as exc:
         logger.error("[plan/opt] delete original failed: %s", exc)
     session.opt_current_task = None
@@ -599,6 +618,7 @@ def _triage_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton("P3 🟡", callback_data="plan_triage:p3"),
         ],
         [
+            InlineKeyboardButton("✅ Done", callback_data="plan_triage:complete"),
             InlineKeyboardButton("⏸ Postpone", callback_data="plan_triage:postpone"),
             InlineKeyboardButton("🗑 Delete", callback_data="plan_triage:delete"),
         ],
@@ -641,18 +661,31 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     task_id = task["id"]
     action = query.data.split(":")[1]
 
+    title = task["title"]
     try:
         if action in ("p1", "p2", "p3"):
             await asyncio.to_thread(
                 todoist.update_todoist_task, task_id,
                 priority=PRIORITY_TO_TODOIST[action], due_string="today",
             )
+            audit.log("update", source="plan/triage", trigger=f"user_set_{action}",
+                      task_id=task_id, title=title,
+                      changes={"priority": action, "due": "today"})
             logger.info("[plan/triage] set %s → %s", task_id, action)
+        elif action == "complete":
+            await asyncio.to_thread(todoist.complete_todoist_task, task_id)
+            audit.log("complete", source="plan/triage", trigger="user_complete",
+                      task_id=task_id, title=title)
+            logger.info("[plan/triage] completed %s", task_id)
         elif action == "postpone":
             await asyncio.to_thread(todoist.remove_task_due_date, task_id)
+            audit.log("remove_due_date", source="plan/triage", trigger="user_postpone",
+                      task_id=task_id, title=title)
             logger.info("[plan/triage] postponed %s", task_id)
         elif action == "delete":
             await asyncio.to_thread(todoist.delete_todoist_task, task_id)
+            audit.log("delete", source="plan/triage", trigger="user_delete",
+                      task_id=task_id, title=title)
             logger.info("[plan/triage] deleted %s", task_id)
     except Exception as exc:
         logger.error("Triage action %s on %s failed: %s", action, task_id, exc)

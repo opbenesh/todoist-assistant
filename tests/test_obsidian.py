@@ -147,10 +147,12 @@ def test_sync_adds_obsidian_task_to_todoist(tmp_path):
     mock_store.last_sync_ts = 0.0
 
     with (
-        patch("lib.sync._store", mock_store),
+        patch("lib.sync.is_day_planned", return_value=True),
+        patch("lib.sync.store", mock_store),
         patch("lib.sync.daily_note_path", return_value=note),
         patch("lib.sync.read_tasks_section", return_value=["- [ ] New from obsidian"]),
         patch("lib.sync.todoist.get_today_tasks", return_value=[]),
+        patch("lib.sync.todoist.get_all_tasks", return_value=[]),
         patch("lib.sync.todoist.create_todoist_task", return_value="tid1") as mock_create,
         patch("lib.sync.write_tasks_section"),
     ):
@@ -186,10 +188,12 @@ def test_sync_appends_todoist_task_to_note(tmp_path):
     written = []
 
     with (
-        patch("lib.sync._store", mock_store),
+        patch("lib.sync.is_day_planned", return_value=True),
+        patch("lib.sync.store", mock_store),
         patch("lib.sync.daily_note_path", return_value=note),
         patch("lib.sync.read_tasks_section", return_value=[]),
         patch("lib.sync.todoist.get_today_tasks", return_value=todoist_tasks),
+        patch("lib.sync.todoist.get_all_tasks", return_value=todoist_tasks),
         patch("lib.sync.write_tasks_section", side_effect=lambda lines: written.extend(lines)),
     ):
         from lib.sync import _sync
@@ -226,10 +230,12 @@ def test_sync_obsidian_wins_when_note_newer(tmp_path):
     ]
 
     with (
-        patch("lib.sync._store", mock_store),
+        patch("lib.sync.is_day_planned", return_value=True),
+        patch("lib.sync.store", mock_store),
         patch("lib.sync.daily_note_path", return_value=note),
         patch("lib.sync.read_tasks_section", return_value=["- [x] Buy milk"]),
         patch("lib.sync.todoist.get_today_tasks", return_value=todoist_tasks),
+        patch("lib.sync.todoist.get_all_tasks", return_value=todoist_tasks),
         patch("lib.sync.todoist.complete_todoist_task") as mock_complete,
         patch("lib.sync.write_tasks_section"),
     ):

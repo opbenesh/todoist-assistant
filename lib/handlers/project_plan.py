@@ -54,7 +54,9 @@ async def project_pick_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     await query.edit_message_text(f"Analysing *{project_name}*…", parse_mode="Markdown")
 
     try:
-        projects_map: dict[str, str] = context.user_data.get("projects_map") or await asyncio.to_thread(todoist.get_all_projects)
+        projects_map: dict[str, str] = context.user_data.get(
+            "projects_map"
+        ) or await asyncio.to_thread(todoist.get_all_projects)
         project_id = next((pid for pid, name in projects_map.items() if name == project_name), None)
         if not project_id:
             await query.edit_message_text("Project not found.")

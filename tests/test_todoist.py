@@ -5,10 +5,12 @@ from unittest.mock import MagicMock, patch
 from lib.models import PRIORITY_TO_TODOIST, Task
 from lib.todoist import (
     build_user_settings,
+    complete_todoist_task,
     create_todoist_task,
     get_all_tasks,
     get_triage_tasks,
     get_user_settings,
+    uncomplete_todoist_task,
 )
 
 # ---------------------------------------------------------------------------
@@ -146,7 +148,7 @@ def _make_mock_task(
     return t
 
 
-def test_get_all_tasks_deduplicates_across_pages():
+def test_get_all_tasks_deduplicates_across_pages(mock_todoist_api):
     """get_all_tasks should return each task only once even if the paginator
     yields the same task on multiple pages.
 
@@ -158,11 +160,8 @@ def test_get_all_tasks_deduplicates_across_pages():
     """
     task = _make_mock_task(task_id="dup-1", title="לשלם ליאיר!")
     # Simulate the same task appearing on two pages of the paginator
-    mock_paginator = [[task], [task]]
-
-    with patch("lib.todoist._api") as mock_api:
-        mock_api.get_tasks.return_value = mock_paginator
-        result = get_all_tasks()
+    mock_todoist_api.get_tasks.return_value = [[task], [task]]
+    result = get_all_tasks()
 
     ids = [t["id"] for t in result]
     assert ids.count("dup-1") == 1, (
@@ -172,7 +171,7 @@ def test_get_all_tasks_deduplicates_across_pages():
     )
 
 
-def test_get_triage_tasks_excludes_completed():
+def test_get_triage_tasks_excludes_completed(mock_todoist_api):
     """get_triage_tasks should never surface a completed task.
 
     BUG: _task_to_dict preserves is_completed from the API response and
@@ -182,14 +181,32 @@ def test_get_triage_tasks_excludes_completed():
     UI and the user sees 'items they've already completed' in their plan session.
     """
     completed = _make_mock_task(task_id="done-1", title="Already done", is_completed=True)
-    mock_paginator = [[completed]]
-
-    with patch("lib.todoist._api") as mock_api:
-        mock_api.filter_tasks.return_value = mock_paginator
-        result = get_triage_tasks()
+    mock_todoist_api.filter_tasks.return_value = [[completed]]
+    result = get_triage_tasks()
 
     completed_in_result = [t for t in result if t["is_completed"]]
     assert completed_in_result == [], (
         f"Expected no completed tasks in triage, got {completed_in_result}. "
         "get_triage_tasks() does not filter is_completed=True tasks."
     )
+
+
+# ---------------------------------------------------------------------------
+# SDK contract tests — catch method renames at test time
+# ---------------------------------------------------------------------------
+
+
+def test_complete_todoist_task_calls_sdk_complete(mock_todoist_api):
+    """complete_todoist_task must call _api.complete_task, not close_task or any other name.
+
+    Using a spec-bound mock means accessing a nonexistent method raises AttributeError,
+    so a future SDK rename would fail here before reaching production.
+    """
+    complete_todoist_task("t1")
+    mock_todoist_api.complete_task.assert_called_once_with("t1")
+
+
+def test_uncomplete_todoist_task_calls_sdk_uncomplete(mock_todoist_api):
+    """uncomplete_todoist_task must call _api.uncomplete_task."""
+    uncomplete_todoist_task("t1")
+    mock_todoist_api.uncomplete_task.assert_called_once_with("t1")

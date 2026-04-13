@@ -6,6 +6,7 @@ HELP_TEXT = """
 /task <title> — capture and enrich a new task
 /list — show today's tasks
 /done <id> — complete a task
+/completed — list recently completed tasks
 /plan — generate a timeblocked plan for today
 /digest — get today's morning digest
 /cancel — cancel current operation
