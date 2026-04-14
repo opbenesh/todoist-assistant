@@ -165,6 +165,8 @@ Analyse:
 - **Habit gaps** — recurring tasks frequently pushed or missed
 - **Workload** — completion rate, overdue ratio
 - **Topic clusters** — which projects/labels accumulated most debt
+- **Quarantined tasks** — if any are present, identify what they have in common and recommend
+  whether to delete, delegate, or reframe each one
 - **Recommendations** — 2–3 concrete changes for next week
 
 Tone: strictly formal and analytical throughout — no motivational language, no direct address,
@@ -446,7 +448,10 @@ async def brainstorm_extract_tasks(text: str) -> list[str]:
 
 
 async def generate_insights(
-    completed: list[dict], overdue: list[dict], all_active: list[dict]
+    completed: list[dict],
+    overdue: list[dict],
+    all_active: list[dict],
+    quarantined: list[dict] | None = None,
 ) -> str:
     """Generate a deep insights report using Sonnet."""
     content = (
@@ -454,6 +459,11 @@ async def generate_insights(
         f"Overdue:\n{json.dumps(overdue, default=str)}\n\n"
         f"All active tasks:\n{json.dumps(all_active, default=str)}"
     )
+    if quarantined:
+        content += (
+            f"\n\nQuarantined tasks (chronically deferred, excluded from planning):\n"
+            f"{json.dumps(quarantined, default=str)}"
+        )
     return await asyncio.to_thread(_call, SONNET, _INSIGHTS_SYSTEM, content, 1000)
 
 

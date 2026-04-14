@@ -355,6 +355,8 @@ async def done_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     task_id = context.args[0]
+    task = await asyncio.to_thread(todoist.get_task_by_id, task_id)
+    await asyncio.to_thread(todoist.strip_age_labels, task_id, task.get("labels") or [])
     await asyncio.to_thread(todoist.complete_todoist_task, task_id)
     audit.log("complete", source="capture/done_cmd", trigger="user_cmd", task_id=task_id)
     await update.message.reply_text("Done.")

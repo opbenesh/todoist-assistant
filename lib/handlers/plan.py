@@ -67,6 +67,8 @@ _OPT_REJECT  = "pf:opt_reject"
 
 _TODOIST_TASK_URL = "https://todoist.com/app/task/{id}"
 
+MAX_TRIAGE_AGE = todoist.MAX_TRIAGE_AGE
+
 # ---------------------------------------------------------------------------
 # Session
 # ---------------------------------------------------------------------------
@@ -92,6 +94,8 @@ class PlanFlowSession:
     triage_tasks: list[dict] = field(default_factory=list)
     triage_index: int = 0
     triage_pending_priority: str | None = None  # set while awaiting timeslot pick
+    triage_processed: list[tuple[str, str, list[str]]] = field(default_factory=list)
+    # each entry: (task_id, action, labels_at_triage_time)
 
     # Q&A + plan
     qa_tasks: list[dict] = field(default_factory=list)
@@ -647,13 +651,29 @@ def _timeslot_keyboard(slots: list[tuple[str, str, int]]) -> InlineKeyboardMarku
     ])
 
 
-def _triage_keyboard() -> InlineKeyboardMarkup:
+def _triage_keyboard(task_age: int = 0) -> InlineKeyboardMarkup:
+    priority_row = [
+        InlineKeyboardButton("P1 🔴", callback_data="plan_triage:p1"),
+        InlineKeyboardButton("P2 🟠", callback_data="plan_triage:p2"),
+        InlineKeyboardButton("P3 🟡", callback_data="plan_triage:p3"),
+    ]
+    if task_age >= MAX_TRIAGE_AGE:
+        return InlineKeyboardMarkup([
+            priority_row,
+            [
+                InlineKeyboardButton("✅ Done", callback_data="plan_triage:complete"),
+                InlineKeyboardButton("🚫 Quarantine", callback_data="plan_triage:quarantine"),
+                InlineKeyboardButton("🗑 Delete", callback_data="plan_triage:delete"),
+            ],
+            [
+                InlineKeyboardButton(
+                    f"⚠️ Postpone anyway (age {task_age})",
+                    callback_data="plan_triage:postpone",
+                ),
+            ],
+        ])
     return InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("P1 🔴", callback_data="plan_triage:p1"),
-            InlineKeyboardButton("P2 🟠", callback_data="plan_triage:p2"),
-            InlineKeyboardButton("P3 🟡", callback_data="plan_triage:p3"),
-        ],
+        priority_row,
         [
             InlineKeyboardButton("✅ Done", callback_data="plan_triage:complete"),
             InlineKeyboardButton("⏸ Postpone", callback_data="plan_triage:postpone"),
@@ -673,6 +693,7 @@ async def _show_triage_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) ->
     priority = task.get("priority", "p4").upper()
     due = task.get("due_date") or "no due date"
     duration = task.get("duration_minutes")
+    age = todoist.get_task_age(task.get("labels") or [])
 
     meta = f"Priority: {priority} · Due: {due}"
     if task.get("is_recurring"):
@@ -680,10 +701,11 @@ async def _show_triage_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) ->
     if duration:
         meta += f" · {duration}min"
 
+    age_badge = f" `#age{age}`" if age > 0 else ""
     await context.bot.send_message(
         chat_id,
-        f"*Task {idx} of {total}*\n\n{task['title']}\n_{meta}_",
-        reply_markup=_triage_keyboard(),
+        f"*Task {idx} of {total}*\n\n{task['title']}{age_badge}\n_{meta}_",
+        reply_markup=_triage_keyboard(age),
         parse_mode="Markdown",
     )
 
@@ -715,6 +737,9 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     title = task["title"]
     is_recurring = task.get("is_recurring", False)
     skip_advance = False
+    labels = task.get("labels") or []
+    session.triage_processed.append((task_id, action, labels))
+
     try:
         if action in ("p1", "p2", "p3"):
             valid_slots = _valid_timeslots()
@@ -736,6 +761,7 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                       changes={"priority": action, "due": "today"})
             logger.info("[plan/triage] set %s → %s (no timeslot available)", task_id, action)
         elif action == "complete":
+            await asyncio.to_thread(todoist.strip_age_labels, task_id, labels)
             await asyncio.to_thread(todoist.complete_todoist_task, task_id)
             audit.log("complete", source="plan/triage", trigger="user_complete",
                       task_id=task_id, title=title)
@@ -749,10 +775,27 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                           task_id=task_id, title=title)
                 logger.info("[plan/triage] recurring postpone → completed %s", task_id)
             else:
+                age = todoist.get_task_age(labels)
                 await asyncio.to_thread(todoist.remove_task_due_date, task_id)
                 audit.log("remove_due_date", source="plan/triage", trigger="user_postpone",
                           task_id=task_id, title=title)
                 logger.info("[plan/triage] postponed %s", task_id)
+                if age >= MAX_TRIAGE_AGE:
+                    await context.bot.send_message(
+                        chat_id,
+                        f"⚠️ _{title}_ has been postponed {age} times.",
+                        parse_mode="Markdown",
+                    )
+        elif action == "quarantine":
+            await asyncio.to_thread(todoist.quarantine_task, task_id, labels)
+            audit.log("update", source="plan/triage", trigger="user_quarantine",
+                      task_id=task_id, title=title, changes={"labels": "+quarantined"})
+            logger.info("[plan/triage] quarantined %s", task_id)
+            await context.bot.send_message(
+                chat_id,
+                f"🚫 _{title}_ quarantined — hidden from future planning.",
+                parse_mode="Markdown",
+            )
         elif action == "delete":
             if is_recurring:
                 # Deleting a recurring task removes all future occurrences permanently.
@@ -764,6 +807,7 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                 )
                 skip_advance = True
             else:
+                await asyncio.to_thread(todoist.strip_age_labels, task_id, labels)
                 await asyncio.to_thread(todoist.delete_todoist_task, task_id)
                 audit.log("delete", source="plan/triage", trigger="user_delete",
                           task_id=task_id, title=title)
@@ -816,9 +860,32 @@ async def timeslot_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     return await _advance_triage(chat_id, context, session)
 
 
+def _bulk_bump_ages(tasks: list[tuple[str, list[str]]]) -> None:
+    """Increment age labels for a list of (task_id, labels) pairs. Errors are logged, not raised."""
+    for task_id, labels in tasks:
+        try:
+            todoist.bump_task_age(task_id, labels)
+        except Exception as exc:
+            logger.warning("[plan/triage] age bump failed for %s: %s", task_id, exc)
+
+
 async def _finish_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("[plan] triage complete chat=%s", chat_id)
+    session = _sessions.get(chat_id)
     await context.bot.send_message(chat_id, "Triage complete ✓")
+
+    # Increment age for all tasks that passed through triage (skip completed/deleted/quarantined)
+    if session:
+        _SKIP_AGE = {"complete", "delete", "quarantine"}
+        age_tasks = [
+            (task_id, labels)
+            for task_id, action, labels in session.triage_processed
+            if action not in _SKIP_AGE
+        ]
+        if age_tasks:
+            await asyncio.to_thread(_bulk_bump_ages, age_tasks)
+            logger.info("[plan/triage] bumped age for %d tasks", len(age_tasks))
+
     # Persist today's task list to daily note
     tasks = await asyncio.to_thread(todoist.get_today_tasks)
     lines = [
