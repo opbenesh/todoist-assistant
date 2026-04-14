@@ -3,6 +3,9 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime
+from datetime import time as dt_time
+from zoneinfo import ZoneInfo
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -40,6 +43,7 @@ OPT_BS_REVIEW     = 6
 
 TRIAGING          = 7
 AWAITING_ANSWER   = 8
+TRIAGE_TIMESLOT   = 9
 
 # ---------------------------------------------------------------------------
 # Callback data constants
@@ -87,6 +91,7 @@ class PlanFlowSession:
     # triage
     triage_tasks: list[dict] = field(default_factory=list)
     triage_index: int = 0
+    triage_pending_priority: str | None = None  # set while awaiting timeslot pick
 
     # Q&A + plan
     qa_tasks: list[dict] = field(default_factory=list)
@@ -610,6 +615,27 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
     await _show_triage_task(chat_id, context)
 
 
+_TIMESLOTS: list[tuple[str, str, int]] = [
+    ("🌅 Morning", "plan_timeslot:morning", 11),
+    ("☀️ Noon",    "plan_timeslot:noon",    14),
+    ("🌙 Evening", "plan_timeslot:evening", 19),
+]
+
+
+def _valid_timeslots() -> list[tuple[str, str, int]]:
+    """Return timeslots not yet within 30 minutes of passing."""
+    tz = ZoneInfo(_settings.timezone)
+    now = datetime.now(tz)
+    cutoff = now.hour * 60 + now.minute + 30
+    return [(label, cb, hour) for label, cb, hour in _TIMESLOTS if hour * 60 >= cutoff]
+
+
+def _timeslot_keyboard(slots: list[tuple[str, str, int]]) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(label, callback_data=cb) for label, cb, _ in slots]
+    ])
+
+
 def _triage_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [
@@ -649,6 +675,19 @@ async def _show_triage_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) ->
     )
 
 
+async def _advance_triage(
+    chat_id: int,
+    context: ContextTypes.DEFAULT_TYPE,
+    session: PlanFlowSession,
+) -> int:
+    session.triage_index += 1
+    if session.triage_index >= len(session.triage_tasks):
+        await _finish_triage(chat_id, context)
+        return ConversationHandler.END
+    await _show_triage_task(chat_id, context)
+    return TRIAGING
+
+
 async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
@@ -660,10 +699,20 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     task = session.triage_tasks[session.triage_index]
     task_id = task["id"]
     action = query.data.split(":")[1]
-
     title = task["title"]
+
     try:
         if action in ("p1", "p2", "p3"):
+            valid_slots = _valid_timeslots()
+            if valid_slots:
+                session.triage_pending_priority = action
+                await query.edit_message_text(
+                    f"*{title}*\n_Priority: {action.upper()} — when should this run?_",
+                    reply_markup=_timeslot_keyboard(valid_slots),
+                    parse_mode="Markdown",
+                )
+                return TRIAGE_TIMESLOT
+            # No slots left today — schedule without a time
             await asyncio.to_thread(
                 todoist.update_todoist_task, task_id,
                 priority=PRIORITY_TO_TODOIST[action], due_string="today",
@@ -671,7 +720,7 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             audit.log("update", source="plan/triage", trigger=f"user_set_{action}",
                       task_id=task_id, title=title,
                       changes={"priority": action, "due": "today"})
-            logger.info("[plan/triage] set %s → %s", task_id, action)
+            logger.info("[plan/triage] set %s → %s (no timeslot available)", task_id, action)
         elif action == "complete":
             await asyncio.to_thread(todoist.complete_todoist_task, task_id)
             audit.log("complete", source="plan/triage", trigger="user_complete",
@@ -692,14 +741,44 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await query.answer("Failed to update task.", show_alert=True)
 
     await query.edit_message_reply_markup(reply_markup=None)
-    session.triage_index += 1
+    return await _advance_triage(chat_id, context, session)
 
-    if session.triage_index >= len(session.triage_tasks):
-        await _finish_triage(chat_id, context)
+
+async def timeslot_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session or session.triage_pending_priority is None:
         return ConversationHandler.END
 
-    await _show_triage_task(chat_id, context)
-    return TRIAGING
+    task = session.triage_tasks[session.triage_index]
+    task_id = task["id"]
+    title = task["title"]
+    action = session.triage_pending_priority
+    slot_key = query.data.split(":")[1]  # "morning" | "noon" | "evening"
+
+    hour = {"morning": 11, "noon": 14, "evening": 19}[slot_key]
+    tz = ZoneInfo(_settings.timezone)
+    due_dt = datetime.combine(datetime.now(tz).date(), dt_time(hour, 0), tzinfo=tz)
+
+    try:
+        await asyncio.to_thread(
+            todoist.update_todoist_task, task_id,
+            priority=PRIORITY_TO_TODOIST[action],
+            due_datetime=due_dt,
+        )
+        audit.log("update", source="plan/triage", trigger=f"user_set_{action}",
+                  task_id=task_id, title=title,
+                  changes={"priority": action, "due_time": f"{hour:02d}:00"})
+        logger.info("[plan/triage] set %s → %s @ %02d:00", task_id, action, hour)
+    except Exception as exc:
+        logger.error("Timeslot update %s on %s failed: %s", slot_key, task_id, exc)
+        await query.answer("Failed to update task.", show_alert=True)
+
+    session.triage_pending_priority = None
+    await query.edit_message_reply_markup(reply_markup=None)
+    return await _advance_triage(chat_id, context, session)
 
 
 async def _finish_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -886,6 +965,9 @@ plan_handler = ConversationHandler(
         ],
         TRIAGING: [
             CallbackQueryHandler(triage_cb, pattern="^plan_triage:"),
+        ],
+        TRIAGE_TIMESLOT: [
+            CallbackQueryHandler(timeslot_cb, pattern="^plan_timeslot:"),
         ],
         # AWAITING_ANSWER and plan generation states are wired up but not active yet
     },
