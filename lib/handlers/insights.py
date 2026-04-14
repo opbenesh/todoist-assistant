@@ -19,12 +19,13 @@ async def insights_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text("Generating insights… (this may take a moment)")
 
     try:
-        completed, overdue, all_tasks = await asyncio.gather(
+        completed, overdue, all_tasks, quarantined = await asyncio.gather(
             asyncio.to_thread(todoist.get_completed_tasks, 14),
             asyncio.to_thread(todoist.get_overdue_tasks),
             asyncio.to_thread(todoist.get_all_tasks),
+            asyncio.to_thread(todoist.get_quarantined_tasks),
         )
-        report = await llm.generate_insights(completed, overdue, all_tasks)
+        report = await llm.generate_insights(completed, overdue, all_tasks, quarantined)
 
         filename = f"insights-{date.today().isoformat()}.md"
         await asyncio.gather(

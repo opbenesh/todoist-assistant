@@ -112,7 +112,9 @@ def get_triage_tasks() -> list[dict]:
         for t in page:
             if t.id not in seen and not t.is_completed:
                 seen.add(t.id)
-                result.append(_task_to_dict(t))
+                d = _task_to_dict(t)
+                if "quarantined" not in (d.get("labels") or []):
+                    result.append(d)
     return result
 
 
@@ -190,6 +192,53 @@ def update_todoist_task(task_id: str, **kwargs) -> None:
 
 def delete_todoist_task(task_id: str) -> None:
     _api.delete_task(task_id)
+
+
+# ---------------------------------------------------------------------------
+# Task age / quarantine helpers
+# ---------------------------------------------------------------------------
+
+MAX_TRIAGE_AGE = 3
+
+
+def get_task_age(labels: list[str]) -> int:
+    """Return current triage age from labels (0 if none). Parses ageN labels."""
+    for lbl in labels:
+        if lbl.startswith("age") and lbl[3:].isdigit():
+            return int(lbl[3:])
+    return 0
+
+
+def bump_task_age(task_id: str, current_labels: list[str]) -> None:
+    """Remove existing ageN label and add age(N+1)."""
+    age = get_task_age(current_labels)
+    new_labels = [
+        lbl for lbl in current_labels if not (lbl.startswith("age") and lbl[3:].isdigit())
+    ]
+    new_labels.append(f"age{age + 1}")
+    update_todoist_task(task_id, labels=new_labels)
+
+
+def quarantine_task(task_id: str, current_labels: list[str]) -> None:
+    """Add quarantined label to a task."""
+    if "quarantined" not in current_labels:
+        update_todoist_task(task_id, labels=current_labels + ["quarantined"])
+
+
+def strip_age_labels(task_id: str, current_labels: list[str]) -> None:
+    """Remove all ageN and quarantined labels (call on complete/delete)."""
+    clean = [
+        lbl for lbl in current_labels
+        if not (lbl.startswith("age") and lbl[3:].isdigit()) and lbl != "quarantined"
+    ]
+    if len(clean) != len(current_labels):
+        update_todoist_task(task_id, labels=clean)
+
+
+def get_quarantined_tasks() -> list[dict]:
+    """Return all tasks with quarantined label."""
+    paginator = _api.filter_tasks(query="label:quarantined")
+    return [_task_to_dict(t) for page in paginator for t in page]
 
 
 def get_all_projects() -> dict[str, str]:
