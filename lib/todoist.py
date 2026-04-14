@@ -273,4 +273,6 @@ def _task_to_dict(t) -> dict:
         "deadline": deadline.isoformat() if deadline else None,
         "duration_minutes": t.duration.amount if t.duration else None,
         "is_completed": t.is_completed,
+        "is_recurring": t.due.is_recurring if t.due else False,
+        "due_string": t.due.string if t.due else None,
     }
