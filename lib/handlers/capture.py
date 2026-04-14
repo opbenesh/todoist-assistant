@@ -343,7 +343,8 @@ async def list_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         status = "✓" if t["is_completed"] else "○"
         priority = f" [{t['priority'].upper()}]" if t["priority"] != "p4" else ""
         due = f" — {t['due_date']}" if t["due_date"] else ""
-        lines.append(f"{i}. {status} {t['title']}{priority}{due}  `{t['id']}`")
+        recurring = " 🔁" if t.get("is_recurring") else ""
+        lines.append(f"{i}. {status} {t['title']}{priority}{due}{recurring}  `{t['id']}`")
 
     await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
 

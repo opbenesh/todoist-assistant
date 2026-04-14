@@ -134,6 +134,8 @@ def _make_mock_task(
     title: str = "Test task",
     is_completed: bool = False,
     labels: list[str] | None = None,
+    is_recurring: bool = False,
+    due_string: str | None = None,
 ) -> MagicMock:
     t = MagicMock()
     t.id = task_id
@@ -141,10 +143,17 @@ def _make_mock_task(
     t.description = ""
     t.priority = 1
     t.labels = labels or []
-    t.due = None
     t.deadline = None
     t.duration = None
     t.is_completed = is_completed
+    if is_recurring or due_string:
+        due = MagicMock()
+        due.date = None
+        due.is_recurring = is_recurring
+        due.string = due_string or "every day"
+        t.due = due
+    else:
+        t.due = None
     return t
 
 
@@ -189,6 +198,61 @@ def test_get_triage_tasks_excludes_completed(mock_todoist_api):
         f"Expected no completed tasks in triage, got {completed_in_result}. "
         "get_triage_tasks() does not filter is_completed=True tasks."
     )
+
+
+# ---------------------------------------------------------------------------
+# Recurring task handling
+# ---------------------------------------------------------------------------
+
+
+def test_task_to_dict_captures_is_recurring(mock_todoist_api):
+    """_task_to_dict must propagate is_recurring=True from t.due.is_recurring.
+
+    Without this field, triage and other flows cannot distinguish recurring tasks
+    from one-offs, leading to destructive actions (removing recurrence via postpone,
+    or deleting the entire series via delete).
+    """
+    from lib.todoist import _task_to_dict
+
+    task = _make_mock_task(task_id="r1", title="Water the plants", is_recurring=True,
+                           due_string="every day")
+    result = _task_to_dict(task)
+
+    assert result["is_recurring"] is True, (
+        f"Expected is_recurring=True for a recurring task, got {result['is_recurring']!r}"
+    )
+    assert result["due_string"] == "every day", (
+        f"Expected due_string='every day', got {result['due_string']!r}"
+    )
+
+
+def test_task_to_dict_non_recurring_defaults_false(mock_todoist_api):
+    """_task_to_dict must set is_recurring=False for a non-recurring task with a due date."""
+    from lib.todoist import _task_to_dict
+
+    task = _make_mock_task(task_id="nr1", title="Pay bill")
+    due = MagicMock()
+    due.date = None
+    due.is_recurring = False
+    due.string = "today"
+    task.due = due
+
+    result = _task_to_dict(task)
+
+    assert result["is_recurring"] is False, (
+        f"Expected is_recurring=False for a non-recurring task, got {result['is_recurring']!r}"
+    )
+
+
+def test_task_to_dict_no_due_is_not_recurring(mock_todoist_api):
+    """_task_to_dict must set is_recurring=False when there is no due date at all."""
+    from lib.todoist import _task_to_dict
+
+    task = _make_mock_task(task_id="nd1", title="Someday task")
+    result = _task_to_dict(task)
+
+    assert result["is_recurring"] is False
+    assert result["due_string"] is None
 
 
 # ---------------------------------------------------------------------------

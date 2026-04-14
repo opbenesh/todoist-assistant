@@ -439,20 +439,31 @@ async def opt_skip_task_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def opt_delete_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
-    await query.answer()
     chat_id = query.message.chat_id
     session = _sessions.get(chat_id)
     if not session or not session.opt_queue:
+        await query.answer()
         return ConversationHandler.END
 
     task = session.opt_queue.pop(0)
+
+    if task.get("is_recurring"):
+        # Deleting a recurring task removes all future occurrences permanently — skip it.
+        await query.answer(
+            "Recurring task — skipped. Open Todoist to manage the series.",
+            show_alert=True,
+        )
+        await query.edit_message_reply_markup(reply_markup=None)
+        await _show_opt_task(chat_id, context)
+        return OPT_REVIEWING
+
+    await query.answer()
     try:
         await asyncio.to_thread(todoist.delete_todoist_task, task["id"])
         audit.log("delete", source="plan/optimize/delete", trigger="user_delete",
                   task_id=task["id"], title=task["title"])
     except Exception as exc:
         logger.error("[plan/opt] delete failed for %s: %s", task["id"], exc)
-        await query.answer("Failed to delete task.", show_alert=True)
 
     await query.edit_message_reply_markup(reply_markup=None)
     await _show_opt_task(chat_id, context)
@@ -638,6 +649,8 @@ async def _show_triage_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) ->
     duration = task.get("duration_minutes")
 
     meta = f"Priority: {priority} · Due: {due}"
+    if task.get("is_recurring"):
+        meta += " · 🔁"
     if duration:
         meta += f" · {duration}min"
 
@@ -662,6 +675,8 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     action = query.data.split(":")[1]
 
     title = task["title"]
+    is_recurring = task.get("is_recurring", False)
+    skip_advance = False
     try:
         if action in ("p1", "p2", "p3"):
             await asyncio.to_thread(
@@ -678,18 +693,39 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                       task_id=task_id, title=title)
             logger.info("[plan/triage] completed %s", task_id)
         elif action == "postpone":
-            await asyncio.to_thread(todoist.remove_task_due_date, task_id)
-            audit.log("remove_due_date", source="plan/triage", trigger="user_postpone",
-                      task_id=task_id, title=title)
-            logger.info("[plan/triage] postponed %s", task_id)
+            if is_recurring:
+                # Removing the due date would destroy the recurrence pattern.
+                # Complete this occurrence instead so Todoist advances the schedule.
+                await asyncio.to_thread(todoist.complete_todoist_task, task_id)
+                audit.log("complete", source="plan/triage", trigger="user_postpone_recurring",
+                          task_id=task_id, title=title)
+                logger.info("[plan/triage] recurring postpone → completed %s", task_id)
+            else:
+                await asyncio.to_thread(todoist.remove_task_due_date, task_id)
+                audit.log("remove_due_date", source="plan/triage", trigger="user_postpone",
+                          task_id=task_id, title=title)
+                logger.info("[plan/triage] postponed %s", task_id)
         elif action == "delete":
-            await asyncio.to_thread(todoist.delete_todoist_task, task_id)
-            audit.log("delete", source="plan/triage", trigger="user_delete",
-                      task_id=task_id, title=title)
-            logger.info("[plan/triage] deleted %s", task_id)
+            if is_recurring:
+                # Deleting a recurring task removes all future occurrences permanently.
+                # Block and let the user choose a different action.
+                await context.bot.send_message(
+                    chat_id,
+                    "⚠️ Recurring task — deleting removes all future occurrences. "
+                    "Use ✅ Done to skip this occurrence, or delete from Todoist directly.",
+                )
+                skip_advance = True
+            else:
+                await asyncio.to_thread(todoist.delete_todoist_task, task_id)
+                audit.log("delete", source="plan/triage", trigger="user_delete",
+                          task_id=task_id, title=title)
+                logger.info("[plan/triage] deleted %s", task_id)
     except Exception as exc:
         logger.error("Triage action %s on %s failed: %s", action, task_id, exc)
         await query.answer("Failed to update task.", show_alert=True)
+
+    if skip_advance:
+        return TRIAGING
 
     await query.edit_message_reply_markup(reply_markup=None)
     session.triage_index += 1
