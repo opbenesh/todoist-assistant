@@ -87,3 +87,23 @@ class TaskStore:
         """Return task IDs handled within the last cutoff_hours."""
         cutoff = time.time() - cutoff_hours * 3600
         return {k for k, v in self._data.get("optimized_task_ids", {}).items() if v > cutoff}
+
+    def save_plan_session(self, phase: int, session_data: dict) -> None:
+        """Persist a planning session checkpoint."""
+        self._data["plan_session"] = {"phase": phase, "session": session_data}
+        self.save()
+
+    def load_plan_session(self) -> tuple[int, dict] | None:
+        """Return (phase, session_data) if a checkpoint exists, else None."""
+        entry = self._data.get("plan_session")
+        if not entry:
+            return None
+        return entry["phase"], entry["session"]
+
+    def clear_plan_session(self) -> None:
+        """Remove any persisted planning session checkpoint."""
+        self._data.pop("plan_session", None)
+        self.save()
+
+
+store = TaskStore()

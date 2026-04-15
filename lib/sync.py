@@ -6,7 +6,7 @@ import time
 
 import lib.audit as audit
 import lib.todoist as todoist
-from lib.models import DEFAULT_PRIORITY, Task, TaskStore
+from lib.models import DEFAULT_PRIORITY, Task, store
 from lib.obsidian import (
     daily_note_path,
     format_task_line,
@@ -17,8 +17,6 @@ from lib.obsidian import (
 )
 
 logger = logging.getLogger(__name__)
-
-store = TaskStore()
 
 
 async def run_sync() -> None:

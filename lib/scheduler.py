@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time as _time
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
@@ -11,6 +12,7 @@ import lib.llm as llm
 import lib.obsidian as obsidian
 import lib.todoist as todoist
 from lib.config import OBSIDIAN_POLL_SECONDS, TELEGRAM_USER_ID, UserSettings
+from lib.models import store
 from lib.sync import run_sync
 
 logger = logging.getLogger(__name__)
@@ -32,12 +34,6 @@ def attach_scheduler(app: Application) -> None:
     jq = app.job_queue
     tz = ZoneInfo(_settings.timezone)
 
-    jq.run_daily(
-        morning_digest_job,
-        time=time(8, 0, tzinfo=tz),
-        chat_id=TELEGRAM_USER_ID,
-        name="morning_digest",
-    )
     jq.run_daily(
         weekly_review_job,
         time=time(20, 0, tzinfo=tz),
@@ -79,15 +75,6 @@ async def stale_nudge_job(context) -> None:
         logger.error("Stale nudge failed: %s", exc)
 
 
-async def morning_digest_job(context) -> None:
-    try:
-        tasks = await asyncio.to_thread(todoist.get_today_tasks)
-        digest = await llm.generate_digest(tasks)
-        await context.bot.send_message(chat_id=TELEGRAM_USER_ID, text=digest, parse_mode="Markdown")
-    except Exception as exc:
-        logger.error("Morning digest failed: %s", exc)
-
-
 async def weekly_review_job(context) -> None:
     try:
         completed, overdue = await asyncio.gather(
@@ -118,6 +105,26 @@ async def plan_nag_job(context) -> None:
     try:
         if await asyncio.to_thread(obsidian.is_day_planned):
             return
+
+        # Suppress nag when a planning session is active or recently active.
+        # Send a single resume nudge after the 15-min grace period, then fall
+        # through to the normal nag on subsequent intervals.
+        persisted = store.load_plan_session()
+        if persisted:
+            phase, session_data = persisted
+            elapsed = _time.time() - session_data.get("last_user_action_ts", 0)
+            if elapsed < 15 * 60:
+                return  # recently active — don't interrupt
+            if not session_data.get("nudge_sent", False):
+                await context.bot.send_message(
+                    chat_id=TELEGRAM_USER_ID,
+                    text="You have a planning session in progress — tap /plan to continue.",
+                )
+                session_data["nudge_sent"] = True
+                store.save_plan_session(phase, session_data)
+                return
+            # Nudge already sent; fall through to normal nag below.
+
         tz = ZoneInfo(_settings.timezone)
         hour = datetime.now(tz).hour
         if 9 <= hour < 21:
