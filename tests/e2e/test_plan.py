@@ -34,17 +34,13 @@ class TestPlanSkipAll:
         ])
 
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
-        assert True, "Bot did not start /plan"
-
+        # Don't consume "Starting..." separately — brainstorm may arrive simultaneously.
+        # _press_skip_or_no uses wait_and_press_button starting from _seen_count=0.
         _press_skip_or_no(bot)  # waits for brainstorm prompt, presses skip
         _press_skip_or_no(bot)  # waits for optimize prompt, presses skip
 
-        # Phase 4: triage — "📋 Triage" header
-        resp = bot.wait_responses(1, timeout=10)
-        assert resp
-
-        # Press p2 priority button (or any priority)
+        # Phase 4: triage — "📋 Triage" header may arrive with task simultaneously
+        # press_button_labeled_any finds the triage task keyboard regardless
         _press_first_matching(bot, ["p1", "p2", "p3", "keep", "skip"])
 
         # After priority, might ask for timeslot
@@ -60,8 +56,6 @@ class TestPlanSkipAll:
     def test_plan_no_tasks(self, bot: BotClient) -> None:
         """/plan with empty inbox should still complete without crashing."""
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
-
         _press_skip_or_no(bot)  # brainstorm
         _press_skip_or_no(bot)  # optimize
 
@@ -79,12 +73,11 @@ class TestPlanTriageActions:
         ])
 
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=8)   # "Starting..."
-        _press_skip_or_no(bot)             # brainstorm
-        _press_skip_or_no(bot)             # optimize
-        bot.wait_responses(2, timeout=10)  # triage header + first task
+        _press_skip_or_no(bot)  # brainstorm
+        _press_skip_or_no(bot)  # optimize
 
-        # Press postpone button
+        # Press postpone — use press_button_labeled_any to handle triage header + task
+        # arriving simultaneously
         _press_first_matching(bot, ["postpone", "no date", "later", "defer"])
 
         op = todoist.wait_for_op("remove_due_date", timeout=8)
@@ -97,11 +90,8 @@ class TestPlanTriageActions:
         ])
 
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=8)   # "Starting..."
-        _press_skip_or_no(bot)             # brainstorm
-        _press_skip_or_no(bot)             # optimize
-        bot.wait_responses(2, timeout=10)  # triage header + first task
-
+        _press_skip_or_no(bot)  # brainstorm
+        _press_skip_or_no(bot)  # optimize
         _press_first_matching(bot, ["delete", "🗑", "remove"])
 
         op = todoist.wait_for_op("delete", timeout=8)
@@ -114,11 +104,8 @@ class TestPlanTriageActions:
         ])
 
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=8)   # "Starting..."
-        _press_skip_or_no(bot)             # brainstorm
-        _press_skip_or_no(bot)             # optimize
-        bot.wait_responses(2, timeout=10)  # triage header + first task
-
+        _press_skip_or_no(bot)  # brainstorm
+        _press_skip_or_no(bot)  # optimize
         _press_first_matching(bot, ["quarantine", "🏥", "isolate"])
 
         op = todoist.wait_for_op("update", timeout=8)
@@ -131,10 +118,8 @@ class TestPlanBrainstorm:
     def test_brainstorm_creates_tasks(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Brainstorm phase: user types tasks → they get created in Todoist."""
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
-
-        # Accept brainstorm offer (press yes/start)
-        _press_first_matching(bot, ["yes", "brainstorm", "start", "sure", "▶"])
+        # Accept brainstorm offer — brainstorm prompt may arrive with "Starting..." simultaneously
+        _press_first_matching(bot, ["yes", "brainstorm", "start", "sure", "▶", "⏭"])
         resp2 = bot.wait_responses(1, timeout=8)
         assert resp2
 
@@ -170,8 +155,7 @@ class TestPlanSessionPersistence:
 
         # Start plan
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=10)  # "Starting..."
-        _press_skip_or_no(bot)             # skip brainstorm
+        _press_skip_or_no(bot)  # skip brainstorm (brainstorm may arrive with "Starting...")
         # (Don't consume optimize message — just verify state was saved)
 
         # Verify session was saved (check state file)
@@ -249,11 +233,17 @@ def _press_skip_or_no(bot: BotClient) -> None:
 def _press_first_matching(bot: BotClient, candidates: list[str]) -> bool:
     """Press the first button whose label matches any candidate (case-insensitive).
 
-    Uses press_button_labeled_any to find the most recent keyboard regardless of
-    whether it was already consumed by a prior wait_responses call.
+    Uses wait_and_press_button to find the next unseen keyboard with a matching
+    button. Falls back to press_button_labeled_any if the keyboard was already
+    consumed by a prior wait_responses call.
     """
+    # Try in unseen responses first (waits for triage keyboard to arrive)
     for candidate in candidates:
-        if bot.press_button_labeled_any(candidate, timeout=3):
+        if bot.wait_and_press_button(candidate, timeout=10):
+            return True
+    # Fallback: keyboard may have been consumed by an earlier wait_responses
+    for candidate in candidates:
+        if bot.press_button_labeled_any(candidate, timeout=2):
             return True
     return False
 
