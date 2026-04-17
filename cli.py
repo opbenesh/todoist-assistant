@@ -2,6 +2,9 @@
 """CLI debug client — mirrors the Telegram bot interface without authentication."""
 
 import asyncio
+import os
+
+os.environ["CLI_MODE"] = "1"  # use data/state_cli.json, not data/state.json
 from datetime import datetime, timezone
 from typing import Any
 

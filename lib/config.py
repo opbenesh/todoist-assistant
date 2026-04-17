@@ -23,6 +23,12 @@ VAULT_PATH: str = os.environ.get("VAULT_PATH", "/home/ubuntu/vault")
 OBSIDIAN_POLL_SECONDS: int = int(os.environ.get("OBSIDIAN_POLL_SECONDS", "300"))
 DEBUG_LOGGING: bool = os.environ.get("DEBUG_LOGGING", "false").lower() in ("1", "true", "yes")
 
+# Staging / testing overrides — point at fake service servers
+TODOIST_BASE_URL: str = os.environ.get("TODOIST_BASE_URL", "https://api.todoist.com")
+ANTHROPIC_BASE_URL: str | None = os.environ.get("ANTHROPIC_BASE_URL")
+TELEGRAM_API_BASE_URL: str | None = os.environ.get("TELEGRAM_API_BASE_URL")
+STATE_PATH: str | None = os.environ.get("STATE_PATH")
+
 
 @dataclass
 class UserSettings:

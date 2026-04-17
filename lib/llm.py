@@ -9,6 +9,7 @@ from datetime import date
 import anthropic
 from anthropic.types import TextBlock
 
+from lib import config as _config
 from lib.config import ANTHROPIC_KEY
 from lib.models import DEFAULT_PRIORITY, VALID_PRIORITIES, Task
 
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 HAIKU = "claude-haiku-4-5-20251001"
 SONNET = "claude-sonnet-4-6"
 
-_client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+_client = anthropic.Anthropic(api_key=ANTHROPIC_KEY, base_url=_config.ANTHROPIC_BASE_URL)
 
 _VALID_LABELS = {"work", "personal", "health", "finance", "home"}
 
@@ -359,7 +360,7 @@ async def generate_project_plan(project_name: str, tasks: list[dict]) -> str:
 
 
 async def generate_plan(
-    tasks: list[dict], settings=None, context: str = ""
+    tasks: list[dict], settings=None
 ) -> str:
     """Generate a timeblocked daily plan using Sonnet. Returns plan markdown."""
     morning = settings.morning_block if settings else "09:00-12:00"
@@ -368,11 +369,11 @@ async def generate_plan(
     system = _PLAN_SYSTEM.format(
         **_today_fmt(), morning=morning, afternoon=afternoon, evening=evening
     )
-    tasks_text = json.dumps(tasks, default=str)
-    user_content = f"Tasks:\n{tasks_text}"
-    if context:
-        user_content += f"\n\nAdditional context: {context}"
-
+    tasks_with_duration = [
+        {**t, "duration_minutes": t.get("duration_minutes") or 30}
+        for t in tasks
+    ]
+    user_content = f"Tasks:\n{json.dumps(tasks_with_duration, default=str)}"
     raw = await asyncio.to_thread(_call, SONNET, system, user_content, 1000)
 
     try:
@@ -381,54 +382,6 @@ async def generate_plan(
     except (json.JSONDecodeError, KeyError, TypeError) as exc:
         logger.warning("generate_plan: failed to parse JSON response: %s", exc)
         return raw
-
-
-async def generate_planning_questions(tasks: list[dict]) -> list[dict]:
-    """Generate 2-3 planning questions with multiple-choice answers (Haiku).
-
-    Returns a list of dicts: [{"question": str, "options": list[str]}, ...]
-    """
-    system = (
-        "You are a concise daily planning assistant. Based on the tasks below, "
-        "generate exactly 2-3 short clarifying questions to help plan the day. "
-        "Cover: energy/capacity, hard time constraints (meetings/appointments), "
-        "and any task-specific context that affects scheduling. "
-        "For each question provide 3-4 short button-friendly answer options "
-        "(max 20 chars each). "
-        'Return ONLY a JSON array, e.g.: '
-        '[{"question": "Energy level?", "options": ["High", "Medium", "Low"]}]'
-    )
-    content = f"Today's tasks:\n{json.dumps(tasks, default=str)}"
-    raw = await asyncio.to_thread(_call, HAIKU, system, content, 300)
-    try:
-        data = json.loads(_strip_fences(raw))
-        if isinstance(data, list):
-            result = []
-            for item in data:
-                if (
-                    isinstance(item, dict)
-                    and item.get("question")
-                    and isinstance(item.get("options"), list)
-                ):
-                    result.append({
-                        "question": str(item["question"]),
-                        "options": [str(o) for o in item["options"] if o],
-                    })
-            if result:
-                return result
-    except (json.JSONDecodeError, TypeError) as exc:
-        logger.warning("generate_planning_questions: failed to parse JSON: %s", exc)
-    # Fallback questions
-    return [
-        {
-            "question": "How's your energy today?",
-            "options": ["High", "Medium", "Low"],
-        },
-        {
-            "question": "Any meetings or hard time blocks?",
-            "options": ["None", "Morning", "Afternoon", "All day"],
-        },
-    ]
 
 
 async def brainstorm_extract_tasks(text: str) -> list[str]:

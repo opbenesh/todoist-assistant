@@ -5,12 +5,45 @@ import logging
 import httpx
 from todoist_api_python.api import TodoistAPI
 
+from lib import config as _config
 from lib.config import TODOIST_KEY, UserSettings
 from lib.models import PRIORITY_TO_TODOIST, TODOIST_TO_PRIORITY, Task
 
 logger = logging.getLogger(__name__)
 
-_api = TodoistAPI(TODOIST_KEY)
+_TODOIST_BASE = _config.TODOIST_BASE_URL.rstrip("/")
+
+
+class _BaseUrlTransport(httpx.BaseTransport):
+    """Rewrites every request's host to point at a different base URL.
+
+    Used in staging/testing to redirect all Todoist SDK HTTP calls to a
+    local fake server without modifying any of the SDK internals.
+    """
+
+    def __init__(self, fake_base: str) -> None:
+        self._fake = httpx.URL(fake_base.rstrip("/"))
+        self._inner = httpx.HTTPTransport()
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        new_url = request.url.copy_with(
+            scheme=self._fake.scheme,
+            host=self._fake.host,
+            port=self._fake.port,
+        )
+        new_request = httpx.Request(
+            method=request.method,
+            url=new_url,
+            headers=request.headers,
+            content=request.content,
+        )
+        return self._inner.handle_request(new_request)
+
+
+if _TODOIST_BASE != "https://api.todoist.com":
+    _api = TodoistAPI(TODOIST_KEY, client=httpx.Client(transport=_BaseUrlTransport(_TODOIST_BASE)))
+else:
+    _api = TodoistAPI(TODOIST_KEY)
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +60,7 @@ def get_user_settings() -> dict:
     """
     try:
         r = httpx.get(
-            "https://api.todoist.com/api/v1/user",
+            f"{_TODOIST_BASE}/api/v1/user",
             headers={"Authorization": f"Bearer {TODOIST_KEY}"},
             timeout=10,
         )
@@ -98,9 +131,14 @@ def create_todoist_task(task: Task, parent_id: str | None = None) -> str:
 
 
 def get_today_tasks() -> list[dict]:
-    """Return tasks due today or overdue."""
+    """Return tasks due today or overdue, excluding quarantined tasks."""
     paginator = _api.filter_tasks(query="today | overdue")
-    return [_task_to_dict(t) for page in paginator for t in page]
+    return [
+        _task_to_dict(t)
+        for page in paginator
+        for t in page
+        if "quarantined" not in (t.labels or [])
+    ]
 
 
 def get_triage_tasks() -> list[dict]:
@@ -157,7 +195,7 @@ def get_completed_tasks(since_days: int = 7) -> list[dict]:
     """
     try:
         r = httpx.get(
-            "https://api.todoist.com/api/v1/tasks",
+            f"{_TODOIST_BASE}/api/v1/tasks",
             headers={"Authorization": f"Bearer {TODOIST_KEY}"},
             params={"filter": "completed", "limit": 200},
             timeout=15,
@@ -201,10 +239,14 @@ def delete_todoist_task(task_id: str) -> None:
 MAX_TRIAGE_AGE = 3
 
 
+def _is_age_label(lbl: str) -> bool:
+    return lbl.startswith("age") and lbl[3:].isdigit()
+
+
 def get_task_age(labels: list[str]) -> int:
-    """Return current triage age from labels (0 if none). Parses ageN labels."""
+    """Return current triage age from labels (0 if none)."""
     for lbl in labels:
-        if lbl.startswith("age") and lbl[3:].isdigit():
+        if _is_age_label(lbl):
             return int(lbl[3:])
     return 0
 
@@ -212,9 +254,7 @@ def get_task_age(labels: list[str]) -> int:
 def bump_task_age(task_id: str, current_labels: list[str]) -> None:
     """Remove existing ageN label and add age(N+1)."""
     age = get_task_age(current_labels)
-    new_labels = [
-        lbl for lbl in current_labels if not (lbl.startswith("age") and lbl[3:].isdigit())
-    ]
+    new_labels = [lbl for lbl in current_labels if not _is_age_label(lbl)]
     new_labels.append(f"age{age + 1}")
     update_todoist_task(task_id, labels=new_labels)
 
@@ -225,12 +265,15 @@ def quarantine_task(task_id: str, current_labels: list[str]) -> None:
         update_todoist_task(task_id, labels=current_labels + ["quarantined"])
 
 
-def strip_age_labels(task_id: str, current_labels: list[str]) -> None:
-    """Remove all ageN and quarantined labels (call on complete/delete)."""
-    clean = [
-        lbl for lbl in current_labels
-        if not (lbl.startswith("age") and lbl[3:].isdigit()) and lbl != "quarantined"
-    ]
+def strip_age_labels(task_id: str, current_labels: list[str] | None = None) -> None:
+    """Remove all ageN and quarantined labels (call on complete/delete).
+
+    If current_labels is not provided, fetches the task first.
+    """
+    if current_labels is None:
+        task = get_task_by_id(task_id)
+        current_labels = task.get("labels") or []
+    clean = [lbl for lbl in current_labels if not _is_age_label(lbl) and lbl != "quarantined"]
     if len(clean) != len(current_labels):
         update_todoist_task(task_id, labels=clean)
 
@@ -293,7 +336,7 @@ def remove_task_due_date(task_id: str) -> None:
     import uuid
 
     r = httpx.post(
-        "https://api.todoist.com/api/v1/sync",
+        f"{_TODOIST_BASE}/api/v1/sync",
         headers={"Authorization": f"Bearer {TODOIST_KEY}"},
         json={
             "commands": [

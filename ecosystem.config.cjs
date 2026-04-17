@@ -9,7 +9,7 @@ module.exports = {
       watch: false,
       restart_delay: 3000,
       max_restarts: 10,
-      env: { PYTHONUNBUFFERED: "1", DEBUG_LOGGING: "true" },
+      env: { PYTHONUNBUFFERED: "1" },
       log_date_format: "YYYY-MM-DD HH:mm:ss",
       error_file: "/home/ubuntu/.pm2/logs/assistant-error.log",
       out_file: "/home/ubuntu/.pm2/logs/assistant-out.log",

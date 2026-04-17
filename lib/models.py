@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from dataclasses import dataclass, field
 from datetime import date
@@ -14,7 +15,7 @@ DEFAULT_PRIORITY: Priority = "p4"
 PRIORITY_TO_TODOIST = {"p1": 4, "p2": 3, "p3": 2, "p4": 1}
 TODOIST_TO_PRIORITY = {4: "p1", 3: "p2", 2: "p3", 1: "p4"}
 
-_STATE_PATH = Path(__file__).parent.parent / "data" / "state.json"
+_DEFAULT_STATE_PATH = Path(__file__).parent.parent / "data" / "state.json"
 
 
 @dataclass
@@ -41,7 +42,7 @@ class EnrichmentState:
 class TaskStore:
     """Persistent state via atomic JSON writes."""
 
-    def __init__(self, path: Path = _STATE_PATH) -> None:
+    def __init__(self, path: Path = _DEFAULT_STATE_PATH) -> None:
         self.path = path
         self._data: dict = {"sync_cursor": "*", "last_sync_ts": None}
         self.load()
@@ -106,4 +107,13 @@ class TaskStore:
         self.save()
 
 
-store = TaskStore()
+def _resolve_state_path() -> Path:
+    if os.getenv("CLI_MODE"):
+        return Path("data/state_cli.json")
+    env_path = os.environ.get("STATE_PATH")
+    if env_path:
+        return Path(env_path)
+    return _DEFAULT_STATE_PATH
+
+
+store = TaskStore(path=_resolve_state_path())
