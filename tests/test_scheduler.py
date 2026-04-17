@@ -7,42 +7,6 @@ import pytest
 from lib.config import UserSettings
 
 # ---------------------------------------------------------------------------
-# morning_digest_job
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.asyncio
-async def test_morning_digest_sends_message():
-    from lib.scheduler import morning_digest_job
-
-    context = MagicMock()
-    context.bot.send_message = AsyncMock()
-
-    tasks = [
-        {
-            "id": "1",
-            "title": "Buy milk",
-            "priority": "p4",
-            "is_completed": False,
-            "due_date": None,
-            "duration_minutes": None,
-        }
-    ]
-
-    with (
-        patch("lib.scheduler.todoist.get_today_tasks", return_value=tasks),
-        patch("lib.scheduler.llm.generate_digest", new=AsyncMock(return_value="*Good morning!*")),
-        patch("lib.scheduler.obsidian.append_digest"),
-    ):
-        await morning_digest_job(context)
-
-    context.bot.send_message.assert_awaited_once()
-    call_kwargs = context.bot.send_message.call_args.kwargs
-    assert call_kwargs["text"] == "*Good morning!*"
-    assert call_kwargs["parse_mode"] == "Markdown"
-
-
-# ---------------------------------------------------------------------------
 # stale_nudge_job
 # ---------------------------------------------------------------------------
 

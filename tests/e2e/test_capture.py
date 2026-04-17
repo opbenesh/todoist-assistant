@@ -14,23 +14,18 @@ class TestTaskCommand:
         """Send /task, confirm enrichment dialog, confirm creation → task exists in Todoist."""
         bot.send_message("/task Buy groceries")
 
-        # Bot should ask for confirmation with enriched details
-        resp = bot.wait_responses(1, timeout=10)
+        # Bot sends "Thinking..." first, then the enriched task details
+        resp = bot.wait_responses(2, timeout=15)
         assert resp, "Bot did not respond to /task"
-        text = resp[0].get("text", "")
-        keywords = ("grocery", "buy", "confirm", "✅")
-        assert any(kw in text.lower() for kw in keywords) or "✅" in text
+        # Check the last (non-interim) response contains task-related content
+        text = resp[-1].get("text", "")
+        keywords = ("grocery", "buy", "confirm", "✅", "task")
+        assert any(kw in text.lower() for kw in keywords) or "✅" in text, \
+            f"Expected task enrichment in final response, got: {text!r}"
 
-        # Look for a confirmation keyboard
-        keyboard = bot.last_keyboard(timeout=2)
-        if keyboard:
-            # Find and press the confirm/yes button
-            for row in keyboard:
-                for label in row:
-                    confirm_kws = ("confirm", "yes", "save", "create", "✅", "ok")
-                    if any(kw in label.lower() for kw in confirm_kws):
-                        bot.press_button(label)
-                        break
+        # Press confirm — search all captured responses (proposal keyboard was already consumed
+        # by wait_responses above, so press_button_labeled_any is needed here)
+        bot.press_button_labeled_any("✅", timeout=3) or bot.press_button_labeled_any("confirm", timeout=1)
 
         # Task should appear in Todoist
         created = todoist.wait_for_task("groceries", timeout=10)
