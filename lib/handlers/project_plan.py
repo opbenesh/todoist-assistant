@@ -86,6 +86,7 @@ project_handler = ConversationHandler(
     },
     fallbacks=[CommandHandler("cancel", cancel_cmd, WHITELIST_FILTER)],
     per_chat=True,
-    conversation_timeout=120,
+    per_message=False,
+    conversation_timeout=600,
     name="project_plan",
 )

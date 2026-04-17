@@ -17,7 +17,7 @@ from tests.staging import seed_data as sd
 pytestmark = pytest.mark.e2e
 
 _TODAY = date.today().isoformat()
-_SYNC_WAIT = 8.0  # seconds to wait for sync to run
+_SYNC_WAIT = 4.0  # seconds to wait for sync to run (2s interval, 2 cycles of margin)
 
 
 def _daily_note_path(vault_dir: Path) -> Path:
@@ -79,9 +79,10 @@ class TestSyncVaultToTodoist:
             sd.task("Walk the dog", due_today=True, task_id="t_walk_dog"),
         ])
 
-        # Write vault with task UNchecked, then wait briefly for initial sync
+        # Write vault with task UNchecked; wait for sync to establish baseline state
+        # before marking complete (requires at least one full sync cycle = 2s)
         _write_daily_note(vault_dir, f"# {_TODAY}\n\n## Tasks\n\n- [ ] Walk the dog\n")
-        time.sleep(2.0)
+        time.sleep(_SYNC_WAIT)
 
         # Now mark as checked in vault (simulating user checking off in Obsidian)
         _write_daily_note(vault_dir, f"# {_TODAY}\n\n## Tasks\n\n- [x] Walk the dog\n")
@@ -102,9 +103,11 @@ class TestSyncVaultToTodoist:
             sd.task("Read book chapter", due_today=True, task_id="t_book"),
         ])
 
-        # Start with task checked in vault
+        # Start with task checked in vault, wait for sync to register it as complete.
+        # Using wait_for_op instead of sleep avoids a race where the fixed sleep ends
+        # before the first sync fires, causing the [x]→complete step to never happen.
         _write_daily_note(vault_dir, f"# {_TODAY}\n\n## Tasks\n\n- [x] Read book chapter\n")
-        time.sleep(2.0)
+        todoist.wait_for_op("complete", timeout=_SYNC_WAIT)
 
         # Uncheck it
         _write_daily_note(vault_dir, f"# {_TODAY}\n\n## Tasks\n\n- [ ] Read book chapter\n")

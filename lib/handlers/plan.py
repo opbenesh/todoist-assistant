@@ -1227,6 +1227,7 @@ plan_handler = ConversationHandler(
     },
     fallbacks=[CommandHandler("cancel", cancel_cmd, WHITELIST_FILTER)],
     per_chat=True,
+    per_message=False,
     conversation_timeout=600,
     name="plan",
 )

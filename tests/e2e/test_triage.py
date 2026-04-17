@@ -18,14 +18,11 @@ import time
 
 import pytest
 
+from tests.e2e.constants import BS_SKIP, OPT_SKIP, TODOIST_P2
 from tests.e2e.helpers import BotClient, TodoistInspector
 from tests.staging import seed_data as sd
 
 pytestmark = pytest.mark.e2e
-
-# Internal plan flow callback data (mirrors lib/handlers/plan.py constants)
-_BS_SKIP  = "pf:bs_skip"
-_OPT_SKIP = "pf:opt_skip"
 
 
 # ---------------------------------------------------------------------------
@@ -36,14 +33,15 @@ def _reach_triage(bot: BotClient) -> None:
     """Send /plan and skip brainstorm + optimize to reach the triage phase."""
     bot.send_message("/plan")
     bot.wait_responses(1, timeout=10)  # "Starting your planning session."
-    _skip_phase(bot, _BS_SKIP)         # wait for brainstorm prompt, press skip
-    _skip_phase(bot, _OPT_SKIP)        # wait for optimize prompt, press skip
+    _skip_phase(bot, BS_SKIP)         # wait for brainstorm prompt, press skip
+    _skip_phase(bot, OPT_SKIP)        # wait for optimize prompt, press skip
 
 
 def _skip_phase(bot: BotClient, callback_data: str) -> None:
     """Wait for the next bot message then directly inject the skip callback."""
-    bot.wait_responses(1, timeout=8)
-    bot.press_button(callback_data)
+    resp = bot.wait_responses(1, timeout=8)
+    msg_id = resp[0].get("message_id", 1) if resp else 1
+    bot.press_button(callback_data, message_id=msg_id)
 
 
 def _wait_for_triage_task(bot: BotClient) -> None:
@@ -137,8 +135,8 @@ class TestTriagePostpone:
         resp = bot.wait_responses(1, timeout=8)
         assert resp, "No warning message sent after aged task postpone"
         combined_text = " ".join((r.get("text") or "") for r in resp).lower()
-        assert any(kw in combined_text for kw in ("postponed", "age", "times")), (
-            f"Expected age warning in responses, got: {[r.get('text') for r in resp]!r}"
+        assert "postponed" in combined_text or "age" in combined_text, (
+            f"Expected age/postpone warning in responses, got: {[r.get('text') for r in resp]!r}"
         )
 
 
@@ -269,9 +267,8 @@ class TestTriagePriority:
 
         op = todoist.wait_for_op("update", timeout=8)
         assert op is not None, "update not called after P2 selection"
-        # Todoist stores p2 as numeric 3 (PRIORITY_TO_TODOIST = {"p2": 3})
-        assert op.get("changes", {}).get("priority") == 3, (
-            f"Expected priority 3 (Todoist p2), got: {op.get('changes')}"
+        assert op.get("changes", {}).get("priority") == TODOIST_P2, (
+            f"Expected priority {TODOIST_P2} (Todoist p2), got: {op.get('changes')}"
         )
 
     def test_p1_assignment(self, bot: BotClient, todoist: TodoistInspector) -> None:

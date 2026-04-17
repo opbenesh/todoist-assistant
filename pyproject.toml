@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest", "pytest-asyncio", "ruff", "ty", "fastapi", "uvicorn"]
+dev = ["pytest", "pytest-asyncio", "ruff", "ty", "fastapi", "uvicorn", "pre-commit>=3.7"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

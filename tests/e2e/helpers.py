@@ -34,11 +34,12 @@ class BotClient:
             timeout=5.0,
         )
 
-    def wait_responses(self, n: int = 1, timeout: float = 10.0) -> list[dict]:
+    def wait_responses(self, n: int = 1, timeout: float = 3.0) -> list[dict]:
         """Wait until at least `self._seen_count + n` responses are captured.
 
         Returns the new responses (those not seen before this call).
         """
+        import sys
         target = self._seen_count + n
         r = httpx.get(
             f"{self._url}/test/wait_responses",
@@ -47,30 +48,44 @@ class BotClient:
         )
         all_responses = r.json().get("responses", [])
         new = all_responses[self._seen_count:]
+        if len(new) < n:
+            print(
+                f"\n[wait_responses TIMEOUT] wanted {n} new response(s) after index "
+                f"{self._seen_count}, got {len(new)}. All responses ({len(all_responses)}):",
+                file=sys.stderr,
+            )
+            for i, resp in enumerate(all_responses):
+                print(f"  [{i}] {resp.get('type')} | {resp.get('text', '')[:100]!r}", file=sys.stderr)
         self._seen_count = len(all_responses)
         return new
 
-    def last_text(self, timeout: float = 8.0) -> str:
+    def last_text(self, timeout: float = 3.0) -> str:
         """Return the text of the most recent bot message (waits for 1 if none yet)."""
         responses = self.wait_responses(1, timeout=timeout)
         if responses:
             return responses[-1].get("text", "")
         return ""
 
-    def last_keyboard(self, timeout: float = 8.0) -> list[list[str]]:
+    def last_keyboard(self, timeout: float = 3.0) -> list[list[str]]:
         """Return button labels from the most recent inline keyboard."""
         buttons = self.last_buttons(timeout=timeout)
         return [[btn["text"] for btn in row] for row in buttons]
 
-    def last_buttons(self, timeout: float = 8.0) -> list[list[dict]]:
+    def last_buttons(self, timeout: float = 3.0) -> list[list[dict]]:
         """Return full button dicts (text + callback_data) from the most recent keyboard.
 
         Each button dict has at least: {"text": "...", "callback_data": "..."}
         """
-        responses = self.wait_responses(1, timeout=timeout)
-        if not responses:
+        all_res = self.all_responses()
+        if not all_res:
+            # If no responses yet, wait for one
+            self.wait_responses(1, timeout=timeout)
+            all_res = self.all_responses()
+
+        if not all_res:
             return []
-        markup = responses[-1].get("reply_markup")
+
+        markup = all_res[-1].get("reply_markup")
         if not markup:
             return []
         if isinstance(markup, str):
@@ -91,7 +106,7 @@ class BotClient:
                     return True
         return False
 
-    def press_button_labeled_any(self, label_fragment: str, timeout: float = 10.0) -> bool:
+    def press_button_labeled_any(self, label_fragment: str, timeout: float = 3.0) -> bool:
         """Like press_button_labeled but scans ALL captured responses, not just new ones.
 
         Searches from most-recent to oldest. This handles the race where a message
@@ -110,12 +125,16 @@ class BotClient:
                 for row in markup.get("inline_keyboard", []):
                     for btn in row:
                         if label_fragment.lower() in btn.get("text", "").lower():
-                            self.press_button(btn.get("callback_data", btn["text"]))
+                            self.press_button(
+                                btn.get("callback_data", btn["text"]),
+                                message_id=resp.get("message_id", 1),
+                                message_text=resp.get("text", "")
+                            )
                             return True
             time.sleep(0.1)
         return False
 
-    def wait_and_press_button(self, label_fragment: str, timeout: float = 10.0) -> bool:
+    def wait_and_press_button(self, label_fragment: str, timeout: float = 3.0) -> bool:
         """Wait for an UNSEEN response containing label_fragment and press that button.
 
         Unlike press_button_labeled_any, only searches responses at/after _seen_count
@@ -135,12 +154,16 @@ class BotClient:
                     for btn in row:
                         if label_fragment.lower() in btn.get("text", "").lower():
                             self._seen_count = idx + 1
-                            self.press_button(btn.get("callback_data", btn["text"]))
+                            self.press_button(
+                                btn.get("callback_data", btn["text"]),
+                                message_id=resp.get("message_id", 1),
+                                message_text=resp.get("text", "")
+                            )
                             return True
             time.sleep(0.1)
         return False
 
-    def press_button_by_callback_prefix(self, prefix: str, timeout: float = 10.0) -> bool:
+    def press_button_by_callback_prefix(self, prefix: str, timeout: float = 3.0) -> bool:
         """Press the first button whose callback_data starts with `prefix`.
 
         Like press_button_labeled_any but matches on callback_data instead of label text.
@@ -157,7 +180,11 @@ class BotClient:
                 for row in markup.get("inline_keyboard", []):
                     for btn in row:
                         if btn.get("callback_data", "").startswith(prefix):
-                            self.press_button(btn["callback_data"])
+                            self.press_button(
+                                btn["callback_data"],
+                                message_id=resp.get("message_id", 1),
+                                message_text=resp.get("text", "")
+                            )
                             return True
             time.sleep(0.1)
         return False
@@ -172,7 +199,7 @@ class BotClient:
         httpx.post(f"{self._url}/test/reset", timeout=5.0)
         self._seen_count = 0
 
-    def find_response_containing(self, substring: str, timeout: float = 10.0) -> dict | None:
+    def find_response_containing(self, substring: str, timeout: float = 3.0) -> dict | None:
         """Poll until a response containing `substring` appears, or timeout."""
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
@@ -220,24 +247,29 @@ class TodoistInspector:
     def reset(self) -> None:
         httpx.post(f"{self._url}/test/reset", timeout=5.0)
 
-    def wait_for_op(self, op: str, timeout: float = 8.0) -> dict | None:
+    def wait_for_op(self, op: str, timeout: float = 3.0) -> dict | None:
         """Wait until a history entry with the given op appears."""
+        import sys
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             for entry in self.history():
                 if entry.get("op") == op:
                     return entry
             time.sleep(0.2)
+        ops = [h.get("op") for h in self.history()]
+        print(f"\n[wait_for_op TIMEOUT] waited {timeout}s for {op!r}, got: {ops}", file=sys.stderr)
         return None
 
-    def wait_for_task(self, title_fragment: str, timeout: float = 8.0) -> dict | None:
+    def wait_for_task(self, title_fragment: str, timeout: float = 3.0) -> dict | None:
         """Wait until a task matching title_fragment exists."""
+        import sys
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             found = self.find(title_fragment)
             if found:
                 return found
             time.sleep(0.2)
+        print(f"\n[wait_for_task TIMEOUT] waited {timeout}s for {title_fragment!r}", file=sys.stderr)
         return None
 
 

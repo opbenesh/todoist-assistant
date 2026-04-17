@@ -85,6 +85,13 @@ _last_acked_offset: int = 0
 # (from terminated bot processes) exit immediately instead of stealing updates
 # intended for the new bot instance.
 _generation: int = 0
+# Set to True when the bot calls deleteWebhook (PTB's first API call during init).
+# Used by tests to detect startup without waiting for a message to be sent.
+_bot_initialized: bool = False
+# Incremented on every getUpdates call after a reset. Used by conftest to detect
+# that PTB's polling loop has fully started (deleteWebhook fires earlier, during
+# initialize(), before start_polling() and the first getUpdates call).
+_get_updates_count: int = 0
 
 
 def _next_update_id() -> int:
@@ -100,7 +107,9 @@ def _next_message_id() -> int:
 
 
 def _reset_state() -> None:
-    global _message_id_counter, _update_id_counter, _last_acked_offset, _generation
+    global _message_id_counter, _update_id_counter, _last_acked_offset, _generation, _bot_initialized, _get_updates_count
+    _bot_initialized = False
+    _get_updates_count = 0
     # Increment generation so any zombie getUpdates handlers (from a just-killed
     # bot process) detect the reset and exit immediately on their next poll,
     # rather than competing with the new bot for updates.
@@ -189,6 +198,8 @@ async def get_me(token: str) -> JSONResponse:
 
 @app.post("/bot{token}/deleteWebhook")
 async def delete_webhook(token: str, request: Request) -> JSONResponse:
+    global _bot_initialized
+    _bot_initialized = True
     return JSONResponse({"ok": True, "result": True})
 
 
@@ -212,7 +223,8 @@ async def send_chat_action(token: str, request: Request) -> JSONResponse:
 
 @app.api_route("/bot{token}/getUpdates", methods=["GET", "POST"])
 async def get_updates(token: str, request: Request) -> JSONResponse:
-    global _last_acked_offset
+    global _last_acked_offset, _get_updates_count
+    _get_updates_count += 1
     # PTB sends getUpdates as POST with a form-encoded or JSON body; also GET query params
     params = dict(request.query_params)
     if not params and request.method == "POST":
@@ -338,6 +350,7 @@ async def inject_callback(request: Request) -> JSONResponse:
     callback_data = body.get("data", "")
     message_text = body.get("message_text", "placeholder")
     message_id = int(body.get("message_id", 1))
+    print(f"[fake_tg] INJECT CALLBACK: {callback_data} on msg {message_id}")
     update = _make_update_callback(callback_data, message_text, message_id)
     await _update_queue.put(update)
     return JSONResponse({"ok": True, "update_id": update["update_id"]})
@@ -374,6 +387,8 @@ async def test_state() -> JSONResponse:
         "last_acked_offset": _last_acked_offset,
         "queue_size": _update_queue.qsize(),
         "response_count": len(_responses),
+        "bot_initialized": _bot_initialized,
+        "get_updates_count": _get_updates_count,
     })
 
 

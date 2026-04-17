@@ -20,7 +20,16 @@ TODOIST_KEY: str = _require("TODOIST_KEY")
 ANTHROPIC_KEY: str = _require("ANTHROPIC_KEY")
 TELEGRAM_USER_ID: int = int(_require("TELEGRAM_USER_ID"))
 VAULT_PATH: str = os.environ.get("VAULT_PATH", "/home/ubuntu/vault")
-OBSIDIAN_POLL_SECONDS: int = int(os.environ.get("OBSIDIAN_POLL_SECONDS", "300"))
+def _parse_int(key: str, default: int) -> int:
+    raw = os.environ.get(key, str(default))
+    try:
+        return int(raw)
+    except ValueError:
+        raise RuntimeError(f"Environment variable {key!r} must be an integer, got {raw!r}")
+
+
+OBSIDIAN_POLL_SECONDS: int = _parse_int("OBSIDIAN_POLL_SECONDS", 300)
+OBSIDIAN_SYNC_FIRST_SECONDS: int = _parse_int("OBSIDIAN_SYNC_FIRST_SECONDS", 10)
 DEBUG_LOGGING: bool = os.environ.get("DEBUG_LOGGING", "false").lower() in ("1", "true", "yes")
 
 # Staging / testing overrides — point at fake service servers

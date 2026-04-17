@@ -11,7 +11,12 @@ from telegram.ext import Application
 import lib.llm as llm
 import lib.obsidian as obsidian
 import lib.todoist as todoist
-from lib.config import OBSIDIAN_POLL_SECONDS, TELEGRAM_USER_ID, UserSettings
+from lib.config import (
+    OBSIDIAN_POLL_SECONDS,
+    OBSIDIAN_SYNC_FIRST_SECONDS,
+    TELEGRAM_USER_ID,
+    UserSettings,
+)
 from lib.models import store
 from lib.sync import run_sync
 
@@ -57,7 +62,7 @@ def attach_scheduler(app: Application) -> None:
     jq.run_repeating(
         obsidian_sync_job,
         interval=OBSIDIAN_POLL_SECONDS,
-        first=10,
+        first=OBSIDIAN_SYNC_FIRST_SECONDS,
         name="obsidian_sync",
     )
 

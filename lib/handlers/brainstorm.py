@@ -228,6 +228,7 @@ brainstorm_handler = ConversationHandler(
     },
     fallbacks=[CommandHandler("cancel", cancel_cmd, WHITELIST_FILTER)],
     per_chat=True,
+    per_message=False,  # single conversation state per chat, not per message
     conversation_timeout=600,
     name="brainstorm",
 )

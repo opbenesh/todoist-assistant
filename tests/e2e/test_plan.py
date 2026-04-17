@@ -13,8 +13,11 @@ import json
 import time
 from pathlib import Path
 
+import httpx
 import pytest
 
+from tests.e2e.conftest import APP_DIR, _wait_bot_ready
+from tests.e2e.constants import BS_SKIP, BS_START, OPT_SKIP
 from tests.e2e.helpers import BotClient, TodoistInspector
 from tests.staging import seed_data as sd
 
@@ -34,19 +37,25 @@ class TestPlanSkipAll:
         ])
 
         bot.send_message("/plan")
-        # Don't consume "Starting..." separately — brainstorm may arrive simultaneously.
-        # _press_skip_or_no uses wait_and_press_button starting from _seen_count=0.
-        _press_skip_or_no(bot)  # waits for brainstorm prompt, presses skip
-        _press_skip_or_no(bot)  # waits for optimize prompt, presses skip
+        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        _skip_bs(bot)
+        _skip_opt(bot)
 
-        # Phase 4: triage — "📋 Triage" header may arrive with task simultaneously
-        # press_button_labeled_any finds the triage task keyboard regardless
-        _press_first_matching(bot, ["p1", "p2", "p3", "keep", "skip"])
+        # Triage header has no buttons; task card follows
+        bot.wait_responses(1, timeout=10)  # "📋 Triage — 1 task to review."
+        pressed = (
+            bot.press_button_labeled_any("P2", timeout=10)
+            or bot.press_button_labeled_any("P3", timeout=3)
+            or bot.press_button_labeled_any("P1", timeout=3)
+        )
+        assert pressed, "No priority button found in triage keyboard"
 
-        # After priority, might ask for timeslot
+        # Timeslot picker may appear for prioritised tasks
         resp2 = bot.wait_responses(1, timeout=8)
-        if resp2:
-            _press_first_matching(bot, ["morning", "afternoon", "evening", "skip", "keep"])
+        if resp2 and resp2[-1].get("reply_markup"):
+            bot.press_button_labeled_any("morning", timeout=3) or \
+            bot.press_button_labeled_any("afternoon", timeout=2) or \
+            bot.press_button_labeled_any("evening", timeout=2)
 
         # Plan generation — wait for vault to be written
         vault_dir = Path(staging_app["vault_dir"])
@@ -54,15 +63,15 @@ class TestPlanSkipAll:
         assert plan_written, "Daily plan was not written to vault"
 
     def test_plan_no_tasks(self, bot: BotClient) -> None:
-        """/plan with empty inbox should still complete without crashing."""
+        """/plan with empty inbox should complete and send a response."""
         bot.send_message("/plan")
-        _press_skip_or_no(bot)  # brainstorm
-        _press_skip_or_no(bot)  # optimize
+        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        _skip_bs(bot)
+        _skip_opt(bot)
 
-        # Should get to end without crashing — allow up to 20s for plan generation
+        # No tasks to triage — bot should still respond (plan generated or "nothing to triage")
         final = bot.wait_responses(1, timeout=20)
-        # Either plan was generated or told us nothing to triage
-        assert final or True  # don't crash is the test
+        assert final, "Expected bot to respond after /plan with no tasks"
 
 
 class TestPlanTriageActions:
@@ -73,12 +82,12 @@ class TestPlanTriageActions:
         ])
 
         bot.send_message("/plan")
-        _press_skip_or_no(bot)  # brainstorm
-        _press_skip_or_no(bot)  # optimize
-
-        # Press postpone — use press_button_labeled_any to handle triage header + task
-        # arriving simultaneously
-        _press_first_matching(bot, ["postpone", "no date", "later", "defer"])
+        bot.wait_responses(1, timeout=10)
+        _skip_bs(bot)
+        _skip_opt(bot)
+        bot.wait_responses(1, timeout=10)  # "📋 Triage — 1 task to review."
+        pressed = bot.press_button_labeled_any("Postpone", timeout=10)
+        assert pressed, "Postpone button not found in triage keyboard"
 
         op = todoist.wait_for_op("remove_due_date", timeout=8)
         assert op is not None, "remove_due_date was not called for postponed task"
@@ -90,38 +99,49 @@ class TestPlanTriageActions:
         ])
 
         bot.send_message("/plan")
-        _press_skip_or_no(bot)  # brainstorm
-        _press_skip_or_no(bot)  # optimize
-        _press_first_matching(bot, ["delete", "🗑", "remove"])
+        bot.wait_responses(1, timeout=10)
+        _skip_bs(bot)
+        _skip_opt(bot)
+        bot.wait_responses(1, timeout=10)  # "📋 Triage — 1 task to review."
+        pressed = bot.press_button_labeled_any("Delete", timeout=10)
+        assert pressed, "Delete button not found in triage keyboard"
 
         op = todoist.wait_for_op("delete", timeout=8)
         assert op is not None, "delete was not called for deleted task"
 
     def test_triage_quarantine(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        """Quarantining a task adds the quarantined label."""
+        """Quarantining an aged task adds the quarantined label (button requires age label)."""
+        from lib.todoist import MAX_TRIAGE_AGE
+
         todoist.seed(tasks=[
-            sd.task("Chronic deferral task", due_today=True, task_id="t_quarantine"),
+            sd.task("Chronic deferral task", due_today=True, task_id="t_quarantine",
+                    labels=[f"age{MAX_TRIAGE_AGE}"]),
         ])
 
         bot.send_message("/plan")
-        _press_skip_or_no(bot)  # brainstorm
-        _press_skip_or_no(bot)  # optimize
-        _press_first_matching(bot, ["quarantine", "🏥", "isolate"])
+        bot.wait_responses(1, timeout=10)
+        _skip_bs(bot)
+        _skip_opt(bot)
+        bot.wait_responses(1, timeout=10)  # "📋 Triage — 1 task to review."
+        pressed = bot.press_button_labeled_any("Quarantine", timeout=10)
+        assert pressed, "Quarantine button not found (task needs age label for it to appear)"
 
         op = todoist.wait_for_op("update", timeout=8)
-        if op:
-            labels = op.get("changes", {}).get("labels", [])
-            assert "quarantined" in labels, f"quarantined label not set, got: {labels}"
+        assert op is not None, "update not recorded for quarantine"
+        labels = op.get("changes", {}).get("labels", [])
+        assert "quarantined" in labels, f"quarantined label not set, got: {labels}"
 
 
 class TestPlanBrainstorm:
     def test_brainstorm_creates_tasks(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Brainstorm phase: user types tasks → they get created in Todoist."""
         bot.send_message("/plan")
-        # Accept brainstorm offer — brainstorm prompt may arrive with "Starting..." simultaneously
-        _press_first_matching(bot, ["yes", "brainstorm", "start", "sure", "▶", "⏭"])
+        resp1 = bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        # Inject the brainstorm start callback directly rather than searching by label
+        msg_id = resp1[0].get("message_id", 1) if resp1 else 1
+        bot.press_button(BS_START, message_id=msg_id)
         resp2 = bot.wait_responses(1, timeout=8)
-        assert resp2
+        assert resp2, "Bot did not respond after brainstorm start"
 
         # Type brainstorm text
         bot.send_message("call mum, buy milk, fix the leak under the sink")
@@ -133,7 +153,14 @@ class TestPlanBrainstorm:
             kb = bot.last_keyboard(timeout=3)
             if not kb:
                 break
-            _press_first_matching(bot, ["yes", "accept", "add", "✅", "👍"])
+            accepted = (
+                bot.press_button_labeled_any("yes", timeout=3)
+                or bot.press_button_labeled_any("accept", timeout=2)
+                or bot.press_button_labeled_any("✅", timeout=2)
+                or bot.press_button_labeled_any("add", timeout=2)
+            )
+            if not accepted:
+                break
             bot.wait_responses(1, timeout=4)
 
         # At least some tasks should be queued for creation
@@ -153,10 +180,11 @@ class TestPlanSessionPersistence:
             sd.task("Persistent task", due_today=True, task_id="t_persist"),
         ])
 
-        # Start plan
+        # Start plan and skip into optimize phase so session is checkpointed
         bot.send_message("/plan")
-        _press_skip_or_no(bot)  # skip brainstorm (brainstorm may arrive with "Starting...")
-        # (Don't consume optimize message — just verify state was saved)
+        bot.wait_responses(1, timeout=10)
+        _skip_bs(bot)
+        # (Don't need to skip optimize — session is saved after brainstorm skip)
 
         # Verify session was saved (check state file)
         state_file = Path(staging_app["state_file"])
@@ -169,12 +197,14 @@ class TestPlanSessionPersistence:
         proc.terminate()
         proc.wait(timeout=5)
 
-        # Restart with same state file
+        # Reset telegram NOW (before restarting) so the new bot's responses start fresh
         import os
         import subprocess
         import sys
 
-        from tests.e2e.conftest import APP_DIR, LLM_URL, TELEGRAM_URL, TODOIST_URL
+        urls = staging_app["urls"]
+        httpx.post(f"{urls['telegram_url']}/test/reset", timeout=5.0)
+        bot._seen_count = 0  # align local counter with cleared state
 
         env = {
             **os.environ,
@@ -182,9 +212,9 @@ class TestPlanSessionPersistence:
             "TODOIST_KEY": "fake-key",
             "ANTHROPIC_KEY": "sk-fake-key",
             "TELEGRAM_USER_ID": "99999",
-            "TELEGRAM_API_BASE_URL": TELEGRAM_URL,
-            "TODOIST_BASE_URL": TODOIST_URL,
-            "ANTHROPIC_BASE_URL": LLM_URL,
+            "TELEGRAM_API_BASE_URL": urls["telegram_url"],
+            "TODOIST_BASE_URL": urls["todoist_url"],
+            "ANTHROPIC_BASE_URL": urls["llm_url"],
             "VAULT_PATH": str(staging_app["vault_dir"]),
             "STATE_PATH": str(state_file),
             "OBSIDIAN_POLL_SECONDS": "2",
@@ -199,8 +229,8 @@ class TestPlanSessionPersistence:
         )
         staging_app["proc"] = new_proc  # update for cleanup
 
-        # Give bot time to restart and send resume message
-        bot.reset()
+        # Wait for the new bot to be polling before checking for the resume message
+        _wait_bot_ready(urls["telegram_url"])
         resp = bot.wait_responses(1, timeout=15)
         # The bot should resume the plan session or offer to
         assert resp, "Bot did not send any message after restart"
@@ -219,33 +249,18 @@ class TestPlanSessionPersistence:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _press_skip_or_no(bot: BotClient) -> None:
-    """Wait for an UNSEEN response with a skip/no button and press it.
-
-    Uses wait_and_press_button so it only searches responses not yet acted on,
-    avoiding re-pressing old keyboards when multiple responses arrive simultaneously.
-    """
-    for candidate in ["⏭", "skip", "no", "later", "cancel", "→"]:
-        if bot.wait_and_press_button(candidate, timeout=5):
-            return
+def _skip_bs(bot: BotClient) -> None:
+    """Wait for the brainstorm prompt then inject the skip callback directly."""
+    resp = bot.wait_responses(1, timeout=10)
+    msg_id = resp[0].get("message_id", 1) if resp else 1
+    bot.press_button(BS_SKIP, message_id=msg_id)
 
 
-def _press_first_matching(bot: BotClient, candidates: list[str]) -> bool:
-    """Press the first button whose label matches any candidate (case-insensitive).
-
-    Uses wait_and_press_button to find the next unseen keyboard with a matching
-    button. Falls back to press_button_labeled_any if the keyboard was already
-    consumed by a prior wait_responses call.
-    """
-    # Try in unseen responses first (waits for triage keyboard to arrive)
-    for candidate in candidates:
-        if bot.wait_and_press_button(candidate, timeout=10):
-            return True
-    # Fallback: keyboard may have been consumed by an earlier wait_responses
-    for candidate in candidates:
-        if bot.press_button_labeled_any(candidate, timeout=2):
-            return True
-    return False
+def _skip_opt(bot: BotClient) -> None:
+    """Wait for the optimize prompt then inject the skip callback directly."""
+    resp = bot.wait_responses(1, timeout=10)
+    msg_id = resp[0].get("message_id", 1) if resp else 1
+    bot.press_button(OPT_SKIP, message_id=msg_id)
 
 
 def _wait_for_vault_plan(vault_dir: Path, timeout: float = 15.0) -> bool:

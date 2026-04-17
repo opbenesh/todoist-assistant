@@ -33,12 +33,14 @@ class TestTaskCommand:
         assert "create" in todoist.history_ops()
 
     def test_task_minimal_title(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        """/task with a short title goes through enrichment flow."""
+        """/task with a short title produces an enrichment proposal with the title and a keyboard."""
         bot.send_message("/task Call dentist")
-        resp = bot.wait_responses(1, timeout=8)
+        resp = bot.wait_responses(2, timeout=12)  # "Thinking..." + enrichment proposal
         assert resp, "Bot did not respond"
-        # At minimum the bot reacted — task enrichment was triggered
-        assert resp[0].get("text") or resp[0].get("reply_markup")
+        proposal = resp[-1]
+        assert "dentist" in (proposal.get("text") or "").lower(), \
+            f"Expected task title in enrichment proposal, got: {proposal.get('text')!r}"
+        assert proposal.get("reply_markup"), "Expected enrichment keyboard (confirm/edit buttons)"
 
 
 class TestListCommand:
@@ -57,10 +59,12 @@ class TestListCommand:
         assert "review" in text.lower() or "write" in text.lower() or "task" in text.lower()
 
     def test_list_empty(self, bot: BotClient) -> None:
-        """/list with no tasks should say nothing is scheduled (not crash)."""
+        """/list with no tasks should tell the user there's nothing scheduled."""
         bot.send_message("/list")
         resp = bot.wait_responses(1, timeout=8)
-        assert resp, "Bot did not respond"
+        assert resp, "Bot did not respond to /list"
+        text = resp[0].get("text", "").lower()
+        assert "no tasks" in text, f"Expected 'no tasks' message, got: {text!r}"
 
 
 class TestDoneCommand:
@@ -76,16 +80,18 @@ class TestDoneCommand:
         assert completed is not None, "complete operation was not recorded"
         assert completed.get("task_id") == "task_fix_bug"
 
-    def test_done_invalid_id(self, bot: BotClient) -> None:
-        """/done with nonexistent ID should respond with an error message, not crash."""
+    def test_done_invalid_id(self, bot: BotClient, todoist: TodoistInspector) -> None:
+        """/done with nonexistent ID should respond, not silently crash."""
         bot.send_message("/done nonexistent_task_id_xyz")
         resp = bot.wait_responses(1, timeout=8)
-        assert resp, "Bot did not respond"
+        assert resp, "Bot did not respond to /done with invalid task ID"
+        text = resp[0].get("text", "")
+        assert text, "Expected non-empty text response for /done with invalid ID"
 
 
 class TestCompletedCommand:
     def test_completed_shows_done_tasks(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        """/completed lists recently completed tasks."""
+        """/completed lists recently completed tasks, including the seeded one."""
         todoist.seed(tasks=[
             sd.task("Finished task", completed=True),
         ])
@@ -93,3 +99,6 @@ class TestCompletedCommand:
         bot.send_message("/completed")
         resp = bot.wait_responses(1, timeout=8)
         assert resp, "Bot did not respond to /completed"
+        text = resp[0].get("text", "").lower()
+        assert "finished task" in text, \
+            f"Expected seeded completed task title in response, got: {text!r}"
