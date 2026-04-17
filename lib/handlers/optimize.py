@@ -20,6 +20,7 @@ import lib.todoist as todoist
 from lib.handlers.auth import WHITELIST_FILTER
 from lib.llm import restore_links
 from lib.models import Task
+from lib.optimize_shared import apply_actionable_label
 
 logger = logging.getLogger(__name__)
 
@@ -85,25 +86,10 @@ async def optimize_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     non_actionable = [r for r in results if not r["actionable"]]
 
     # Auto-label actionable tasks + apply title cleanup concurrently
-    async def _apply_actionable(r: dict) -> None:
-        original = task_by_id.get(r["id"], {})
-        existing_labels = list(original.get("labels") or [])
-        if "actionable" not in existing_labels:
-            existing_labels.append("actionable")
-        kwargs: dict = {"labels": existing_labels}
-        raw_title = original.get("title", "")
-        clean = r.get("clean_title")
-        if clean:
-            kwargs["content"] = restore_links(raw_title, clean)
-        try:
-            await asyncio.to_thread(todoist.update_todoist_task, r["id"], **kwargs)
-            audit.log("update", source="optimize/auto_label", trigger="auto",
-                      task_id=r["id"], title=original.get("title", ""),
-                      changes=kwargs)
-        except Exception as exc:
-            logger.error("[optimize] failed to auto-label task %s: %s", r["id"], exc)
-
-    await asyncio.gather(*[_apply_actionable(r) for r in actionable])
+    await asyncio.gather(*[
+        apply_actionable_label(r, task_by_id, "optimize/auto_label")
+        for r in actionable
+    ])
 
     total = len(unlabeled)
     n_labeled = len(actionable)
