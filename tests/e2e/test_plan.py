@@ -180,17 +180,17 @@ class TestPlanSessionPersistence:
             sd.task("Persistent task", due_today=True, task_id="t_persist"),
         ])
 
-        # Start plan and skip into optimize phase so session is checkpointed
+        # Start plan, skip brainstorm, wait for optimize prompt to confirm session saved
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)
         _skip_bs(bot)
-        # (Don't need to skip optimize — session is saved after brainstorm skip)
+        bot.wait_responses(1, timeout=10)  # optimize prompt — ensures session flushed to disk
 
         # Verify session was saved (check state file)
         state_file = Path(staging_app["state_file"])
-        if state_file.exists():
-            state = json.loads(state_file.read_text())
-            assert "plan_session" in state, "Plan session not saved to state.json"
+        assert state_file.exists(), "State file not created"
+        state = json.loads(state_file.read_text())
+        assert "plan_session" in state, "Plan session not saved to state.json"
 
         # Kill the bot
         proc = staging_app["proc"]
@@ -229,13 +229,13 @@ class TestPlanSessionPersistence:
         )
         staging_app["proc"] = new_proc  # update for cleanup
 
-        # Wait for the new bot to be polling before checking for the resume message
+        # Wait for the new bot to be ready, then trigger resume via /plan
         _wait_bot_ready(urls["telegram_url"])
-        resp = bot.wait_responses(1, timeout=15)
-        # The bot should resume the plan session or offer to
-        assert resp, "Bot did not send any message after restart"
-        text = resp[0].get("text", "").lower()
-        assert any(kw in text for kw in ("resume", "plan", "continue", "triage", "session")), \
+        bot.send_message("/plan")
+        resp = bot.wait_responses(2, timeout=15)  # resume header + phase UI
+        assert resp, "Bot did not respond to /plan after restart"
+        text = " ".join(r.get("text", "") for r in resp).lower()
+        assert any(kw in text for kw in ("resuming", "resume", "planning session")), \
             f"Bot restart response didn't mention plan session: {text!r}"
 
         new_proc.terminate()

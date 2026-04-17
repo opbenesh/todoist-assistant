@@ -278,6 +278,7 @@ async def plan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     logger.info("[plan] session started for chat %s", chat_id)
     _sessions[chat_id] = PlanFlowSession()
+    _checkpoint(chat_id, BRAINSTORM_PROMPT)  # persist immediately so nag suppression takes effect
     await update.message.reply_text("Starting your planning session.")
     await _show_brainstorm_prompt(chat_id, context)
     return BRAINSTORM_PROMPT

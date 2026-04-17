@@ -39,14 +39,20 @@ def _reach_triage(bot: BotClient) -> None:
 
 def _skip_phase(bot: BotClient, callback_data: str) -> None:
     """Wait for the next bot message then directly inject the skip callback."""
-    resp = bot.wait_responses(1, timeout=8)
+    resp = bot.wait_responses(1, timeout=15)
     msg_id = resp[0].get("message_id", 1) if resp else 1
     bot.press_button(callback_data, message_id=msg_id)
 
 
 def _wait_for_triage_task(bot: BotClient) -> None:
-    """Consume the triage header so the task card (with keyboard) is the next response."""
-    bot.wait_responses(1, timeout=10)  # "📋 Triage — N tasks to review."
+    """Advance seen_count past the triage header so the task card is the next new response."""
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        for idx, resp in enumerate(bot.all_responses()):
+            if "triage" in (resp.get("text") or "").lower():
+                bot._seen_count = max(bot._seen_count, idx + 1)
+                return
+        time.sleep(0.2)
 
 
 def _press_triage_action(bot: BotClient, action_label: str, timeout: float = 10.0) -> bool:

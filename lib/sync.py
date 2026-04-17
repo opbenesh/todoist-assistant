@@ -53,6 +53,11 @@ def _sync() -> None:
     all_tasks = todoist.get_all_tasks()
     all_todoist_titles: set[str] = {t["title"] for t in all_tasks}
 
+    # Recently-completed tasks (today) — needed so unchecking a just-completed task
+    # calls uncomplete instead of creating a duplicate
+    completed_today = todoist.get_completed_tasks(since_days=1)
+    completed_by_title: dict[str, dict] = {t["title"]: t for t in completed_today}
+
     updated_lines: list[str] = []
     processed_titles: set[str] = set()
     dirty = False
@@ -95,6 +100,16 @@ def _sync() -> None:
         elif obs_checked:
             # Checked in Obsidian but absent from Todoist — already completed, skip
             logger.debug("Task '%s' checked in Obsidian but absent from Todoist — skipping", title)
+            updated_lines.append(format_task_line(title, obs_checked))
+        elif title in completed_by_title and not obs_checked:
+            # Task was recently completed but user unchecked it — uncomplete
+            if note_changed:
+                task = completed_by_title[title]
+                todoist.uncomplete_todoist_task(task["id"])
+                audit.log("uncomplete", source="sync", trigger="obsidian_unchecked",
+                          task_id=task["id"], title=title)
+                dirty = True
+                logger.debug("Obsidian unchecks completed task '%s'", title)
             updated_lines.append(format_task_line(title, obs_checked))
         else:
             # Unchecked task not in Todoist at all — create it
