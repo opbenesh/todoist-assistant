@@ -81,6 +81,11 @@ _test_chat_id: int = 99999
 # Track the highest offset acknowledged by PTB so we don't re-deliver
 _last_acked_offset: int = 0
 
+# Generation counter: incremented on each reset so zombie getUpdates handlers
+# (from terminated bot processes) exit immediately instead of stealing updates
+# intended for the new bot instance.
+_generation: int = 0
+
 
 def _next_update_id() -> int:
     global _update_id_counter
@@ -95,7 +100,11 @@ def _next_message_id() -> int:
 
 
 def _reset_state() -> None:
-    global _message_id_counter
+    global _message_id_counter, _update_id_counter, _last_acked_offset, _generation
+    # Increment generation so any zombie getUpdates handlers (from a just-killed
+    # bot process) detect the reset and exit immediately on their next poll,
+    # rather than competing with the new bot for updates.
+    _generation += 1
     # Drain the queue
     while not _update_queue.empty():
         try:
@@ -103,10 +112,11 @@ def _reset_state() -> None:
         except asyncio.QueueEmpty:
             break
     _responses.clear()
-    # Do NOT reset _update_id_counter or _last_acked_offset — the bot has already
-    # acked updates up to _last_acked_offset, so new injected updates must have
-    # IDs > _last_acked_offset to be delivered.  Resetting to 1 would cause all
-    # injected messages to be silently dropped after the first test.
+    # Reset counters so that injected updates always have IDs > _last_acked_offset.
+    # This is safe because the generation increment above ensures zombie handlers
+    # from the previous bot process exit without consuming new updates.
+    _update_id_counter = 1
+    _last_acked_offset = 0
     _message_id_counter = 1000
 
 
@@ -207,21 +217,36 @@ async def get_updates(token: str, request: Request) -> JSONResponse:
     params = dict(request.query_params)
     if not params and request.method == "POST":
         params = await _parse_body(request)
-    offset = int(params.get("offset", 0))
     timeout = min(int(params.get("timeout", 0)), 30)  # cap at 30s for tests
 
-    # Advance offset acknowledgement
-    if offset > _last_acked_offset:
-        _last_acked_offset = offset
+    # Capture generation BEFORE the polling loop. If _reset_state() is called mid-poll
+    # (new test starting), the loop detects the generation change and exits immediately
+    # so zombie handlers from killed bot processes don't steal updates from new bots.
+    my_generation = _generation
 
-    try:
-        update = await asyncio.wait_for(_update_queue.get(), timeout=max(timeout, 1))
-        # Only deliver if this update hasn't been acked yet
-        if update["update_id"] < _last_acked_offset:
+    # NOTE: We deliberately do NOT advance _last_acked_offset here. In our fake server
+    # the queue is the source of truth and is drained on every reset — re-delivery cannot
+    # happen. More importantly, zombie bots (PTB graceful shutdown after SIGTERM) keep
+    # making getUpdates calls with their last high offset. If we advanced _last_acked_offset
+    # from those calls, new test updates (IDs starting near 0 after reset) would be
+    # silently discarded as "already acknowledged".
+
+    # Poll for an update, checking generation on each iteration.
+    # This ensures that if the bot process is killed and a new test starts (which calls
+    # /test/reset, incrementing _generation), this zombie handler exits immediately
+    # instead of stealing the next injected update from the new bot.
+    deadline = time.monotonic() + max(timeout, 1)
+    while time.monotonic() < deadline:
+        # If reset occurred (new test starting), exit — the new bot's handler will pick up.
+        if _generation != my_generation:
             return JSONResponse({"ok": True, "result": []})
-        return JSONResponse({"ok": True, "result": [update]})
-    except asyncio.TimeoutError:
-        return JSONResponse({"ok": True, "result": []})
+        # Check for pending update without blocking
+        try:
+            update = _update_queue.get_nowait()
+            return JSONResponse({"ok": True, "result": [update]})
+        except asyncio.QueueEmpty:
+            await asyncio.sleep(0.05)
+    return JSONResponse({"ok": True, "result": []})
 
 
 @app.post("/bot{token}/sendMessage")
@@ -338,6 +363,18 @@ async def test_wait_responses(request: Request) -> JSONResponse:
 async def test_reset() -> JSONResponse:
     _reset_state()
     return JSONResponse({"ok": True})
+
+
+@app.get("/test/state")
+async def test_state() -> JSONResponse:
+    """Diagnostic: current internal state for debugging test isolation issues."""
+    return JSONResponse({
+        "generation": _generation,
+        "update_id_counter": _update_id_counter,
+        "last_acked_offset": _last_acked_offset,
+        "queue_size": _update_queue.qsize(),
+        "response_count": len(_responses),
+    })
 
 
 @app.get("/health")

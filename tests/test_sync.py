@@ -78,6 +78,7 @@ def _run_sync(
             patch("lib.sync.todoist.complete_todoist_task") as mock_complete,
             patch("lib.sync.todoist.uncomplete_todoist_task") as mock_uncomplete,
             patch("lib.sync.write_tasks_section", side_effect=lambda lines: written.extend(lines)),
+            patch("lib.sync.audit.log"),
         ):
             from lib.sync import _sync
             _sync()
