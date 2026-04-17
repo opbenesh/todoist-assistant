@@ -14,9 +14,16 @@ Use app.job_queue for all scheduled jobs (PTB bundles APScheduler via [job-queue
 - Ctrl-C to quit.
 Use the CLI to test bot commands instead of one-off Python scripts.
 
+## Testing
+E2E: `uv run pytest -m e2e` — fake Telegram/Todoist/LLM servers + real bot, isolated vault/state.
+Unit only: `uv run pytest tests/ --ignore=tests/e2e`
+
+## Logging
+Interactions → `data/interactions.jsonl` (auto-rotates 10 MB). Covers commands, callbacks, replies, errors.
+
 ## Key API notes
 - Todoist completed tasks: use `GET /api/v1/tasks?filter=completed` (the old /tasks/completed/get_all endpoint is gone).
 - Handlers live in lib/handlers/. Register new ones in main.py (register_handlers) and add a BotCommand entry.
 
 ## Commands index
-/task, /list, /done, /completed, /plan, /digest, /optimize, /deepdive, /insights, /project, /brainstorm
+/task, /list, /done, /completed, /plan, /digest, /optimize, /deepdive, /insights, /project, /brainstorm, /cancel, /session
