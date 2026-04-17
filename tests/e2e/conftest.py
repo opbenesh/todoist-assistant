@@ -14,6 +14,7 @@ against the running staging_app.
 `todoist_inspector` (function-scoped): yields a TodoistInspector for the
 current test.
 """
+
 from __future__ import annotations
 
 import os
@@ -52,6 +53,7 @@ APP_DIR = Path(__file__).parent.parent.parent
 # Server management helpers
 # ---------------------------------------------------------------------------
 
+
 class _ServerThread(threading.Thread):
     """Run a uvicorn server in a background daemon thread."""
 
@@ -83,6 +85,7 @@ def _wait_healthy(url: str, retries: int = 40, delay: float = 0.15) -> None:
 # Session-scoped: start fake services once per test session
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="session")
 def staging_services() -> Generator[dict, None, None]:
     servers = [
@@ -110,6 +113,7 @@ def staging_services() -> Generator[dict, None, None]:
 # ---------------------------------------------------------------------------
 # Function-scoped: reset services + launch app subprocess for each test
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def staging_app(
@@ -207,6 +211,7 @@ def staging_app(
 # ---------------------------------------------------------------------------
 # Convenience fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def bot(staging_app: dict) -> BotClient:

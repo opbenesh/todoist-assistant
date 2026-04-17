@@ -14,6 +14,7 @@ Entry fields:
   changes    — dict of changed fields (for update actions)
   extra      — any additional context fields passed as kwargs
 """
+
 from __future__ import annotations
 
 import json

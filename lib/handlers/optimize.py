@@ -40,8 +40,8 @@ _TODOIST_TASK_URL = "https://todoist.com/app/task/{id}"
 
 @dataclass
 class OptimizeSession:
-    queue: list[dict]              # non-actionable tasks: {id, title, reason, clean_title}
-    auto_labeled: int              # set at creation, never mutated
+    queue: list[dict]  # non-actionable tasks: {id, title, reason, clean_title}
+    auto_labeled: int  # set at creation, never mutated
     current_task: dict | None = None
     proposed: list[str] = field(default_factory=list)
     proposal_index: int = 0
@@ -86,10 +86,9 @@ async def optimize_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     non_actionable = [r for r in results if not r["actionable"]]
 
     # Auto-label actionable tasks + apply title cleanup concurrently
-    await asyncio.gather(*[
-        apply_actionable_label(r, task_by_id, "optimize/auto_label")
-        for r in actionable
-    ])
+    await asyncio.gather(
+        *[apply_actionable_label(r, task_by_id, "optimize/auto_label") for r in actionable]
+    )
 
     total = len(unlabeled)
     n_labeled = len(actionable)
@@ -117,14 +116,16 @@ async def optimize_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 
 def _review_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
+    return InlineKeyboardMarkup(
         [
-            InlineKeyboardButton("⚙️ Optimize", callback_data=_OPT_CB),
-            InlineKeyboardButton("⏭ Skip", callback_data=_SKIP_CB),
-            InlineKeyboardButton("🗑 Delete", callback_data=_DELETE_CB),
-        ],
-        [InlineKeyboardButton("✅ It's actionable", callback_data=_OVERRIDE_CB)],
-    ])
+            [
+                InlineKeyboardButton("⚙️ Optimize", callback_data=_OPT_CB),
+                InlineKeyboardButton("⏭ Skip", callback_data=_SKIP_CB),
+                InlineKeyboardButton("🗑 Delete", callback_data=_DELETE_CB),
+            ],
+            [InlineKeyboardButton("✅ It's actionable", callback_data=_OVERRIDE_CB)],
+        ]
+    )
 
 
 async def _show_review_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -164,9 +165,14 @@ async def skip_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         new_content = restore_links(task["title"], clean)
         try:
             await asyncio.to_thread(todoist.update_todoist_task, task["id"], content=new_content)
-            audit.log("update", source="optimize/skip", trigger="user_skip",
-                      task_id=task["id"], title=task["title"],
-                      changes={"content": new_content})
+            audit.log(
+                "update",
+                source="optimize/skip",
+                trigger="user_skip",
+                task_id=task["id"],
+                title=task["title"],
+                changes={"content": new_content},
+            )
         except Exception as exc:
             logger.error("[optimize] skip title cleanup failed for %s: %s", task["id"], exc)
 
@@ -187,8 +193,13 @@ async def delete_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     session.deleted += 1
     try:
         await asyncio.to_thread(todoist.delete_todoist_task, task["id"])
-        audit.log("delete", source="optimize/delete", trigger="user_delete",
-                  task_id=task["id"], title=task["title"])
+        audit.log(
+            "delete",
+            source="optimize/delete",
+            trigger="user_delete",
+            task_id=task["id"],
+            title=task["title"],
+        )
         logger.info("[optimize] deleted task %s '%s'", task["id"], task["title"][:60])
     except Exception as exc:
         logger.error("[optimize] delete failed for %s: %s", task["id"], exc)
@@ -213,9 +224,14 @@ async def override_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         existing_labels.append("actionable")
     try:
         await asyncio.to_thread(todoist.update_todoist_task, task["id"], labels=existing_labels)
-        audit.log("update", source="optimize/override", trigger="user_override",
-                  task_id=task["id"], title=task["title"],
-                  changes={"labels": existing_labels})
+        audit.log(
+            "update",
+            source="optimize/override",
+            trigger="user_override",
+            task_id=task["id"],
+            title=task["title"],
+            changes={"labels": existing_labels},
+        )
         logger.info("[optimize] override task %s '%s'", task["id"], task["title"][:60])
     except Exception as exc:
         logger.error("[optimize] override failed for %s: %s", task["id"], exc)
@@ -277,10 +293,14 @@ async def brainstorm_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 def _proposal_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("✅ Accept", callback_data=_ACCEPT_CB),
-        InlineKeyboardButton("❌ Reject", callback_data=_REJECT_CB),
-    ]])
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("✅ Accept", callback_data=_ACCEPT_CB),
+                InlineKeyboardButton("❌ Reject", callback_data=_REJECT_CB),
+            ]
+        ]
+    )
 
 
 async def _show_proposal(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -326,9 +346,15 @@ async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
     try:
         task_id = await asyncio.to_thread(todoist.create_todoist_task, task)
         session.created += 1
-        audit.log("create", source="optimize/breakdown", trigger="user_accept",
-                  task_id=task_id, title=title, original_task_id=original["id"],
-                  original_title=original_title)
+        audit.log(
+            "create",
+            source="optimize/breakdown",
+            trigger="user_accept",
+            task_id=task_id,
+            title=title,
+            original_task_id=original["id"],
+            original_title=original_title,
+        )
         logger.info("[optimize] created breakdown task: %s", title)
         await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
     except Exception as exc:
@@ -370,9 +396,14 @@ async def _finalize_breakdown(chat_id: int, context: ContextTypes.DEFAULT_TYPE) 
     try:
         await asyncio.to_thread(todoist.delete_todoist_task, original_id)
         session.broken_down += 1
-        audit.log("delete", source="optimize/breakdown_finalize", trigger="auto",
-                  task_id=original_id, title=original.get("title", ""),
-                  note="deleted after user broke it down into subtasks")
+        audit.log(
+            "delete",
+            source="optimize/breakdown_finalize",
+            trigger="auto",
+            task_id=original_id,
+            title=original.get("title", ""),
+            note="deleted after user broke it down into subtasks",
+        )
         logger.info("[optimize] deleted original task %s after breakdown", original_id)
     except Exception as exc:
         logger.error("[optimize] failed to delete original task %s: %s", original_id, exc)
@@ -429,9 +460,7 @@ optimize_conversation_handler = ConversationHandler(
             CallbackQueryHandler(override_cb, pattern=f"^{_OVERRIDE_CB}$"),
         ],
         BRAINSTORM_INPUT: [
-            MessageHandler(
-                filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, brainstorm_input_cb
-            ),
+            MessageHandler(filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, brainstorm_input_cb),
         ],
         BRAINSTORM_REVIEW: [
             CallbackQueryHandler(accept_proposal_cb, pattern=f"^{_ACCEPT_CB}$"),

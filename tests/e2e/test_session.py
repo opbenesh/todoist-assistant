@@ -5,6 +5,7 @@ Covers:
 - Plan nag suppression while session is active
 - Digest and list commands
 """
+
 from __future__ import annotations
 
 import json
@@ -22,9 +23,11 @@ pytestmark = pytest.mark.e2e
 class TestDigest:
     def test_digest_responds(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """/digest should respond with a morning digest message."""
-        todoist.seed(tasks=[
-            sd.task("Morning priority task", due_today=True, priority=4),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Morning priority task", due_today=True, priority=4),
+            ]
+        )
         bot.send_message("/digest")
         resp = bot.wait_responses(1, timeout=10)
         assert resp, "Bot did not respond to /digest"
@@ -47,9 +50,11 @@ class TestPlanNagSuppression:
         staging_app: dict,
     ) -> None:
         """While a plan session is active, the nag job should not fire."""
-        todoist.seed(tasks=[
-            sd.task("Active session task", due_today=True, task_id="t_nag"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Active session task", due_today=True, task_id="t_nag"),
+            ]
+        )
 
         # Start /plan to create an active session
         bot.send_message("/plan")
@@ -78,6 +83,7 @@ class TestPlanNagSuppression:
         # Check no new nag messages arrived
         all_now = bot.all_responses()
         new_responses = all_now[initial_count:]
+
         def _is_nag(r: dict) -> bool:
             t = (r.get("text") or "").lower()
             return "overdue" in t or "plan" in t
@@ -119,9 +125,13 @@ class TestSessionState:
         staging_app: dict,
     ) -> None:
         """/optimize should work end-to-end without crashing."""
-        todoist.seed(tasks=[
-            sd.task("Vague task needing improvement", no_due_date=True, priority=1, task_id="t_opt"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task(
+                    "Vague task needing improvement", no_due_date=True, priority=1, task_id="t_opt"
+                ),
+            ]
+        )
 
         bot.send_message("/optimize")
         resp = bot.wait_responses(1, timeout=10)

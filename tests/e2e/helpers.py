@@ -4,6 +4,7 @@ BotClient       — inject Telegram messages, await bot responses
 TodoistInspector — inspect/seed/reset the fake Todoist server
 LLMInspector    — inspect/configure the fake LLM server
 """
+
 from __future__ import annotations
 
 import json
@@ -46,7 +47,7 @@ class BotClient:
             timeout=timeout + 2.0,
         )
         all_responses = r.json().get("responses", [])
-        new = all_responses[self._seen_count:]
+        new = all_responses[self._seen_count :]
         self._seen_count = len(all_responses)
         return new
 
@@ -125,7 +126,7 @@ class BotClient:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             all_resp = self.all_responses()
-            for idx, resp in enumerate(all_resp[self._seen_count:], start=self._seen_count):
+            for idx, resp in enumerate(all_resp[self._seen_count :], start=self._seen_count):
                 markup = resp.get("reply_markup")
                 if not markup:
                     continue
@@ -176,7 +177,7 @@ class BotClient:
         """Poll until a response containing `substring` appears, or timeout."""
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            for resp in self.all_responses()[self._seen_count:]:
+            for resp in self.all_responses()[self._seen_count :]:
                 if substring.lower() in (resp.get("text") or "").lower():
                     return resp
             time.sleep(0.2)

@@ -1,4 +1,5 @@
 """Test data factories for seeding fake services."""
+
 from __future__ import annotations
 
 from datetime import date, timedelta

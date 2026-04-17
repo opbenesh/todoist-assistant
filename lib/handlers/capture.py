@@ -124,8 +124,13 @@ async def confirm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     try:
         task_id = await asyncio.to_thread(todoist.create_todoist_task, state.task)
         state.task.todoist_id = task_id
-        audit.log("create", source="capture/task", trigger="user_confirm",
-                  task_id=task_id, title=state.task.title)
+        audit.log(
+            "create",
+            source="capture/task",
+            trigger="user_confirm",
+            task_id=task_id,
+            title=state.task.title,
+        )
         await query.edit_message_text(f"Saved: *{state.task.title}*", parse_mode="Markdown")
     except Exception as exc:
         logger.error("Failed to create Todoist task: %s", exc)
@@ -278,8 +283,13 @@ async def breakdown_confirm_callback(update: Update, context: ContextTypes.DEFAU
 
     try:
         parent_id = await asyncio.to_thread(todoist.create_todoist_task, state.task)
-        audit.log("create", source="capture/breakdown", trigger="user_confirm",
-                  task_id=parent_id, title=state.task.title)
+        audit.log(
+            "create",
+            source="capture/breakdown",
+            trigger="user_confirm",
+            task_id=parent_id,
+            title=state.task.title,
+        )
         for title in state.subtasks:
             sub = Task(
                 title=title,
@@ -288,8 +298,14 @@ async def breakdown_confirm_callback(update: Update, context: ContextTypes.DEFAU
                 due_date=state.task.due_date,
             )
             sub_id = await asyncio.to_thread(todoist.create_todoist_task, sub, parent_id)
-            audit.log("create", source="capture/breakdown", trigger="user_confirm",
-                      task_id=sub_id, title=title, parent_id=parent_id)
+            audit.log(
+                "create",
+                source="capture/breakdown",
+                trigger="user_confirm",
+                task_id=sub_id,
+                title=title,
+                parent_id=parent_id,
+            )
         await query.edit_message_text(
             f"Created *{state.task.title}* with {len(state.subtasks)} subtasks.",
             parse_mode="Markdown",

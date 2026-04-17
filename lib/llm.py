@@ -310,7 +310,6 @@ async def generate_digest(tasks: list[dict]) -> str:
     return await asyncio.to_thread(_call, HAIKU, system, f"Today's tasks:\n{tasks_text}", 400)
 
 
-
 async def generate_weekly_review(completed: list[dict], overdue: list[dict]) -> str:
     """Generate a weekly review using Sonnet."""
     content = (
@@ -359,9 +358,7 @@ async def generate_project_plan(project_name: str, tasks: list[dict]) -> str:
     return await asyncio.to_thread(_call, SONNET, system, content, 800)
 
 
-async def generate_plan(
-    tasks: list[dict], settings=None
-) -> str:
+async def generate_plan(tasks: list[dict], settings=None) -> str:
     """Generate a timeblocked daily plan using Sonnet. Returns plan markdown."""
     morning = settings.morning_block if settings else "09:00-12:00"
     afternoon = settings.afternoon_block if settings else "12:00-17:00"
@@ -370,8 +367,7 @@ async def generate_plan(
         **_today_fmt(), morning=morning, afternoon=afternoon, evening=evening
     )
     tasks_with_duration = [
-        {**t, "duration_minutes": t.get("duration_minutes") or 30}
-        for t in tasks
+        {**t, "duration_minutes": t.get("duration_minutes") or 30} for t in tasks
     ]
     user_content = f"Tasks:\n{json.dumps(tasks_with_duration, default=str)}"
     raw = await asyncio.to_thread(_call, SONNET, system, user_content, 1000)
@@ -447,12 +443,14 @@ async def judge_tasks(tasks: list[dict]) -> list[dict]:
             for item in data:
                 if not isinstance(item, dict) or not item.get("id"):
                     continue
-                results.append({
-                    "id": str(item["id"]),
-                    "actionable": bool(item.get("actionable", True)),
-                    "reason": str(item.get("reason", "")),
-                    "clean_title": str(item.get("clean_title", "")) or None,
-                })
+                results.append(
+                    {
+                        "id": str(item["id"]),
+                        "actionable": bool(item.get("actionable", True)),
+                        "reason": str(item.get("reason", "")),
+                        "clean_title": str(item.get("clean_title", "")) or None,
+                    }
+                )
             return results
         except (json.JSONDecodeError, ValueError) as exc:
             logger.warning("judge_tasks: parse error: %s — raw: %s", exc, raw[:200])
@@ -461,9 +459,7 @@ async def judge_tasks(tasks: list[dict]) -> list[dict]:
                 for t in chunk
             ]
 
-    chunks = [
-        tasks[i : i + _JUDGE_CHUNK_SIZE] for i in range(0, len(tasks), _JUDGE_CHUNK_SIZE)
-    ]
+    chunks = [tasks[i : i + _JUDGE_CHUNK_SIZE] for i in range(0, len(tasks), _JUDGE_CHUNK_SIZE)]
     chunk_results = await asyncio.gather(
         *[asyncio.to_thread(_judge_chunk, chunk) for chunk in chunks]
     )

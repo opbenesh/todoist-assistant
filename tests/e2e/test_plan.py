@@ -7,6 +7,7 @@ Covers:
 - Session persistence: plan session survives bot restart
 - Nag suppression: active plan session suppresses hourly nag
 """
+
 from __future__ import annotations
 
 import json
@@ -29,9 +30,11 @@ class TestPlanSkipAll:
         staging_app: dict,
     ) -> None:
         """Skip brainstorm and optimize phases, triage one task, verify plan written to vault."""
-        todoist.seed(tasks=[
-            sd.task("Send weekly report", due_today=True, priority=2, task_id="t_weekly"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Send weekly report", due_today=True, priority=2, task_id="t_weekly"),
+            ]
+        )
 
         bot.send_message("/plan")
         # Don't consume "Starting..." separately — brainstorm may arrive simultaneously.
@@ -68,9 +71,11 @@ class TestPlanSkipAll:
 class TestPlanTriageActions:
     def test_triage_postpone(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Postponing a task in triage calls remove_task_due_date (Sync API)."""
-        todoist.seed(tasks=[
-            sd.task("Review backlog", due_today=True, task_id="t_backlog"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Review backlog", due_today=True, task_id="t_backlog"),
+            ]
+        )
 
         bot.send_message("/plan")
         _press_skip_or_no(bot)  # brainstorm
@@ -85,9 +90,11 @@ class TestPlanTriageActions:
 
     def test_triage_delete(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Deleting a task in triage calls delete in Todoist."""
-        todoist.seed(tasks=[
-            sd.task("Old task to delete", due_today=True, task_id="t_delete"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Old task to delete", due_today=True, task_id="t_delete"),
+            ]
+        )
 
         bot.send_message("/plan")
         _press_skip_or_no(bot)  # brainstorm
@@ -99,9 +106,11 @@ class TestPlanTriageActions:
 
     def test_triage_quarantine(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Quarantining a task adds the quarantined label."""
-        todoist.seed(tasks=[
-            sd.task("Chronic deferral task", due_today=True, task_id="t_quarantine"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Chronic deferral task", due_today=True, task_id="t_quarantine"),
+            ]
+        )
 
         bot.send_message("/plan")
         _press_skip_or_no(bot)  # brainstorm
@@ -149,9 +158,11 @@ class TestPlanSessionPersistence:
         staging_app: dict,
     ) -> None:
         """Start /plan, kill the bot, restart it — session should resume."""
-        todoist.seed(tasks=[
-            sd.task("Persistent task", due_today=True, task_id="t_persist"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Persistent task", due_today=True, task_id="t_persist"),
+            ]
+        )
 
         # Start plan
         bot.send_message("/plan")
@@ -205,8 +216,9 @@ class TestPlanSessionPersistence:
         # The bot should resume the plan session or offer to
         assert resp, "Bot did not send any message after restart"
         text = resp[0].get("text", "").lower()
-        assert any(kw in text for kw in ("resume", "plan", "continue", "triage", "session")), \
+        assert any(kw in text for kw in ("resume", "plan", "continue", "triage", "session")), (
             f"Bot restart response didn't mention plan session: {text!r}"
+        )
 
         new_proc.terminate()
         try:
@@ -218,6 +230,7 @@ class TestPlanSessionPersistence:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _press_skip_or_no(bot: BotClient) -> None:
     """Wait for an UNSEEN response with a skip/no button and press it.
@@ -251,6 +264,7 @@ def _press_first_matching(bot: BotClient, candidates: list[str]) -> bool:
 def _wait_for_vault_plan(vault_dir: Path, timeout: float = 15.0) -> bool:
     """Wait until today's daily note contains a ## Daily Plan section."""
     from datetime import date
+
     note_path = vault_dir / "Daily" / f"{date.today().isoformat()}.md"
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:

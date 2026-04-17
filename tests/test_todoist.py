@@ -214,8 +214,9 @@ def test_task_to_dict_captures_is_recurring(mock_todoist_api):
     """
     from lib.todoist import _task_to_dict
 
-    task = _make_mock_task(task_id="r1", title="Water the plants", is_recurring=True,
-                           due_string="every day")
+    task = _make_mock_task(
+        task_id="r1", title="Water the plants", is_recurring=True, due_string="every day"
+    )
     result = _task_to_dict(task)
 
     assert result["is_recurring"] is True, (

@@ -12,6 +12,7 @@ Covers all seven triage actions with correct callback_data:
 Also covers:
 - aged task (age >= MAX_TRIAGE_AGE) postpone warning message
 """
+
 from __future__ import annotations
 
 import time
@@ -24,7 +25,7 @@ from tests.staging import seed_data as sd
 pytestmark = pytest.mark.e2e
 
 # Internal plan flow callback data (mirrors lib/handlers/plan.py constants)
-_BS_SKIP  = "pf:bs_skip"
+_BS_SKIP = "pf:bs_skip"
 _OPT_SKIP = "pf:opt_skip"
 
 
@@ -32,12 +33,13 @@ _OPT_SKIP = "pf:opt_skip"
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _reach_triage(bot: BotClient) -> None:
     """Send /plan and skip brainstorm + optimize to reach the triage phase."""
     bot.send_message("/plan")
     bot.wait_responses(1, timeout=10)  # "Starting your planning session."
-    _skip_phase(bot, _BS_SKIP)         # wait for brainstorm prompt, press skip
-    _skip_phase(bot, _OPT_SKIP)        # wait for optimize prompt, press skip
+    _skip_phase(bot, _BS_SKIP)  # wait for brainstorm prompt, press skip
+    _skip_phase(bot, _OPT_SKIP)  # wait for optimize prompt, press skip
 
 
 def _skip_phase(bot: BotClient, callback_data: str) -> None:
@@ -65,12 +67,15 @@ def _press_triage_action(bot: BotClient, action_label: str, timeout: float = 10.
 # Test classes
 # ---------------------------------------------------------------------------
 
+
 class TestTriagePostpone:
     def test_postpone_regular_task(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Postponing a non-recurring task calls remove_due_date (Sync API)."""
-        todoist.seed(tasks=[
-            sd.task("Review backlog", due_today=True, task_id="t_postpone"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Review backlog", due_today=True, task_id="t_postpone"),
+            ]
+        )
 
         _reach_triage(bot)
         _wait_for_triage_task(bot)
@@ -91,9 +96,11 @@ class TestTriagePostpone:
         self, bot: BotClient, todoist: TodoistInspector
     ) -> None:
         """Postponing a recurring task completes the current occurrence (preserves schedule)."""
-        todoist.seed(tasks=[
-            sd.task("Daily standup", due_today=True, recurring=True, task_id="t_recurring"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Daily standup", due_today=True, recurring=True, task_id="t_recurring"),
+            ]
+        )
 
         _reach_triage(bot)
         _wait_for_triage_task(bot)
@@ -114,14 +121,16 @@ class TestTriagePostpone:
         """Postponing a task with age >= MAX_TRIAGE_AGE shows a warning message."""
         from lib.todoist import MAX_TRIAGE_AGE
 
-        todoist.seed(tasks=[
-            sd.task(
-                "Ancient stale task",
-                due_today=True,
-                task_id="t_aged",
-                labels=[f"age{MAX_TRIAGE_AGE}"],
-            ),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task(
+                    "Ancient stale task",
+                    due_today=True,
+                    task_id="t_aged",
+                    labels=[f"age{MAX_TRIAGE_AGE}"],
+                ),
+            ]
+        )
 
         _reach_triage(bot)
         _wait_for_triage_task(bot)
@@ -145,9 +154,11 @@ class TestTriagePostpone:
 class TestTriageComplete:
     def test_complete_marks_task_done(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Pressing Done marks the task complete in Todoist."""
-        todoist.seed(tasks=[
-            sd.task("Finish the report", due_today=True, task_id="t_complete"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Finish the report", due_today=True, task_id="t_complete"),
+            ]
+        )
 
         _reach_triage(bot)
         _wait_for_triage_task(bot)
@@ -162,9 +173,11 @@ class TestTriageComplete:
 class TestTriageDelete:
     def test_delete_regular_task(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Deleting a non-recurring task removes it from Todoist."""
-        todoist.seed(tasks=[
-            sd.task("Old stale task to delete", due_today=True, task_id="t_delete"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Old stale task to delete", due_today=True, task_id="t_delete"),
+            ]
+        )
 
         _reach_triage(bot)
         _wait_for_triage_task(bot)
@@ -179,9 +192,11 @@ class TestTriageDelete:
         self, bot: BotClient, todoist: TodoistInspector
     ) -> None:
         """Trying to delete a recurring task sends a warning; the task is NOT deleted."""
-        todoist.seed(tasks=[
-            sd.task("Weekly review", due_today=True, recurring=True, task_id="t_del_rec"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Weekly review", due_today=True, recurring=True, task_id="t_del_rec"),
+            ]
+        )
 
         _reach_triage(bot)
         _wait_for_triage_task(bot)
@@ -210,11 +225,17 @@ class TestTriageQuarantine:
         """
         from lib.todoist import MAX_TRIAGE_AGE
 
-        todoist.seed(tasks=[
-            # Must have age label to get the Quarantine button on the triage keyboard
-            sd.task("Chronic deferral task", due_today=True, task_id="t_quarantine",
-                    labels=[f"age{MAX_TRIAGE_AGE}"]),
-        ])
+        todoist.seed(
+            tasks=[
+                # Must have age label to get the Quarantine button on the triage keyboard
+                sd.task(
+                    "Chronic deferral task",
+                    due_today=True,
+                    task_id="t_quarantine",
+                    labels=[f"age{MAX_TRIAGE_AGE}"],
+                ),
+            ]
+        )
 
         _reach_triage(bot)
         _wait_for_triage_task(bot)
@@ -248,9 +269,11 @@ class TestTriagePriority:
         If all blocks have passed, it skips the picker and updates directly.
         Either way, the Todoist update op must record priority=p2.
         """
-        todoist.seed(tasks=[
-            sd.task("Important focused work", due_today=True, task_id="t_p2"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Important focused work", due_today=True, task_id="t_p2"),
+            ]
+        )
 
         _reach_triage(bot)
         _wait_for_triage_task(bot)
@@ -276,9 +299,11 @@ class TestTriagePriority:
 
     def test_p1_assignment(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """P1 priority can also be assigned (highest priority)."""
-        todoist.seed(tasks=[
-            sd.task("Critical urgent task", due_today=True, task_id="t_p1"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Critical urgent task", due_today=True, task_id="t_p1"),
+            ]
+        )
 
         _reach_triage(bot)
         _wait_for_triage_task(bot)

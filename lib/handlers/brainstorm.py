@@ -89,17 +89,25 @@ async def input_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 def _review_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("✅ Accept", callback_data=_ACCEPT_CB),
-        InlineKeyboardButton("❌ Reject", callback_data=_REJECT_CB),
-    ]])
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("✅ Accept", callback_data=_ACCEPT_CB),
+                InlineKeyboardButton("❌ Reject", callback_data=_REJECT_CB),
+            ]
+        ]
+    )
 
 
 def _wrapup_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("➕ Keep brainstorming", callback_data=_CONTINUE_CB),
-        InlineKeyboardButton("✔ Done", callback_data=_DONE_CB),
-    ]])
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("➕ Keep brainstorming", callback_data=_CONTINUE_CB),
+                InlineKeyboardButton("✔ Done", callback_data=_DONE_CB),
+            ]
+        ]
+    )
 
 
 async def _show_task(
@@ -131,9 +139,7 @@ async def _show_wrapup(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None
         f"rejected {session.rejected}.\n\n"
         "Continue brainstorming or finish?"
     )
-    await context.bot.send_message(
-        chat_id, text, reply_markup=_wrapup_keyboard()
-    )
+    await context.bot.send_message(chat_id, text, reply_markup=_wrapup_keyboard())
 
 
 async def accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -149,8 +155,9 @@ async def accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         task = Task(title=title)
         task_id = await asyncio.to_thread(todoist.create_todoist_task, task)
         session.created += 1
-        audit.log("create", source="brainstorm", trigger="user_accept",
-                  task_id=task_id, title=title)
+        audit.log(
+            "create", source="brainstorm", trigger="user_accept", task_id=task_id, title=title
+        )
         logger.info("[brainstorm] created task: %s", title)
         await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
     except Exception as exc:
