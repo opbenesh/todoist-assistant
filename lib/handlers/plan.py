@@ -4,7 +4,7 @@ import asyncio
 import logging
 import time as _time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from datetime import time as dt_time
 from zoneinfo import ZoneInfo
 
@@ -154,6 +154,12 @@ class PlanFlowSession:
 
 _sessions: dict[int, PlanFlowSession] = {}
 
+
+def has_active_plan_session(chat_id: int) -> bool:
+    """Return True if there is an in-memory plan session for this chat."""
+    return chat_id in _sessions
+
+
 # ---------------------------------------------------------------------------
 # Entry
 # ---------------------------------------------------------------------------
@@ -174,9 +180,10 @@ def _phase_label(phase: int, session: PlanFlowSession) -> str:
         return "brainstorm entry"
     if phase == BS_REVIEW:
         total = len(session.bs_proposed)
-        return (
-            f"brainstorm review ({session.bs_index + 1}/{total})" if total else "brainstorm review"
-        )
+        if total:
+            idx = min(session.bs_index + 1, total)
+            return f"brainstorm review ({idx}/{total})"
+        return "brainstorm review"
     if phase == OPTIMIZE_PROMPT:
         return "optimize"
     if phase in (OPT_REVIEWING, OPT_BS_INPUT, OPT_BS_REVIEW):
@@ -221,7 +228,11 @@ async def _show_phase_ui(
     elif phase in (OPT_REVIEWING, OPT_BS_INPUT, OPT_BS_REVIEW):
         await _show_opt_task(chat_id, context)
     elif phase == TRIAGING:
-        await _show_triage_task(chat_id, context)
+        session = _sessions.get(chat_id)
+        if session and not session.triage_tasks:
+            await _start_triage(chat_id, context)  # re-fetch if tasks weren't checkpointed
+        else:
+            await _show_triage_task(chat_id, context)
     elif phase == TRIAGE_TIMESLOT:
         session = _sessions.get(chat_id)
         if session:
@@ -250,16 +261,23 @@ async def plan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if persisted:
         phase, data = persisted
         session = PlanFlowSession.from_dict(data)
-        session.last_user_action_ts = _time.time()
-        _sessions[chat_id] = session
-        logger.info("[plan] resuming session at phase=%s for chat %s", phase, chat_id)
-        await _show_resume_header(chat_id, context, phase, session)
-        await _show_phase_ui(chat_id, context, phase)
-        return phase
+        tz = ZoneInfo(_settings.timezone) if _settings.timezone else ZoneInfo("UTC")
+        session_date = datetime.fromtimestamp(session.last_user_action_ts, tz=tz).date()
+        if session_date < date.today():
+            logger.info("[plan] discarding stale session from %s for chat %s",
+                        session_date, chat_id)
+            store.clear_plan_session()
+            persisted = None
+        else:
+            session.last_user_action_ts = _time.time()
+            _sessions[chat_id] = session
+            logger.info("[plan] resuming session at phase=%s for chat %s", phase, chat_id)
+            await _show_resume_header(chat_id, context, phase, session)
+            await _show_phase_ui(chat_id, context, phase)
+            return phase
 
     logger.info("[plan] session started for chat %s", chat_id)
     _sessions[chat_id] = PlanFlowSession()
-    store.save_plan_session(BRAINSTORM_PROMPT, _sessions[chat_id].to_dict())
     await update.message.reply_text("Starting your planning session.")
     await _show_brainstorm_prompt(chat_id, context)
     return BRAINSTORM_PROMPT
@@ -314,10 +332,10 @@ async def bs_prompt_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         await context.bot.send_message(
             chat_id, "What's on your mind? Type freely:"
         )
-        _checkpoint(chat_id, BS_INPUT)
+        _checkpoint(chat_id, BS_INPUT)  # first save — user has engaged
         return BS_INPUT
     logger.info("[plan] phase=brainstorm skipped chat=%s", chat_id)
-    _checkpoint(chat_id, OPTIMIZE_PROMPT)
+    _checkpoint(chat_id, OPTIMIZE_PROMPT)  # first save — user has engaged
     await _show_optimize_prompt(chat_id, context)
     return OPTIMIZE_PROMPT
 
@@ -390,7 +408,7 @@ async def bs_accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     title = session.bs_proposed[session.bs_index]
     try:
         task_id = await asyncio.to_thread(
-            todoist.create_todoist_task, Task(title=title, due_string="today")
+            todoist.create_todoist_task, Task(title=title, due_date=date.today())
         )
         session.bs_created += 1
         audit.log("create", source="plan/brainstorm", trigger="user_accept",
@@ -531,7 +549,7 @@ async def _show_opt_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> No
         await _finish_optimize(chat_id, context)
         return
     task = session.opt_queue[0]
-    title = task.get("clean_title") or task["title"]
+    title = task.get("clean_title") or task.get("title", task["id"])
     reason = task.get("reason") or "Unclear next step"
     remaining = len(session.opt_queue)
     await context.bot.send_message(
@@ -557,9 +575,11 @@ async def opt_override_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         labels.append("actionable")
     try:
         await asyncio.to_thread(todoist.update_todoist_task, task["id"], labels=labels)
+        title = task.get("clean_title") or task.get("title", task["id"])
         audit.log("update", source="plan/optimize/override", trigger="user_override",
-                  task_id=task["id"], title=task["title"], changes={"labels": labels})
-        logger.info("[plan/opt] override task %s '%s'", task["id"], task["title"][:60])
+                  task_id=task["id"], title=title, changes={"labels": labels})
+        logger.info("[plan/opt] override task %s '%s'", task["id"],
+                    (task.get("clean_title") or task.get("title", task["id"]))[:60])
     except Exception as exc:
         logger.error("[plan/opt] override failed for %s: %s", task["id"], exc)
         await query.answer("Failed to update task.", show_alert=True)
@@ -603,11 +623,11 @@ async def opt_skip_task_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     session.opt_processed_ids.add(task["id"])
     clean = task.get("clean_title")
     if clean:
-        new_content = restore_links(task["title"], clean)
+        new_content = restore_links(task.get("title", ""), clean)
         try:
             await asyncio.to_thread(todoist.update_todoist_task, task["id"], content=new_content)
             audit.log("update", source="plan/optimize/skip", trigger="user_skip",
-                      task_id=task["id"], title=task["title"],
+                      task_id=task["id"], title=task.get("title", clean),
                       changes={"content": new_content})
         except Exception as exc:
             logger.error("[plan/opt] skip cleanup failed for %s: %s", task["id"], exc)
@@ -643,7 +663,8 @@ async def opt_delete_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     try:
         await asyncio.to_thread(todoist.delete_todoist_task, task["id"])
         audit.log("delete", source="plan/optimize/delete", trigger="user_delete",
-                  task_id=task["id"], title=task["title"])
+                  task_id=task["id"],
+                  title=task.get("clean_title") or task.get("title", task["id"]))
     except Exception as exc:
         logger.error("[plan/opt] delete failed for %s: %s", task["id"], exc)
         await query.answer("Failed to delete task.", show_alert=True)
@@ -803,6 +824,7 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
     session.triage_tasks = tasks
     session.triage_index = 0
+    _checkpoint(chat_id, TRIAGING)  # persist tasks before showing first one
     total = len(tasks)
     await context.bot.send_message(
         chat_id,

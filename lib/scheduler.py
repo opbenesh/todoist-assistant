@@ -112,6 +112,11 @@ async def plan_nag_job(context) -> None:
         persisted = store.load_plan_session()
         if persisted:
             phase, session_data = persisted
+            last_ts = session_data.get("last_user_action_ts", 0)
+            if date.fromtimestamp(last_ts) < date.today():
+                persisted = None  # stale session from a previous day — don't suppress nags
+        if persisted:
+            phase, session_data = persisted
             elapsed = _time.time() - session_data.get("last_user_action_ts", 0)
             if elapsed < 15 * 60:
                 return  # recently active — don't interrupt
