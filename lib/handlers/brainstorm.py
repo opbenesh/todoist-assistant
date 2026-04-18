@@ -73,7 +73,10 @@ async def input_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if not tasks:
         await update.message.reply_text(
-            "Couldn't find any tasks in that. Try again or /cancel to exit."
+            "Couldn't find any tasks in that. Try again or /cancel to exit.",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("⏭ Skip", callback_data=_DONE_CB),
+            ]]),
         )
         return WAITING_INPUT
 

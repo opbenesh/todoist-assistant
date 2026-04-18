@@ -351,7 +351,10 @@ async def bs_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     logger.info("[plan/bs] extracted %d tasks", len(proposed))
     if not proposed:
         await update.message.reply_text(
-            "Couldn't find tasks in that — try again or tap Skip."
+            "Couldn't find tasks in that — try again or tap Skip.",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("⏭ Skip", callback_data=_BS_SKIP),
+            ]]),
         )
         return BS_INPUT
 

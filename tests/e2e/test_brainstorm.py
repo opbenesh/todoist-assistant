@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from tests.e2e.helpers import BotClient, TodoistInspector
+from tests.e2e.helpers import BotClient, LLMInspector, TodoistInspector
 
 pytestmark = pytest.mark.e2e
 
@@ -102,3 +102,24 @@ class TestBrainstormCommand:
         text = (resp[-1].get("text") or "").lower()
         assert "cancel" in text, f"Expected cancellation message, got: {text!r}"
         assert not todoist.history_ops(), "Expected no Todoist ops after cancel"
+
+    def test_no_tasks_extracted_shows_skip_button(
+        self, bot: BotClient, todoist: TodoistInspector, llm: LLMInspector
+    ) -> None:
+        """When LLM extracts no tasks, bot must include a Skip button so user isn't stuck."""
+        llm.set_next_response("[]")  # simulate "Nothing" → no tasks
+
+        bot.send_message("/brainstorm")
+        bot.wait_responses(1, timeout=8)
+
+        bot.send_message("Nothing")
+        # Bot sends "Extracting tasks…" then the error — wait for both
+        resp = bot.wait_responses(2, timeout=15)
+        assert resp, "No response after sending 'Nothing'"
+        text = (resp[-1].get("text") or "").lower()
+        assert "couldn't find" in text or "no task" in text or "try again" in text, \
+            f"Expected 'no tasks' error message, got: {text!r}"
+
+        # The error reply must include a Skip button so the user can escape
+        found = bot.press_button_labeled_any("skip", timeout=3)
+        assert found, "No Skip button in response — user is stuck with no way to exit brainstorm"
