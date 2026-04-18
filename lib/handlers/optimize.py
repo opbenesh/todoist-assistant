@@ -83,7 +83,13 @@ async def optimize_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     task_by_id = {t["id"]: t for t in unlabeled}
 
     actionable = [r for r in results if r["actionable"]]
-    non_actionable = [r for r in results if not r["actionable"]]
+    # Merge original task fields (title, labels, notes) into judge results so
+    # downstream handlers (skip_cb, breakdown) can access them without KeyError.
+    non_actionable = [
+        {**task_by_id.get(r["id"], {}), **r}
+        for r in results
+        if not r["actionable"]
+    ]
 
     # Auto-label actionable tasks + apply title cleanup concurrently
     await asyncio.gather(*[
