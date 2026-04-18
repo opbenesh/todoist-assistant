@@ -25,6 +25,8 @@ Use the CLI to test bot commands instead of one-off Python scripts.
 E2E: `uv run pytest -m e2e` — fake Telegram/Todoist/LLM servers + real bot, isolated vault/state.
 Unit only: `uv run pytest tests/ --ignore=tests/e2e`
 
+**Bug workflow:** always add a failing e2e test that reproduces the bug first, confirm it fails, then fix the bug, then confirm the test passes.
+
 ## Logging
 Interactions → `data/interactions.jsonl` (auto-rotates 10 MB). Covers commands, callbacks, replies, errors.
 
