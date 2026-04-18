@@ -7,6 +7,13 @@ Env vars: TELEGRAM_BOT_KEY, TODOIST_KEY, ANTHROPIC_KEY, TELEGRAM_USER_ID
 All Todoist and Anthropic SDK calls are sync — wrap with asyncio.to_thread at call sites.
 Use app.job_queue for all scheduled jobs (PTB bundles APScheduler via [job-queue] extra).
 
+## Commands
+- Test Full: `uv run pytest -m e2e`
+- Test Unit: `uv run pytest -m "not e2e"`
+- Test File: `uv run pytest tests/e2e/test_postpone_resumption.py -m e2e`
+- Lint/Format: `uv run ruff check .` | `uv run ruff format .`
+- Debug REPL: `uv run python cli.py`
+
 ## CLI (debug client)
 `uv run python cli.py` — interactive REPL that mirrors the Telegram bot without auth.
 - Type any command (e.g. `/list`, `/completed`, `/task Buy milk`) to test bot responses.
