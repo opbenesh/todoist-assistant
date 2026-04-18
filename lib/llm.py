@@ -112,10 +112,17 @@ Examples — NOT actionable: "Plan vacation" (requires planning first),
 The bar is: could you open this task right now and immediately start working on it?
 If yes — actionable. If you'd need to think about what to do first — not actionable.
 
-For EVERY task also return a clean_title: fix typos, capitalise properly, and add a single
-context-appropriate leading emoji (e.g. 🍽️ Wash the dishes, 📞 Call dad).
-If the title is formatted as [description](url), only rewrite the description part and keep
-the url: [New description](original_url). Always include a leading emoji in clean_title.
+For EVERY task also return a clean_title.
+Rules for clean_title:
+1. Fix obvious typos, capitalise properly, and add a single context-appropriate leading emoji
+   (e.g. 🍽️ Wash the dishes).
+2. PRESERVE THE ORIGINAL LANGUAGE. If the input is in Hebrew, the clean_title must be in Hebrew.
+   Do NOT translate between languages.
+3. If the title is formatted as [description](url), only rewrite the description part and keep
+   the url: [New description](original_url).
+4. NEVER guess or hallucinate details. If "SIM" is written, do not change it to "Simon".
+   If "Fiz" is written, do not assume it's a person if it looks like "Physical".
+   When in doubt, keep the word as-is.
 
 Return a JSON array — one object per input task — with exactly these fields:
 - "id": string (the task id, unchanged)
