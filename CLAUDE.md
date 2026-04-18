@@ -24,3 +24,6 @@ Interactions → `data/interactions.jsonl`.
 ## Key API notes
 - Todoist completed tasks: use `GET /api/v1/tasks?filter=completed` (the old /tasks/completed/get_all endpoint is gone).
 - Handlers live in lib/handlers/. Register new ones in main.py (register_handlers) and add a BotCommand entry.
+
+## Commands index
+/task, /list, /done, /completed, /plan, /digest, /optimize, /deepdive, /insights, /project, /brainstorm, /cancel, /session
