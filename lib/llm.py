@@ -108,8 +108,14 @@ Rules:
 - Each subtask must be actionable: specific, achievable, unambiguous
 - Pick ONE context-appropriate emoji for the parent task and start EVERY subtask title with it
 - Subtask titles under 80 chars each
-- Return ONLY a valid JSON array of strings, no prose, no markdown fences.
+- Derive a short project slug: lowercase, hyphen-separated, 2–4 words, no special characters
 
+Return a JSON object with exactly two keys:
+- "project_slug": string (e.g. "tax-filing", "website-redesign")
+- "tasks": array of strings (the subtask titles)
+
+Example: {"project_slug": "tax-filing", "tasks": ["📄 Gather documents", "📄 Submit online"]}
+Return ONLY valid JSON object, no prose, no markdown fences.
 Original task context will be provided alongside the user's free-form plan."""
 
 _BREAKDOWN_SYSTEM = """You are a task planning assistant.
@@ -390,10 +396,13 @@ async def generate_insights(
     return await asyncio.to_thread(_call, SONNET, _INSIGHTS_SYSTEM, content, 1000)
 
 
-async def breakdown_tasks_for_optimize(original_task: dict, user_plan: str) -> list[str]:
-    """Propose minimum atomic breakdown tasks for a non-actionable task using Haiku.
+async def breakdown_tasks_for_optimize(
+    original_task: dict, user_plan: str
+) -> tuple[list[str], str]:
+    """Propose minimum atomic breakdown tasks and a project slug using Haiku.
 
-    Returns list of task title strings (with emoji prefix), empty on failure.
+    Returns (tasks, project_slug). tasks is a list of title strings with emoji prefix.
+    On failure returns ([], "").
     """
     task_summary = json.dumps(
         {"title": original_task["title"], "notes": original_task.get("notes", "")},
@@ -403,9 +412,11 @@ async def breakdown_tasks_for_optimize(original_task: dict, user_plan: str) -> l
     raw = await asyncio.to_thread(_call, HAIKU, _BREAKDOWN_OPTIMIZE_SYSTEM, content, 400)
     try:
         data = json.loads(_strip_fences(raw))
-        if isinstance(data, list):
-            return [s for s in data if isinstance(s, str) and s]
-        return []
+        if isinstance(data, dict):
+            tasks = [s for s in data.get("tasks", []) if isinstance(s, str) and s]
+            slug = str(data.get("project_slug", "")).strip().lower().replace(" ", "-")
+            return tasks, slug
+        return [], ""
     except json.JSONDecodeError as exc:
         logger.warning("breakdown_tasks_for_optimize: invalid JSON: %s — raw: %s", exc, raw)
-        return []
+        return [], ""

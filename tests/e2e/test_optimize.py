@@ -24,7 +24,7 @@ class TestOptimizeTaskList:
         )
         bot.send_message("/optimize")
         resp = bot.wait_responses(2, timeout=15)  # "Fetching…" + list
-        assert any(r.get("has_keyboard") for r in resp), "Expected inline keyboard with task list"
+        assert any(r.get("reply_markup") for r in resp), "Expected inline keyboard with task list"
 
     def test_no_tasks(self, bot: BotClient) -> None:
         """/optimize with empty inbox shows 'no tasks' message."""
@@ -47,7 +47,7 @@ class TestOptimizeTaskList:
         bot.send_message("/optimize")
         resp = bot.wait_responses(2, timeout=15)
         # All tasks should be listed; check that the keyboard exists
-        assert any(r.get("has_keyboard") for r in resp), "Expected task list keyboard"
+        assert any(r.get("reply_markup") for r in resp), "Expected task list keyboard"
 
 
 class TestOptimizeBreakdown:
@@ -60,7 +60,7 @@ class TestOptimizeBreakdown:
         assert pressed, "Could not press task button in list"
 
     def test_breakdown_flow(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        """Pick a task → describe plan → accept 1 proposal → original deleted, subtask created."""
+        """Pick a task → describe plan → confirm project → accept 1 proposal → original deleted."""
         self._start_and_pick(bot, todoist)
 
         prompt = bot.wait_responses(1, timeout=8)
@@ -68,23 +68,21 @@ class TestOptimizeBreakdown:
         assert "plan" in (prompt[-1].get("text") or "").lower()
 
         bot.send_message("Research first, then write a draft")
-        prop1 = bot.wait_responses(1, timeout=15)
-        assert prop1, "No breakdown proposal"
+        bot.wait_responses(1, timeout=15)  # project confirm
+        bot.press_button_labeled_any("✅ Confirm", timeout=5)
+
+        bot.wait_responses(2, timeout=15)  # "Project created" + first proposal
         bot.press_button_labeled_any("✅ Accept", timeout=5)
 
-        for _ in range(5):
-            resp = bot.wait_responses(1, timeout=8)
-            if not resp:
-                break
-            if any(r.get("has_keyboard") for r in resp):
-                bot.press_button_labeled_any("❌ Reject", timeout=5)
-            else:
-                break
+        # Drain remaining proposals — use press_button_labeled_any which polls all seen responses
+        for _ in range(6):
+            if not bot.press_button_labeled_any("❌ Reject", timeout=4):
+                break  # no more proposal buttons
 
-        finish = bot.wait_responses(1, timeout=10)
-        assert finish, "No finish message"
-        text = (finish[-1].get("text") or "").lower()
-        assert "done" in text or "created" in text, f"Expected finish summary, got: {text!r}"
+        finish = bot.find_response_containing("done", timeout=10) or bot.find_response_containing(
+            "created", timeout=5
+        )
+        assert finish, "No finish summary message"
 
         assert todoist.wait_for_op("delete", timeout=5) is not None, (
             "Expected original task deleted after breakdown"
@@ -107,7 +105,9 @@ class TestOptimizeBreakdown:
 
         bot.wait_responses(1, timeout=8)  # plan prompt
         bot.send_message("Split into two parts")
-        bot.wait_responses(1, timeout=15)  # first proposal
+        bot.wait_responses(1, timeout=15)  # project confirm
+        bot.press_button_labeled_any("✅ Confirm", timeout=5)
+        bot.wait_responses(2, timeout=15)  # "Project created" + first proposal
         bot.press_button_labeled_any("✅ Accept", timeout=5)
 
         # Drain remaining proposals
@@ -115,7 +115,7 @@ class TestOptimizeBreakdown:
             resp = bot.wait_responses(1, timeout=8)
             if not resp:
                 break
-            if any(r.get("has_keyboard") for r in resp):
+            if any(r.get("reply_markup") for r in resp):
                 bot.press_button_labeled_any("❌ Reject", timeout=5)
             else:
                 break
@@ -127,3 +127,117 @@ class TestOptimizeBreakdown:
         created_labels = create_op.get("labels") or []
         assert "age5" not in created_labels, "New task should not inherit age label"
         assert "quarantined" not in created_labels, "New task should not inherit quarantined label"
+
+
+class TestOptimizeProject:
+    """Tests for project creation and task numbering during breakdown."""
+
+    def _pick_task(self, bot: BotClient, todoist: TodoistInspector, title: str) -> None:
+        todoist.seed(tasks=[sd.task(title, task_id=_TASK_ID)])
+        bot.send_message("/optimize")
+        bot.wait_responses(2, timeout=15)
+        pressed = bot.press_button_labeled_any(title[:20], timeout=8)
+        assert pressed, f"Could not press button for task: {title!r}"
+        bot.wait_responses(1, timeout=8)  # plan prompt
+
+    def test_project_confirmation_shown(self, bot: BotClient, todoist: TodoistInspector) -> None:
+        """After user describes plan, a project name confirmation message appears."""
+        self._pick_task(bot, todoist, "Plan the project")
+        bot.send_message("Research first, then write a draft")
+        resp = bot.wait_responses(1, timeout=15)
+        assert resp, "No response after plan input"
+        text = (resp[-1].get("text") or "").lower()
+        assert "#proj-" in text, f"Expected project suggestion with #proj- prefix, got: {text!r}"
+        assert resp[-1].get("reply_markup"), "Expected ✅ Confirm button"
+
+    def test_project_created_on_confirm(self, bot: BotClient, todoist: TodoistInspector) -> None:
+        """Pressing ✅ Confirm creates the project and starts proposals."""
+        self._pick_task(bot, todoist, "Plan the project")
+        bot.send_message("Research first, then write a draft")
+        bot.wait_responses(1, timeout=15)  # project confirm msg
+        bot.press_button_labeled_any("✅ Confirm", timeout=5)
+
+        # Should see "Project created" + first proposal
+        resp = bot.wait_responses(2, timeout=15)
+        texts = " ".join(r.get("text", "") for r in resp).lower()
+        assert "#proj-" in texts, f"Expected project created message, got: {texts!r}"
+
+        proj_op = todoist.wait_for_op("create_project", timeout=5)
+        assert proj_op is not None, "Expected create_project op in history"
+        assert proj_op.get("name", "").startswith("#proj-"), (
+            f"Project name should start with #proj-, got: {proj_op.get('name')!r}"
+        )
+
+    def test_custom_project_name(self, bot: BotClient, todoist: TodoistInspector) -> None:
+        """Replying with a name instead of confirming uses the custom name."""
+        self._pick_task(bot, todoist, "Plan the project")
+        bot.send_message("Research first, then write a draft")
+        bot.wait_responses(1, timeout=15)  # project confirm msg
+        bot.send_message("my-custom-plan")
+        bot.wait_responses(2, timeout=15)  # project created + first proposal
+
+        proj_op = todoist.wait_for_op("create_project", timeout=5)
+        assert proj_op is not None, "Expected create_project op"
+        assert "#proj-my-custom-plan" in proj_op.get("name", ""), (
+            f"Expected custom name in project, got: {proj_op.get('name')!r}"
+        )
+
+    def test_tasks_assigned_to_project(self, bot: BotClient, todoist: TodoistInspector) -> None:
+        """Accepted subtasks are created inside the new project."""
+        self._pick_task(bot, todoist, "Plan the project")
+        bot.send_message("Research first, then write a draft")
+        bot.wait_responses(1, timeout=15)
+        bot.press_button_labeled_any("✅ Confirm", timeout=5)
+        bot.wait_responses(2, timeout=15)  # project created + first proposal
+
+        bot.press_button_labeled_any("✅ Accept", timeout=5)
+
+        # Drain remaining proposals
+        for _ in range(5):
+            resp = bot.wait_responses(1, timeout=8)
+            if not resp:
+                break
+            if any(r.get("reply_markup") for r in resp):
+                bot.press_button_labeled_any("❌ Reject", timeout=5)
+            else:
+                break
+        bot.wait_responses(1, timeout=10)  # finish message
+
+        proj_op = todoist.wait_for_op("create_project", timeout=5)
+        project_id = proj_op["project_id"]
+
+        create_op = todoist.wait_for_op("create", timeout=5)
+        assert create_op is not None, "Expected task create op"
+        assert create_op.get("project_id") == project_id, (
+            f"Task should be in project {project_id}, got: {create_op.get('project_id')!r}"
+        )
+
+    def test_tasks_are_numbered(self, bot: BotClient, todoist: TodoistInspector) -> None:
+        """Accepted subtask titles include a sequential number after the emoji."""
+        self._pick_task(bot, todoist, "Plan the project")
+        bot.send_message("Research first, then write a draft")
+        bot.wait_responses(1, timeout=15)
+        bot.press_button_labeled_any("✅ Confirm", timeout=5)
+        bot.wait_responses(2, timeout=15)  # project created + first proposal
+
+        bot.press_button_labeled_any("✅ Accept", timeout=5)
+
+        # Drain remaining proposals
+        for _ in range(5):
+            resp = bot.wait_responses(1, timeout=8)
+            if not resp:
+                break
+            if any(r.get("reply_markup") for r in resp):
+                bot.press_button_labeled_any("❌ Reject", timeout=5)
+            else:
+                break
+        bot.wait_responses(1, timeout=10)
+
+        created_tasks = [t for t in todoist.tasks() if t.get("content", "").strip()]
+        titles = [t["content"] for t in created_tasks if t["id"] != _TASK_ID]
+        assert titles, "No created task titles found"
+        # First accepted task should be numbered "1"
+        first = titles[0]
+        assert " 1 " in first or first.startswith("1 "), (
+            f"Expected task title to contain ' 1 ', got: {first!r}"
+        )

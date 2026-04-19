@@ -110,7 +110,11 @@ def build_user_settings(todoist_data: dict, profile: dict) -> UserSettings:
 # ---------------------------------------------------------------------------
 
 
-def create_todoist_task(task: Task, parent_id: str | None = None) -> str:
+def create_todoist_task(
+    task: Task,
+    parent_id: str | None = None,
+    project_id: str | None = None,
+) -> str:
     """Create a task in Todoist. Returns the new task's id."""
     kwargs: dict = {
         "priority": PRIORITY_TO_TODOIST[task.priority],
@@ -125,9 +129,17 @@ def create_todoist_task(task: Task, parent_id: str | None = None) -> str:
         kwargs["duration_unit"] = "minute"
     if parent_id:
         kwargs["parent_id"] = parent_id
+    if project_id:
+        kwargs["project_id"] = project_id
 
     result = _api.add_task(task.title, **kwargs)  # content is positional in v4
     return result.id
+
+
+def create_todoist_project(name: str) -> str:
+    """Create a Todoist project with the given name. Returns the new project's id."""
+    project = _api.add_project(name)
+    return project.id
 
 
 def get_today_tasks() -> list[dict]:

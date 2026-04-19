@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from dataclasses import dataclass, field
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -24,14 +25,17 @@ logger = logging.getLogger(__name__)
 
 PICKING = 0
 BRAINSTORM_INPUT = 1
-BRAINSTORM_REVIEW = 2
+PROJECT_CONFIRM = 2
+BRAINSTORM_REVIEW = 3
 
 _PICK_PREFIX = "opt_pick:"
+_CONFIRM_PROJECT_CB = "opt:confirm_proj"
 _ACCEPT_CB = "opt:accept"
 _REJECT_CB = "opt:reject"
 
 _MAX_LIST = 15
 _TODOIST_TASK_URL = "https://todoist.com/app/task/{id}"
+_SLUG_RE = re.compile(r"[^a-z0-9-]+")
 
 
 @dataclass
@@ -40,6 +44,8 @@ class OptimizeSession:
     current_task: dict | None = None
     proposed: list[str] = field(default_factory=list)
     proposal_index: int = 0
+    project_slug: str = ""
+    project_id: str | None = None
     created: int = 0
 
 
@@ -62,6 +68,19 @@ def _age_badge(task: dict) -> str:
         return " (quarantined)"
     age = todoist.get_task_age(labels)
     return f" (age{age})" if age > 0 else ""
+
+
+def _slugify(text: str) -> str:
+    """Convert text to a lowercase hyphenated slug."""
+    return _SLUG_RE.sub("-", text.lower().strip()).strip("-")
+
+
+def _number_title(title: str, n: int) -> str:
+    """Insert sequential number into a title: '🔧 Research' → '🔧 1 Research'."""
+    if " " in title and ord(title[0]) > 127:
+        emoji, rest = title.split(" ", 1)
+        return f"{emoji} {n} {rest}"
+    return f"{n} {title}"
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +156,7 @@ async def brainstorm_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE
         return ConversationHandler.END
 
     user_text = update.message.text.strip()
-    proposed = await llm.breakdown_tasks_for_optimize(session.current_task, user_text)
+    proposed, slug = await llm.breakdown_tasks_for_optimize(session.current_task, user_text)
 
     if not proposed:
         await update.message.reply_text(
@@ -147,6 +166,91 @@ async def brainstorm_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     session.proposed = proposed
     session.proposal_index = 0
+    session.project_slug = slug or _slugify(session.current_task["title"])[:30]
+
+    await _show_project_confirm(chat_id, context)
+    return PROJECT_CONFIRM
+
+
+# ---------------------------------------------------------------------------
+# Project confirmation
+# ---------------------------------------------------------------------------
+
+
+async def _show_project_confirm(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    session = _sessions.get(chat_id)
+    if not session:
+        return
+    full_name = f"#proj-{session.project_slug}"
+    await context.bot.send_message(
+        chat_id,
+        f"Suggested project: *{full_name}*\n\n"
+        "Reply with a different name to change it, or confirm:",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton("✅ Confirm", callback_data=_CONFIRM_PROJECT_CB),
+                ]
+            ]
+        ),
+        parse_mode="Markdown",
+    )
+
+
+async def confirm_project_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session:
+        return ConversationHandler.END
+
+    await query.edit_message_reply_markup(reply_markup=None)
+    return await _create_project_and_start(chat_id, context, session.project_slug)
+
+
+async def project_name_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    chat_id = update.effective_chat.id
+    session = _sessions.get(chat_id)
+    if not session:
+        return ConversationHandler.END
+
+    raw = update.message.text.strip()
+    # Strip leading '#proj-' if user pasted it back
+    if raw.lower().startswith("#proj-"):
+        raw = raw[6:]
+    slug = _slugify(raw)[:50] or session.project_slug
+    session.project_slug = slug
+    return await _create_project_and_start(chat_id, context, slug)
+
+
+async def _create_project_and_start(
+    chat_id: int, context: ContextTypes.DEFAULT_TYPE, slug: str
+) -> int:
+    session = _sessions.get(chat_id)
+    if not session:
+        return ConversationHandler.END
+
+    full_name = f"#proj-{slug}"
+    try:
+        project_id = await asyncio.to_thread(todoist.create_todoist_project, full_name)
+        session.project_id = project_id
+        audit.log(
+            "create_project",
+            source="optimize/breakdown",
+            trigger="user_confirm",
+            project_id=project_id,
+            name=full_name,
+        )
+        logger.info("[optimize] created project %s (%s)", full_name, project_id)
+    except Exception as exc:
+        logger.error("[optimize] failed to create project '%s': %s", full_name, exc)
+        await context.bot.send_message(chat_id, f"Failed to create project: {exc}")
+        return ConversationHandler.END
+
+    await context.bot.send_message(
+        chat_id, f"Project *{full_name}* created.", parse_mode="Markdown"
+    )
     await _show_proposal(chat_id, context)
     return BRAINSTORM_REVIEW
 
@@ -193,7 +297,10 @@ async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not session or session.proposal_index >= len(session.proposed):
         return ConversationHandler.END
 
-    title = session.proposed[session.proposal_index]
+    raw_title = session.proposed[session.proposal_index]
+    n = session.created + 1
+    title = _number_title(raw_title, n)
+
     original = session.current_task
     original_title = original["title"]
     task_url = _TODOIST_TASK_URL.format(id=original["id"])
@@ -203,7 +310,9 @@ async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     task = Task(title=title, notes=notes, priority=original.get("priority", "p4"), labels=[])
     try:
-        task_id = await asyncio.to_thread(todoist.create_todoist_task, task)
+        task_id = await asyncio.to_thread(
+            todoist.create_todoist_task, task, project_id=session.project_id
+        )
         session.created += 1
         audit.log(
             "create",
@@ -213,6 +322,7 @@ async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
             title=title,
             original_task_id=original["id"],
             original_title=original_title,
+            project_id=session.project_id,
         )
         logger.info("[optimize] created breakdown task: %s", title)
         await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
@@ -267,10 +377,13 @@ async def _finalize_breakdown(chat_id: int, context: ContextTypes.DEFAULT_TYPE) 
         logger.error("[optimize] failed to delete original task %s: %s", original_id, exc)
 
     created = session.created
+    project_name = f"#proj-{session.project_slug}" if session.project_slug else "project"
     _sessions.pop(chat_id, None)
     await context.bot.send_message(
         chat_id,
-        f"Done — created {created} task{'s' if created != 1 else ''}, original deleted.",
+        f"Done — created {created} task{'s' if created != 1 else ''} in *{project_name}*, "
+        f"original deleted.",
+        parse_mode="Markdown",
     )
 
 
@@ -298,6 +411,12 @@ optimize_conversation_handler = ConversationHandler(
         ],
         BRAINSTORM_INPUT: [
             MessageHandler(filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, brainstorm_input_cb),
+        ],
+        PROJECT_CONFIRM: [
+            CallbackQueryHandler(confirm_project_cb, pattern=f"^{_CONFIRM_PROJECT_CB}$"),
+            MessageHandler(
+                filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, project_name_input_cb
+            ),
         ],
         BRAINSTORM_REVIEW: [
             CallbackQueryHandler(accept_proposal_cb, pattern=f"^{_ACCEPT_CB}$"),

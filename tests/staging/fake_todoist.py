@@ -23,6 +23,7 @@ Control plane:
   GET  /test/tasks                   — dump current task state
   GET  /test/history                 — list of all write operations
 """
+
 from __future__ import annotations
 
 import uuid
@@ -135,6 +136,7 @@ _reset_state()
 # Filter engine
 # ---------------------------------------------------------------------------
 
+
 def _parse_due_date(due: dict | None) -> date | None:
     if not due:
         return None
@@ -191,6 +193,7 @@ def _paginate(items: list[dict]) -> dict:
 # Task endpoints (SDK-driven)
 # ---------------------------------------------------------------------------
 
+
 @app.get("/api/v1/tasks")
 async def list_tasks(request: Request) -> JSONResponse:
     params = dict(request.query_params)
@@ -204,7 +207,9 @@ async def list_tasks(request: Request) -> JSONResponse:
         return JSONResponse({"results": results})
 
     if project_id:
-        results = [t for t in all_tasks if t["project_id"] == project_id and not _task_is_completed(t)]
+        results = [
+            t for t in all_tasks if t["project_id"] == project_id and not _task_is_completed(t)
+        ]
     else:
         results = [t for t in all_tasks if not _task_is_completed(t)]
 
@@ -242,7 +247,15 @@ async def create_task(request: Request) -> JSONResponse:
         duration=_build_duration(body),
     )
     _tasks[task["id"]] = task
-    _history.append({"op": "create", "task_id": task["id"], "content": task["content"]})
+    _history.append(
+        {
+            "op": "create",
+            "task_id": task["id"],
+            "content": task["content"],
+            "project_id": task.get("project_id"),
+            "labels": task.get("labels", []),
+        }
+    )
     return JSONResponse(task, status_code=200)
 
 
@@ -318,14 +331,26 @@ async def delete_task(task_id: str) -> JSONResponse:
 # Project endpoints
 # ---------------------------------------------------------------------------
 
+
 @app.get("/api/v1/projects")
 async def list_projects() -> JSONResponse:
     return JSONResponse(_paginate(list(_projects.values())))
 
 
+@app.post("/api/v1/projects")
+async def create_project(request: Request) -> JSONResponse:
+    body = await request.json()
+    name = body.get("name", "")
+    project = _make_project(name)
+    _projects[project["id"]] = project
+    _history.append({"op": "create_project", "project_id": project["id"], "name": name})
+    return JSONResponse(project, status_code=200)
+
+
 # ---------------------------------------------------------------------------
 # User settings endpoint
 # ---------------------------------------------------------------------------
+
 
 @app.get("/api/v1/user")
 async def get_user() -> JSONResponse:
@@ -335,6 +360,7 @@ async def get_user() -> JSONResponse:
 # ---------------------------------------------------------------------------
 # Sync API (used by remove_task_due_date)
 # ---------------------------------------------------------------------------
+
 
 @app.post("/api/v1/sync")
 async def sync_api(request: Request) -> JSONResponse:
@@ -356,15 +382,34 @@ async def sync_api(request: Request) -> JSONResponse:
 # Due / deadline / duration helpers
 # ---------------------------------------------------------------------------
 
+
 def _build_due(body: dict) -> dict | None:
     if "due_date" in body and body["due_date"]:
         d = body["due_date"]
-        return {"date": d if isinstance(d, str) else d.isoformat(), "string": str(d), "lang": "en", "is_recurring": False, "timezone": None}
+        return {
+            "date": d if isinstance(d, str) else d.isoformat(),
+            "string": str(d),
+            "lang": "en",
+            "is_recurring": False,
+            "timezone": None,
+        }
     if "due_datetime" in body and body["due_datetime"]:
         dt = body["due_datetime"]
-        return {"date": dt if isinstance(dt, str) else dt.isoformat(), "string": str(dt), "lang": "en", "is_recurring": False, "timezone": None}
+        return {
+            "date": dt if isinstance(dt, str) else dt.isoformat(),
+            "string": str(dt),
+            "lang": "en",
+            "is_recurring": False,
+            "timezone": None,
+        }
     if "due_string" in body and body["due_string"]:
-        return {"date": date.today().isoformat(), "string": body["due_string"], "lang": "en", "is_recurring": False, "timezone": None}
+        return {
+            "date": date.today().isoformat(),
+            "string": body["due_string"],
+            "lang": "en",
+            "is_recurring": False,
+            "timezone": None,
+        }
     return None
 
 
@@ -384,6 +429,7 @@ def _build_duration(body: dict) -> dict | None:
 # ---------------------------------------------------------------------------
 # Test control plane
 # ---------------------------------------------------------------------------
+
 
 @app.post("/test/reset")
 async def test_reset() -> JSONResponse:
