@@ -22,6 +22,7 @@ Control plane (under /test/):
   GET  /test/wait_responses        — block until min_count responses arrive (or timeout)
   POST /test/reset                 — clear queue, responses, and counters
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -65,6 +66,7 @@ async def _parse_body(request: Request) -> dict:
     except Exception:
         return {}
 
+
 app = FastAPI()
 
 # ---------------------------------------------------------------------------
@@ -107,7 +109,13 @@ def _next_message_id() -> int:
 
 
 def _reset_state() -> None:
-    global _message_id_counter, _update_id_counter, _last_acked_offset, _generation, _bot_initialized, _get_updates_count
+    global \
+        _message_id_counter, \
+        _update_id_counter, \
+        _last_acked_offset, \
+        _generation, \
+        _bot_initialized, \
+        _get_updates_count
     _bot_initialized = False
     _get_updates_count = 0
     # Increment generation so any zombie getUpdates handlers (from a just-killed
@@ -132,7 +140,12 @@ def _reset_state() -> None:
 def _make_message(text: str, message_id: int | None = None) -> dict:
     msg: dict = {
         "message_id": message_id or _next_message_id(),
-        "from": {"id": _test_user_id, "is_bot": False, "first_name": "Test", "username": "testuser"},
+        "from": {
+            "id": _test_user_id,
+            "is_bot": False,
+            "first_name": "Test",
+            "username": "testuser",
+        },
         "chat": {"id": _test_chat_id, "type": "private"},
         "date": int(time.time()),
         "text": text,
@@ -163,7 +176,12 @@ def _make_update_callback(
         "update_id": uid,
         "callback_query": {
             "id": str(uid),
-            "from": {"id": _test_user_id, "is_bot": False, "first_name": "Test", "username": "testuser"},
+            "from": {
+                "id": _test_user_id,
+                "is_bot": False,
+                "first_name": "Test",
+                "username": "testuser",
+            },
             "message": {
                 "message_id": message_id,
                 "chat": {"id": _test_chat_id, "type": "private"},
@@ -180,20 +198,23 @@ def _make_update_callback(
 # Bot API endpoints
 # ---------------------------------------------------------------------------
 
+
 @app.api_route("/bot{token}/getMe", methods=["GET", "POST"])
 async def get_me(token: str) -> JSONResponse:
-    return JSONResponse({
-        "ok": True,
-        "result": {
-            "id": 1,
-            "is_bot": True,
-            "first_name": "StagingBot",
-            "username": "staging_assistant_bot",
-            "can_join_groups": True,
-            "can_read_all_group_messages": False,
-            "supports_inline_queries": False,
-        },
-    })
+    return JSONResponse(
+        {
+            "ok": True,
+            "result": {
+                "id": 1,
+                "is_bot": True,
+                "first_name": "StagingBot",
+                "username": "staging_assistant_bot",
+                "can_join_groups": True,
+                "can_read_all_group_messages": False,
+                "supports_inline_queries": False,
+            },
+        }
+    )
 
 
 @app.post("/bot{token}/deleteWebhook")
@@ -210,10 +231,12 @@ async def set_my_commands(token: str, request: Request) -> JSONResponse:
 
 @app.api_route("/bot{token}/getChat", methods=["GET", "POST"])
 async def get_chat(token: str, request: Request) -> JSONResponse:
-    return JSONResponse({
-        "ok": True,
-        "result": {"id": _test_chat_id, "type": "private", "first_name": "Test"},
-    })
+    return JSONResponse(
+        {
+            "ok": True,
+            "result": {"id": _test_chat_id, "type": "private", "first_name": "Test"},
+        }
+    )
 
 
 @app.post("/bot{token}/sendChatAction")
@@ -274,15 +297,17 @@ async def send_message(token: str, request: Request) -> JSONResponse:
         "parse_mode": body.get("parse_mode"),
     }
     _responses.append(entry)
-    return JSONResponse({
-        "ok": True,
-        "result": {
-            "message_id": msg_id,
-            "chat": {"id": body.get("chat_id"), "type": "private"},
-            "date": int(time.time()),
-            "text": body.get("text", ""),
-        },
-    })
+    return JSONResponse(
+        {
+            "ok": True,
+            "result": {
+                "message_id": msg_id,
+                "chat": {"id": body.get("chat_id"), "type": "private"},
+                "date": int(time.time()),
+                "text": body.get("text", ""),
+            },
+        }
+    )
 
 
 @app.post("/bot{token}/editMessageText")
@@ -298,15 +323,17 @@ async def edit_message_text(token: str, request: Request) -> JSONResponse:
         "parse_mode": body.get("parse_mode"),
     }
     _responses.append(entry)
-    return JSONResponse({
-        "ok": True,
-        "result": {
-            "message_id": msg_id,
-            "chat": {"id": body.get("chat_id"), "type": "private"},
-            "date": int(time.time()),
-            "text": body.get("text", ""),
-        },
-    })
+    return JSONResponse(
+        {
+            "ok": True,
+            "result": {
+                "message_id": msg_id,
+                "chat": {"id": body.get("chat_id"), "type": "private"},
+                "date": int(time.time()),
+                "text": body.get("text", ""),
+            },
+        }
+    )
 
 
 @app.post("/bot{token}/answerCallbackQuery")
@@ -320,20 +347,23 @@ async def edit_message_reply_markup(token: str, request: Request) -> JSONRespons
     # Not captured — keyboard removals are not useful for test assertions
     body = await _parse_body(request)
     msg_id = body.get("message_id", _next_message_id())
-    return JSONResponse({
-        "ok": True,
-        "result": {
-            "message_id": msg_id,
-            "chat": {"id": body.get("chat_id"), "type": "private"},
-            "date": int(time.time()),
-            "text": "",
-        },
-    })
+    return JSONResponse(
+        {
+            "ok": True,
+            "result": {
+                "message_id": msg_id,
+                "chat": {"id": body.get("chat_id"), "type": "private"},
+                "date": int(time.time()),
+                "text": "",
+            },
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # Control plane
 # ---------------------------------------------------------------------------
+
 
 @app.post("/test/inject_message")
 async def inject_message(request: Request) -> JSONResponse:
@@ -381,15 +411,17 @@ async def test_reset() -> JSONResponse:
 @app.get("/test/state")
 async def test_state() -> JSONResponse:
     """Diagnostic: current internal state for debugging test isolation issues."""
-    return JSONResponse({
-        "generation": _generation,
-        "update_id_counter": _update_id_counter,
-        "last_acked_offset": _last_acked_offset,
-        "queue_size": _update_queue.qsize(),
-        "response_count": len(_responses),
-        "bot_initialized": _bot_initialized,
-        "get_updates_count": _get_updates_count,
-    })
+    return JSONResponse(
+        {
+            "generation": _generation,
+            "update_id_counter": _update_id_counter,
+            "last_acked_offset": _last_acked_offset,
+            "queue_size": _update_queue.qsize(),
+            "response_count": len(_responses),
+            "bot_initialized": _bot_initialized,
+            "get_updates_count": _get_updates_count,
+        }
+    )
 
 
 @app.get("/health")

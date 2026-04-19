@@ -1,4 +1,5 @@
 """E2E tests for basic capture commands: /task, /list, /done, /completed."""
+
 from __future__ import annotations
 
 import pytest
@@ -20,12 +21,15 @@ class TestTaskCommand:
         # Check the last (non-interim) response contains task-related content
         text = resp[-1].get("text", "")
         keywords = ("grocery", "buy", "confirm", "✅", "task")
-        assert any(kw in text.lower() for kw in keywords) or "✅" in text, \
+        assert any(kw in text.lower() for kw in keywords) or "✅" in text, (
             f"Expected task enrichment in final response, got: {text!r}"
+        )
 
         # Press confirm — search all captured responses (proposal keyboard was already consumed
         # by wait_responses above, so press_button_labeled_any is needed here)
-        bot.press_button_labeled_any("✅", timeout=3) or bot.press_button_labeled_any("confirm", timeout=1)
+        bot.press_button_labeled_any("✅", timeout=3) or bot.press_button_labeled_any(
+            "confirm", timeout=1
+        )
 
         # Task should appear in Todoist
         created = todoist.wait_for_task("groceries", timeout=10)
@@ -38,18 +42,21 @@ class TestTaskCommand:
         resp = bot.wait_responses(2, timeout=12)  # "Thinking..." + enrichment proposal
         assert resp, "Bot did not respond"
         proposal = resp[-1]
-        assert "dentist" in (proposal.get("text") or "").lower(), \
+        assert "dentist" in (proposal.get("text") or "").lower(), (
             f"Expected task title in enrichment proposal, got: {proposal.get('text')!r}"
+        )
         assert proposal.get("reply_markup"), "Expected enrichment keyboard (confirm/edit buttons)"
 
 
 class TestListCommand:
     def test_list_shows_seeded_tasks(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """/list should show today's tasks."""
-        todoist.seed(tasks=[
-            sd.task("Review pull request", due_today=True, priority=3),
-            sd.task("Write tests", due_today=True, priority=2),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Review pull request", due_today=True, priority=3),
+                sd.task("Write tests", due_today=True, priority=2),
+            ]
+        )
 
         bot.send_message("/list")
         resp = bot.wait_responses(1, timeout=8)
@@ -92,16 +99,19 @@ class TestDoneCommand:
 class TestCompletedCommand:
     def test_completed_shows_done_tasks(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """/completed lists recently completed tasks, including the seeded one."""
-        todoist.seed(tasks=[
-            sd.task("Finished task", completed=True),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Finished task", completed=True),
+            ]
+        )
 
         bot.send_message("/completed")
         resp = bot.wait_responses(1, timeout=8)
         assert resp, "Bot did not respond to /completed"
         text = resp[0].get("text", "").lower()
-        assert "finished task" in text, \
+        assert "finished task" in text, (
             f"Expected seeded completed task title in response, got: {text!r}"
+        )
 
 
 class TestTaskEditFlows:
@@ -128,8 +138,9 @@ class TestTaskEditFlows:
         bot.send_message("2026-12-31")
         resp = bot.wait_responses(1, timeout=8)  # updated proposal
         assert resp, "No response after entering due date"
-        assert "2026-12-31" in (resp[-1].get("text") or ""), \
+        assert "2026-12-31" in (resp[-1].get("text") or ""), (
             "Due date not reflected in updated proposal"
+        )
 
     def test_edit_due_invalid_then_valid(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Invalid due date triggers retry prompt; valid date updates proposal."""
@@ -139,9 +150,10 @@ class TestTaskEditFlows:
         bot.send_message("not-a-date")
         retry = bot.wait_responses(1, timeout=5)
         assert retry, "No retry prompt after invalid date"
-        assert "iso" in (retry[-1].get("text") or "").lower() or \
-               "format" in (retry[-1].get("text") or "").lower(), \
-            f"Expected format hint, got: {retry[-1].get('text')!r}"
+        assert (
+            "iso" in (retry[-1].get("text") or "").lower()
+            or "format" in (retry[-1].get("text") or "").lower()
+        ), f"Expected format hint, got: {retry[-1].get('text')!r}"
         bot.send_message("2026-06-01")
         resp = bot.wait_responses(1, timeout=8)
         assert resp and "2026-06-01" in (resp[-1].get("text") or "")
@@ -154,10 +166,13 @@ class TestTaskEditFlows:
         bot.send_message("p1")
         resp = bot.wait_responses(1, timeout=8)
         assert resp, "No response after entering priority"
-        assert "p1" in (resp[-1].get("text") or "").lower(), \
+        assert "p1" in (resp[-1].get("text") or "").lower(), (
             f"Expected P1 in updated proposal, got: {resp[-1].get('text')!r}"
+        )
 
-    def test_edit_priority_invalid_then_valid(self, bot: BotClient, todoist: TodoistInspector) -> None:
+    def test_edit_priority_invalid_then_valid(
+        self, bot: BotClient, todoist: TodoistInspector
+    ) -> None:
         """Invalid priority triggers retry; valid value updates proposal."""
         self._start_task(bot)
         bot.press_button_labeled_any("Edit priority", timeout=5)
@@ -165,9 +180,10 @@ class TestTaskEditFlows:
         bot.send_message("p9")
         retry = bot.wait_responses(1, timeout=5)
         assert retry, "No retry prompt after invalid priority"
-        assert "p1" in (retry[-1].get("text") or "").lower() or \
-               "p4" in (retry[-1].get("text") or "").lower(), \
-            f"Expected p1/p4 hint, got: {retry[-1].get('text')!r}"
+        assert (
+            "p1" in (retry[-1].get("text") or "").lower()
+            or "p4" in (retry[-1].get("text") or "").lower()
+        ), f"Expected p1/p4 hint, got: {retry[-1].get('text')!r}"
         bot.send_message("p2")
         resp = bot.wait_responses(1, timeout=8)
         assert resp and "p2" in (resp[-1].get("text") or "").lower()
@@ -180,10 +196,13 @@ class TestTaskEditFlows:
         bot.send_message("45")
         resp = bot.wait_responses(1, timeout=8)
         assert resp, "No response after entering duration"
-        assert "45" in (resp[-1].get("text") or ""), \
+        assert "45" in (resp[-1].get("text") or ""), (
             f"Expected '45' in updated proposal, got: {resp[-1].get('text')!r}"
+        )
 
-    def test_edit_duration_invalid_then_valid(self, bot: BotClient, todoist: TodoistInspector) -> None:
+    def test_edit_duration_invalid_then_valid(
+        self, bot: BotClient, todoist: TodoistInspector
+    ) -> None:
         """Invalid duration triggers retry; valid number updates proposal."""
         self._start_task(bot)
         bot.press_button_labeled_any("Edit duration", timeout=5)
@@ -191,9 +210,10 @@ class TestTaskEditFlows:
         bot.send_message("half an hour")
         retry = bot.wait_responses(1, timeout=5)
         assert retry, "No retry prompt after invalid duration"
-        assert "number" in (retry[-1].get("text") or "").lower() or \
-               "minutes" in (retry[-1].get("text") or "").lower(), \
-            f"Expected number hint, got: {retry[-1].get('text')!r}"
+        assert (
+            "number" in (retry[-1].get("text") or "").lower()
+            or "minutes" in (retry[-1].get("text") or "").lower()
+        ), f"Expected number hint, got: {retry[-1].get('text')!r}"
         bot.send_message("30")
         resp = bot.wait_responses(1, timeout=8)
         assert resp and "30" in (resp[-1].get("text") or "")
@@ -214,8 +234,9 @@ class TestTaskEditFlows:
         resp = bot.wait_responses(1, timeout=15)  # breakdown proposal (LLM call)
         assert resp, "No breakdown proposal received"
         text = (resp[-1].get("text") or "").lower()
-        assert "subtask" in text or "research" in text, \
+        assert "subtask" in text or "research" in text, (
             f"Expected breakdown proposal, got: {text!r}"
+        )
         bot.press_button_labeled_any("Create all", timeout=5)
         resp = bot.wait_responses(1, timeout=8)
         assert resp, "No confirmation after Create all"

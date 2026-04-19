@@ -1,4 +1,5 @@
 """E2E tests for /insights command handler."""
+
 from __future__ import annotations
 
 import time
@@ -21,10 +22,12 @@ class TestInsightsCommand:
         staging_app: dict,
     ) -> None:
         """/insights → LLM generates report → sent to chat + saved to vault."""
-        todoist.seed(tasks=[
-            sd.task("Overdue task", overdue_days=3),
-            sd.task("Completed task", completed=True),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Overdue task", overdue_days=3),
+                sd.task("Completed task", completed=True),
+            ]
+        )
 
         bot.send_message("/insights")
         # "Generating insights…" + report + "Saved to vault: …"
@@ -33,10 +36,12 @@ class TestInsightsCommand:
 
         texts = [r.get("text", "") for r in resp]
         combined = " ".join(texts).lower()
-        assert "generating" in combined or "insight" in combined, \
+        assert "generating" in combined or "insight" in combined, (
             f"Expected insights content, got: {texts!r}"
-        assert "saved" in combined or "vault" in combined, \
+        )
+        assert "saved" in combined or "vault" in combined, (
             f"Expected vault confirmation, got: {texts!r}"
+        )
 
         assert llm.call_count() > 0, "Expected LLM call for insights"
 
@@ -50,5 +55,6 @@ class TestInsightsCommand:
             if insight_files:
                 break
             time.sleep(0.1)
-        assert insight_files, \
+        assert insight_files, (
             f"Expected insights-*.md file in vault/Assistant/, found: {list(assistant_dir.iterdir())}"
+        )

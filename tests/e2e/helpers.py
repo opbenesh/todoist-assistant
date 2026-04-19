@@ -4,6 +4,7 @@ BotClient       — inject Telegram messages, await bot responses
 TodoistInspector — inspect/seed/reset the fake Todoist server
 LLMInspector    — inspect/configure the fake LLM server
 """
+
 from __future__ import annotations
 
 import json
@@ -40,6 +41,7 @@ class BotClient:
         Returns the new responses (those not seen before this call).
         """
         import sys
+
         target = self._seen_count + n
         r = httpx.get(
             f"{self._url}/test/wait_responses",
@@ -47,7 +49,7 @@ class BotClient:
             timeout=timeout + 2.0,
         )
         all_responses = r.json().get("responses", [])
-        new = all_responses[self._seen_count:]
+        new = all_responses[self._seen_count :]
         if len(new) < n:
             print(
                 f"\n[wait_responses TIMEOUT] wanted {n} new response(s) after index "
@@ -55,7 +57,9 @@ class BotClient:
                 file=sys.stderr,
             )
             for i, resp in enumerate(all_responses):
-                print(f"  [{i}] {resp.get('type')} | {resp.get('text', '')[:100]!r}", file=sys.stderr)
+                print(
+                    f"  [{i}] {resp.get('type')} | {resp.get('text', '')[:100]!r}", file=sys.stderr
+                )
         self._seen_count = len(all_responses)
         return new
 
@@ -128,7 +132,7 @@ class BotClient:
                             self.press_button(
                                 btn.get("callback_data", btn["text"]),
                                 message_id=resp.get("message_id", 1),
-                                message_text=resp.get("text", "")
+                                message_text=resp.get("text", ""),
                             )
                             return True
             time.sleep(0.1)
@@ -144,7 +148,7 @@ class BotClient:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             all_resp = self.all_responses()
-            for idx, resp in enumerate(all_resp[self._seen_count:], start=self._seen_count):
+            for idx, resp in enumerate(all_resp[self._seen_count :], start=self._seen_count):
                 markup = resp.get("reply_markup")
                 if not markup:
                     continue
@@ -157,7 +161,7 @@ class BotClient:
                             self.press_button(
                                 btn.get("callback_data", btn["text"]),
                                 message_id=resp.get("message_id", 1),
-                                message_text=resp.get("text", "")
+                                message_text=resp.get("text", ""),
                             )
                             return True
             time.sleep(0.1)
@@ -183,7 +187,7 @@ class BotClient:
                             self.press_button(
                                 btn["callback_data"],
                                 message_id=resp.get("message_id", 1),
-                                message_text=resp.get("text", "")
+                                message_text=resp.get("text", ""),
                             )
                             return True
             time.sleep(0.1)
@@ -203,7 +207,7 @@ class BotClient:
         """Poll until a response containing `substring` appears, or timeout."""
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            for resp in self.all_responses()[self._seen_count:]:
+            for resp in self.all_responses()[self._seen_count :]:
                 if substring.lower() in (resp.get("text") or "").lower():
                     return resp
             time.sleep(0.2)
@@ -250,6 +254,7 @@ class TodoistInspector:
     def wait_for_op(self, op: str, timeout: float = 3.0) -> dict | None:
         """Wait until a history entry with the given op appears."""
         import sys
+
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             for entry in self.history():
@@ -263,13 +268,16 @@ class TodoistInspector:
     def wait_for_task(self, title_fragment: str, timeout: float = 3.0) -> dict | None:
         """Wait until a task matching title_fragment exists."""
         import sys
+
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             found = self.find(title_fragment)
             if found:
                 return found
             time.sleep(0.2)
-        print(f"\n[wait_for_task TIMEOUT] waited {timeout}s for {title_fragment!r}", file=sys.stderr)
+        print(
+            f"\n[wait_for_task TIMEOUT] waited {timeout}s for {title_fragment!r}", file=sys.stderr
+        )
         return None
 
 

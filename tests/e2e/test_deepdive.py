@@ -1,4 +1,5 @@
 """E2E tests for /deepdive command handler."""
+
 from __future__ import annotations
 
 import pytest
@@ -10,13 +11,13 @@ pytestmark = pytest.mark.e2e
 
 
 class TestDeepdiveCommand:
-    def test_valid_task(
-        self, bot: BotClient, todoist: TodoistInspector, llm: LLMInspector
-    ) -> None:
+    def test_valid_task(self, bot: BotClient, todoist: TodoistInspector, llm: LLMInspector) -> None:
         """/deepdive <task_id> → 'Analysing…' + markdown analysis from LLM."""
-        todoist.seed(tasks=[
-            sd.task("Refactor authentication module", task_id="t_deep"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Refactor authentication module", task_id="t_deep"),
+            ]
+        )
 
         bot.send_message("/deepdive t_deep")
         resp = bot.wait_responses(2, timeout=20)  # "Analysing…" + analysis
@@ -24,8 +25,7 @@ class TestDeepdiveCommand:
 
         texts = [r.get("text", "") for r in resp]
         combined = " ".join(texts).lower()
-        assert "analys" in combined, \
-            f"Expected 'Analysing' or analysis content, got: {texts!r}"
+        assert "analys" in combined, f"Expected 'Analysing' or analysis content, got: {texts!r}"
         # LLM should have been called
         assert llm.call_count() > 0, "Expected LLM call for deep dive"
 
@@ -35,8 +35,9 @@ class TestDeepdiveCommand:
         resp = bot.wait_responses(2, timeout=15)  # "Analysing…" + error
         assert resp, "No response to /deepdive with invalid ID"
         text = " ".join(r.get("text", "") for r in resp).lower()
-        assert "could not find" in text or "not found" in text or "failed" in text, \
+        assert "could not find" in text or "not found" in text or "failed" in text, (
             f"Expected error message for missing task, got: {text!r}"
+        )
 
     def test_no_args(self, bot: BotClient) -> None:
         """/deepdive with no args → usage hint."""
@@ -44,5 +45,4 @@ class TestDeepdiveCommand:
         resp = bot.wait_responses(1, timeout=8)
         assert resp, "No response to /deepdive without args"
         text = (resp[-1].get("text") or "").lower()
-        assert "usage" in text or "deepdive" in text, \
-            f"Expected usage hint, got: {text!r}"
+        assert "usage" in text or "deepdive" in text, f"Expected usage hint, got: {text!r}"

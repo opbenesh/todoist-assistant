@@ -1,4 +1,5 @@
 """E2E tests for /brainstorm conversation handler."""
+
 from __future__ import annotations
 
 import pytest
@@ -32,8 +33,9 @@ class TestBrainstormCommand:
         finish = bot.wait_responses(1, timeout=8)
         assert finish, "No finish message after Done"
         text = (finish[-1].get("text") or "").lower()
-        assert "task" in text and ("added" in text or "complete" in text), \
+        assert "task" in text and ("added" in text or "complete" in text), (
             f"Expected completion summary, got: {text!r}"
+        )
 
         ops = todoist.history_ops()
         assert ops.count("create") >= 2, f"Expected ≥2 create ops, got: {ops}"
@@ -117,8 +119,9 @@ class TestBrainstormCommand:
         resp = bot.wait_responses(2, timeout=15)
         assert resp, "No response after sending 'Nothing'"
         text = (resp[-1].get("text") or "").lower()
-        assert "couldn't find" in text or "no task" in text or "try again" in text, \
+        assert "couldn't find" in text or "no task" in text or "try again" in text, (
             f"Expected 'no tasks' error message, got: {text!r}"
+        )
 
         # The error reply must include a Skip button so the user can escape
         found = bot.press_button_labeled_any("skip", timeout=3)

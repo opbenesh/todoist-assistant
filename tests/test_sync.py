@@ -14,6 +14,7 @@ Branch map (mirrors lib/sync.py:61-116):
   4   obs_checked=F, in_today=F, in_all=F           → create_todoist_task
   append  in_today task not in obsidian             → append to note
 """
+
 from __future__ import annotations
 
 import os
@@ -81,6 +82,7 @@ def _run_sync(
             patch("lib.sync.audit.log"),
         ):
             from lib.sync import _sync
+
             _sync()
 
         return written, mock_create, mock_complete, mock_uncomplete
@@ -148,7 +150,7 @@ def test_branch_1d_todoist_wins_when_note_older():
     task = _todoist_task("Buy milk", is_completed=True)
     written, create, complete, uncomplete = _run_sync(
         obsidian_lines=["- [ ] Buy milk"],  # unchecked in obsidian
-        today_tasks=[task],                  # but completed in todoist
+        today_tasks=[task],  # but completed in todoist
         note_newer=False,
     )
     complete.assert_not_called()
@@ -169,8 +171,8 @@ def test_branch_2_rescheduled_task_not_recreated():
     rescheduled = _todoist_task("Rescheduled task")
     written, create, complete, uncomplete = _run_sync(
         obsidian_lines=["- [ ] Rescheduled task"],
-        today_tasks=[],            # not due today
-        all_tasks=[rescheduled],   # but exists in Todoist
+        today_tasks=[],  # not due today
+        all_tasks=[rescheduled],  # but exists in Todoist
     )
     create.assert_not_called()
 
@@ -190,8 +192,8 @@ def test_branch_3_checked_absent_task_not_recreated():
     """
     written, create, complete, uncomplete = _run_sync(
         obsidian_lines=["- [x] Already done"],
-        today_tasks=[],   # absent from today
-        all_tasks=[],     # absent from all tasks
+        today_tasks=[],  # absent from today
+        all_tasks=[],  # absent from all tasks
     )
     create.assert_not_called()
 

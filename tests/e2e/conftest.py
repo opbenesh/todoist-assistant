@@ -14,6 +14,7 @@ against the running staging_app.
 `todoist_inspector` (function-scoped): yields a TodoistInspector for the
 current test.
 """
+
 from __future__ import annotations
 
 import os
@@ -100,6 +101,7 @@ def _wait_healthy(url: str, retries: int = 20, delay: float = 0.1) -> None:
 # Session-scoped: start fake services once per test session
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="session")
 def staging_services() -> Generator[dict, None, None]:
     todoist_port = find_free_port()
@@ -135,6 +137,7 @@ def staging_services() -> Generator[dict, None, None]:
 # ---------------------------------------------------------------------------
 # Function-scoped: reset services + launch app subprocess for each test
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def staging_app(
@@ -237,6 +240,7 @@ def staging_app(
 # Convenience fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """Append diagnostic context (bot stdout, Telegram responses, Todoist history, LLM calls)
@@ -255,6 +259,7 @@ def pytest_runtest_makereport(item, call):
     if proc and proc.stdout:
         try:
             import select
+
             out_chunks = []
             while select.select([proc.stdout], [], [], 0.0)[0]:
                 chunk = proc.stdout.read1(65536).decode(errors="replace")
@@ -313,4 +318,3 @@ def todoist(staging_app: dict) -> TodoistInspector:
 @pytest.fixture
 def llm(staging_app: dict) -> LLMInspector:
     return LLMInspector(staging_app["urls"]["llm_url"])
-

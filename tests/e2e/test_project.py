@@ -1,4 +1,5 @@
 """E2E tests for /project conversation handler."""
+
 from __future__ import annotations
 
 import json
