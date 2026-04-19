@@ -224,13 +224,12 @@ class TestTriageQuarantine:
     def test_quarantine_adds_label(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Quarantining a task adds the 'quarantined' label via an update.
 
-        Quarantine only appears on the keyboard when task_age >= MAX_TRIAGE_AGE.
+        Quarantine appears on the keyboard when task_age >= MAX_TRIAGE_AGE.
         """
         from lib.todoist import MAX_TRIAGE_AGE
 
         todoist.seed(
             tasks=[
-                # Must have age label to get the Quarantine button on the triage keyboard
                 sd.task(
                     "Chronic deferral task",
                     due_today=True,
@@ -260,6 +259,66 @@ class TestTriageQuarantine:
             assert "quarantine" in combined or "hidden" in combined, (
                 f"Unexpected quarantine confirmation: {[r.get('text') for r in resp]!r}"
             )
+
+    def test_quarantine_available_at_age_1(
+        self, bot: BotClient, todoist: TodoistInspector
+    ) -> None:
+        """Quarantine button appears at age >= 1, not only at MAX_TRIAGE_AGE."""
+        todoist.seed(
+            tasks=[
+                sd.task(
+                    "Once-deferred task",
+                    due_today=True,
+                    task_id="t_quarantine_age1",
+                    labels=["age1"],
+                ),
+            ]
+        )
+
+        _reach_triage(bot)
+        _wait_for_triage_task(bot)
+        pressed = _press_triage_action(bot, "Quarantine")
+        assert pressed, "Quarantine button should appear at age 1"
+
+        op = todoist.wait_for_op("update", timeout=8)
+        assert op is not None, "update not recorded for quarantine at age 1"
+        labels = op.get("changes", {}).get("labels", [])
+        assert "quarantined" in labels, f"Expected quarantined label, got: {labels}"
+
+    def test_quarantine_not_shown_at_age_0(
+        self, bot: BotClient, todoist: TodoistInspector
+    ) -> None:
+        """Fresh tasks (age 0) do not show a Quarantine button."""
+        import json
+
+        todoist.seed(
+            tasks=[
+                sd.task("Brand new task", due_today=True, task_id="t_quarantine_age0"),
+            ]
+        )
+
+        _reach_triage(bot)
+        _wait_for_triage_task(bot)
+
+        # Collect all responses that contain a triage keyboard
+        deadline = time.monotonic() + 10
+        keyboard_resp = None
+        while time.monotonic() < deadline:
+            for r in bot.all_responses():
+                if r.get("reply_markup"):
+                    keyboard_resp = r
+            if keyboard_resp:
+                break
+            time.sleep(0.2)
+
+        assert keyboard_resp, "No triage keyboard found"
+        markup = keyboard_resp["reply_markup"]
+        if isinstance(markup, str):
+            markup = json.loads(markup)
+        buttons = [btn["text"] for row in markup["inline_keyboard"] for btn in row]
+        assert not any("Quarantine" in b for b in buttons), (
+            f"Quarantine button should not appear at age 0, got buttons: {buttons}"
+        )
 
 
 class TestTriagePriority:

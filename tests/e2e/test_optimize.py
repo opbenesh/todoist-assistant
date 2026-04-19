@@ -12,14 +12,15 @@ pytestmark = pytest.mark.e2e
 _TASK_ID = "t_opt_task"
 _AGED_ID = "t_opt_aged"
 _QUARANTINE_ID = "t_opt_quarantined"
+_QUARANTINE_ID2 = "t_opt_quarantined2"
 
 
 class TestOptimizeTaskList:
-    def test_shows_task_list(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        """/optimize fetches tasks and shows an inline keyboard list."""
+    def test_shows_quarantined_task_list(self, bot: BotClient, todoist: TodoistInspector) -> None:
+        """/optimize with a quarantined task shows an inline keyboard."""
         todoist.seed(
             tasks=[
-                sd.task("Write the report", task_id=_TASK_ID),
+                sd.task("Stalled project", task_id=_QUARANTINE_ID, labels=["quarantined"]),
             ]
         )
         bot.send_message("/optimize")
@@ -27,32 +28,61 @@ class TestOptimizeTaskList:
         assert any(r.get("reply_markup") for r in resp), "Expected inline keyboard with task list"
 
     def test_no_tasks(self, bot: BotClient) -> None:
-        """/optimize with empty inbox shows 'no tasks' message."""
+        """/optimize with empty inbox shows a 'no quarantined tasks' message."""
         bot.send_message("/optimize")
         resp = bot.wait_responses(2, timeout=15)
         text = " ".join(r.get("text", "") for r in resp).lower()
-        assert "no tasks" in text or "nothing" in text, (
+        assert "no" in text and "quarantine" in text or "no tasks" in text, (
             f"Expected empty-state message, got: {text!r}"
         )
 
-    def test_quarantined_listed_first(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        """Quarantined and aged tasks appear in the list (sorted by age)."""
+    def test_no_quarantined_tasks(self, bot: BotClient, todoist: TodoistInspector) -> None:
+        """Tasks exist but none quarantined → 'No quarantined tasks found' message."""
         todoist.seed(
             tasks=[
                 sd.task("Regular task", task_id=_TASK_ID),
                 sd.task("Aged task", task_id=_AGED_ID, labels=["age3"]),
+            ]
+        )
+        bot.send_message("/optimize")
+        resp = bot.wait_responses(2, timeout=15)
+        text = " ".join(r.get("text", "") for r in resp).lower()
+        assert "quarantine" in text, (
+            f"Expected 'quarantined' in response when no quarantined tasks exist, got: {text!r}"
+        )
+        assert not any(r.get("reply_markup") for r in resp), (
+            "Expected no task keyboard when no quarantined tasks"
+        )
+
+    def test_only_quarantined_shown(self, bot: BotClient, todoist: TodoistInspector) -> None:
+        """Only quarantined tasks appear in the list; regular tasks are excluded."""
+        import json
+
+        todoist.seed(
+            tasks=[
+                sd.task("Regular task", task_id=_TASK_ID),
                 sd.task("Quarantined task", task_id=_QUARANTINE_ID, labels=["quarantined"]),
             ]
         )
         bot.send_message("/optimize")
         resp = bot.wait_responses(2, timeout=15)
-        # All tasks should be listed; check that the keyboard exists
-        assert any(r.get("reply_markup") for r in resp), "Expected task list keyboard"
+        keyboard_resp = next((r for r in resp if r.get("reply_markup")), None)
+        assert keyboard_resp, "Expected task list keyboard"
+        markup = keyboard_resp["reply_markup"]
+        if isinstance(markup, str):
+            markup = json.loads(markup)
+        buttons = [btn["text"] for row in markup["inline_keyboard"] for btn in row]
+        assert any("Quarantined task" in b for b in buttons), (
+            f"Expected quarantined task in list, got: {buttons}"
+        )
+        assert not any("Regular task" in b for b in buttons), (
+            f"Non-quarantined task should not appear in optimize list, got: {buttons}"
+        )
 
 
 class TestOptimizeBreakdown:
     def _start_and_pick(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        todoist.seed(tasks=[sd.task("Plan the project", task_id=_TASK_ID)])
+        todoist.seed(tasks=[sd.task("Plan the project", task_id=_QUARANTINE_ID, labels=["quarantined"])])
         bot.send_message("/optimize")
         bot.wait_responses(2, timeout=15)  # "Fetching…" + list
         # Pick the only task by pressing its button
@@ -95,7 +125,7 @@ class TestOptimizeBreakdown:
         """Subtasks created from breakdown should not carry age or quarantine labels."""
         todoist.seed(
             tasks=[
-                sd.task("Aged task to break down", task_id=_AGED_ID, labels=["age5"]),
+                sd.task("Aged task to break down", task_id=_QUARANTINE_ID, labels=["quarantined", "age5"]),
             ]
         )
         bot.send_message("/optimize")
@@ -133,7 +163,7 @@ class TestOptimizeProject:
     """Tests for project creation and task numbering during breakdown."""
 
     def _pick_task(self, bot: BotClient, todoist: TodoistInspector, title: str) -> None:
-        todoist.seed(tasks=[sd.task(title, task_id=_TASK_ID)])
+        todoist.seed(tasks=[sd.task(title, task_id=_QUARANTINE_ID, labels=["quarantined"])])
         bot.send_message("/optimize")
         bot.wait_responses(2, timeout=15)
         pressed = bot.press_button_labeled_any(title[:20], timeout=8)

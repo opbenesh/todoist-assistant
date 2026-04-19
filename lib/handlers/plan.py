@@ -509,6 +509,18 @@ def _triage_keyboard(task_age: int = 0) -> InlineKeyboardMarkup:
                 ],
             ]
         )
+    if task_age >= 1:
+        return InlineKeyboardMarkup(
+            [
+                priority_row,
+                [
+                    InlineKeyboardButton("✅ Done", callback_data="plan_triage:complete"),
+                    InlineKeyboardButton("⏸ Postpone", callback_data="plan_triage:postpone"),
+                    InlineKeyboardButton("🚫 Quarantine", callback_data="plan_triage:quarantine"),
+                    InlineKeyboardButton("🗑 Delete", callback_data="plan_triage:delete"),
+                ],
+            ]
+        )
     return InlineKeyboardMarkup(
         [
             priority_row,

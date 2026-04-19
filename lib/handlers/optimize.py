@@ -93,11 +93,12 @@ async def optimize_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await update.message.reply_text("Fetching tasks…")
 
     all_tasks = await asyncio.to_thread(todoist.get_all_tasks)
-    if not all_tasks:
-        await update.message.reply_text("No tasks found.")
+    quarantined = [t for t in all_tasks if "quarantined" in (t.get("labels") or [])]
+    if not quarantined:
+        await update.message.reply_text("No quarantined tasks found.")
         return ConversationHandler.END
 
-    sorted_tasks = sorted(all_tasks, key=_sort_key)[:_MAX_LIST]
+    sorted_tasks = quarantined[:_MAX_LIST]
     _sessions[chat_id] = OptimizeSession(tasks=sorted_tasks)
 
     buttons = []
