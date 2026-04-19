@@ -135,7 +135,7 @@ class BotClient:
                                 message_text=resp.get("text", ""),
                             )
                             return True
-            time.sleep(0.1)
+            time.sleep(0.2)
         return False
 
     def wait_and_press_button(self, label_fragment: str, timeout: float = 3.0) -> bool:
@@ -164,7 +164,7 @@ class BotClient:
                                 message_text=resp.get("text", ""),
                             )
                             return True
-            time.sleep(0.1)
+            time.sleep(0.2)
         return False
 
     def press_button_by_callback_prefix(self, prefix: str, timeout: float = 3.0) -> bool:
@@ -190,7 +190,7 @@ class BotClient:
                                 message_text=resp.get("text", ""),
                             )
                             return True
-            time.sleep(0.1)
+            time.sleep(0.2)
         return False
 
     def all_responses(self) -> list[dict]:

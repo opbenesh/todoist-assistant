@@ -103,6 +103,19 @@ def _wait_healthy(url: str, retries: int = 20, delay: float = 0.1) -> None:
 
 
 @pytest.fixture(scope="session")
+def bot_profiles() -> Generator[list, None, None]:
+    """Accumulate per-test pyinstrument JSON profile paths; print locations at session end."""
+    paths: list[str] = []
+    yield paths
+    if not paths:
+        return
+    print(f"\n\n=== BOT SUBPROCESS PROFILES ({len(paths)} files) ===")
+    for p in paths:
+        print(f"  {p}")
+    print("Inspect with: pyinstrument --load-prev <path>")
+
+
+@pytest.fixture(scope="session")
 def staging_services() -> Generator[dict, None, None]:
     todoist_port = find_free_port()
     llm_port = find_free_port()
@@ -143,6 +156,7 @@ def staging_services() -> Generator[dict, None, None]:
 def staging_app(
     staging_services: dict,
     tmp_path: Path,
+    bot_profiles: list,
 ) -> Generator[dict, None, None]:
     # Use dynamic URLs from fixture
     todoist_url = staging_services["todoist_url"]
@@ -191,8 +205,17 @@ def staging_app(
         "DOTENV_PATH": "",
     }
 
+    profile_out = tmp_path / "bot.prof.json"
     proc = subprocess.Popen(
-        [sys.executable, "main.py"],
+        [
+            sys.executable,
+            "-m",
+            "pyinstrument",
+            "--renderer=json",
+            "-o",
+            str(profile_out),
+            "main.py",
+        ],
         cwd=str(APP_DIR),
         env=env,
         stdout=subprocess.PIPE,
@@ -234,6 +257,8 @@ def staging_app(
         proc.wait(timeout=5)
     except subprocess.TimeoutExpired:
         proc.kill()
+    if profile_out.exists() and profile_out.stat().st_size > 0:
+        bot_profiles.append(str(profile_out))
 
 
 # ---------------------------------------------------------------------------

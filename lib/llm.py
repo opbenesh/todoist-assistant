@@ -195,8 +195,9 @@ def _call(model: str, system: str, user_content: str, max_tokens: int = 500) -> 
     response = _client.messages.create(
         model=model,
         max_tokens=max_tokens,
-        system=system,
+        system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_content}],
+        extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
     )
     block = response.content[0]
     assert isinstance(block, TextBlock), f"Unexpected content block type: {type(block)}"

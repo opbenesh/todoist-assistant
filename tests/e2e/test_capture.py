@@ -231,7 +231,8 @@ class TestTaskEditFlows:
         """/task → Break down → Create all → parent + 3 subtasks created."""
         self._start_task(bot)
         bot.press_button_labeled_any("Break down", timeout=5)
-        resp = bot.wait_responses(1, timeout=15)  # breakdown proposal (LLM call)
+        # Bot sends an intermediate edit ("breaking down task…") then the final subtask proposal.
+        resp = bot.wait_responses(2, timeout=15)
         assert resp, "No breakdown proposal received"
         text = (resp[-1].get("text") or "").lower()
         assert "subtask" in text or "research" in text, (

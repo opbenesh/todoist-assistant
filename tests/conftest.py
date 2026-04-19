@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from todoist_api_python.api import TodoistAPI
@@ -8,13 +8,20 @@ from todoist_api_python.api import TodoistAPI
 
 @pytest.fixture
 def mock_todoist_api():
-    """Patch lib.todoist._api with a spec-bound MagicMock.
+    """Patch lib.todoist._api with a spec-bound MagicMock, and block real HTTP calls
+    from get_completed_tasks by replacing the module-level _http client.
 
     Using spec=TodoistAPI means accessing a method that doesn't exist on the
     real SDK (e.g. _api.close_task) raises AttributeError immediately, catching
     SDK renames at test time rather than waiting for a production failure.
     """
-    with patch("lib.todoist._api", spec=TodoistAPI) as mock_api:
+    mock_http = MagicMock()
+    mock_http.get.return_value.raise_for_status = MagicMock()
+    mock_http.get.return_value.json.return_value = {"results": []}
+    with (
+        patch("lib.todoist._api", spec=TodoistAPI) as mock_api,
+        patch("lib.todoist._http", mock_http),
+    ):
         yield mock_api
 
 

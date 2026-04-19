@@ -194,6 +194,8 @@ def _route(system: str, user_msg: str, model: str) -> str:
 async def create_message(request: Request) -> JSONResponse:
     body = await request.json()
     system = body.get("system", "")
+    if isinstance(system, list):
+        system = " ".join(block.get("text", "") for block in system if block.get("type") == "text")
     messages = body.get("messages", [])
     model = body.get("model", "claude-haiku-4-5-20251001")
 

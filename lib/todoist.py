@@ -12,6 +12,7 @@ from lib.models import PRIORITY_TO_TODOIST, TODOIST_TO_PRIORITY, Task
 logger = logging.getLogger(__name__)
 
 _TODOIST_BASE = _config.TODOIST_BASE_URL.rstrip("/")
+_http = httpx.Client(timeout=15)
 
 
 class _BaseUrlTransport(httpx.BaseTransport):
@@ -206,11 +207,10 @@ def get_completed_tasks(since_days: int = 7) -> list[dict]:
     endpoint was removed. Results lack completed_at metadata.
     """
     try:
-        r = httpx.get(
+        r = _http.get(
             f"{_TODOIST_BASE}/api/v1/tasks",
             headers={"Authorization": f"Bearer {TODOIST_KEY}"},
             params={"filter": "completed", "limit": 200},
-            timeout=15,
         )
         r.raise_for_status()
         items = r.json().get("results", [])

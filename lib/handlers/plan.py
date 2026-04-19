@@ -621,8 +621,10 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             )
             logger.info("[plan/triage] set %s → %s (no timeslot available)", task_id, action)
         elif action == "complete":
-            await asyncio.to_thread(todoist.strip_age_labels, task_id, labels)
-            await asyncio.to_thread(todoist.complete_todoist_task, task_id)
+            await asyncio.gather(
+                asyncio.to_thread(todoist.strip_age_labels, task_id, labels),
+                asyncio.to_thread(todoist.complete_todoist_task, task_id),
+            )
             audit.log(
                 "complete",
                 source="plan/triage",
@@ -688,8 +690,10 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                 )
                 skip_advance = True
             else:
-                await asyncio.to_thread(todoist.strip_age_labels, task_id, labels)
-                await asyncio.to_thread(todoist.delete_todoist_task, task_id)
+                await asyncio.gather(
+                    asyncio.to_thread(todoist.strip_age_labels, task_id, labels),
+                    asyncio.to_thread(todoist.delete_todoist_task, task_id),
+                )
                 audit.log(
                     "delete",
                     source="plan/triage",

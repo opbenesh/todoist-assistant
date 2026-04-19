@@ -75,6 +75,7 @@ def _run_sync(
             patch("lib.sync.read_tasks_section", return_value=obsidian_lines),
             patch("lib.sync.todoist.get_today_tasks", return_value=today_tasks),
             patch("lib.sync.todoist.get_all_tasks", return_value=all_tasks),
+            patch("lib.sync.todoist.get_completed_tasks", return_value=[]),
             patch("lib.sync.todoist.create_todoist_task", return_value="new-id") as mock_create,
             patch("lib.sync.todoist.complete_todoist_task") as mock_complete,
             patch("lib.sync.todoist.uncomplete_todoist_task") as mock_uncomplete,
