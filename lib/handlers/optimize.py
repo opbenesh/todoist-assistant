@@ -18,40 +18,50 @@ import lib.audit as audit
 import lib.llm as llm
 import lib.todoist as todoist
 from lib.handlers.auth import WHITELIST_FILTER
-from lib.llm import restore_links
 from lib.models import Task
-from lib.optimize_shared import apply_actionable_label
 
 logger = logging.getLogger(__name__)
 
-REVIEWING = 0
+PICKING = 0
 BRAINSTORM_INPUT = 1
 BRAINSTORM_REVIEW = 2
 
-_OPT_CB = "opt:optimize"
-_SKIP_CB = "opt:skip"
-_DELETE_CB = "opt:delete"
-_OVERRIDE_CB = "opt:override"
+_PICK_PREFIX = "opt_pick:"
 _ACCEPT_CB = "opt:accept"
 _REJECT_CB = "opt:reject"
 
+_MAX_LIST = 15
 _TODOIST_TASK_URL = "https://todoist.com/app/task/{id}"
 
 
 @dataclass
 class OptimizeSession:
-    queue: list[dict]              # non-actionable tasks: {id, title, reason, clean_title}
-    auto_labeled: int              # set at creation, never mutated
+    tasks: list[dict]
     current_task: dict | None = None
     proposed: list[str] = field(default_factory=list)
     proposal_index: int = 0
-    deleted: int = 0
-    skipped: int = 0
-    broken_down: int = 0
     created: int = 0
 
 
 _sessions: dict[int, OptimizeSession] = {}
+
+
+def _sort_key(task: dict) -> tuple[int, int]:
+    labels = task.get("labels") or []
+    if "quarantined" in labels:
+        return (0, 0)
+    age = todoist.get_task_age(labels)
+    if age > 0:
+        return (1, -age)
+    return (2, 0)
+
+
+def _age_badge(task: dict) -> str:
+    labels = task.get("labels") or []
+    if "quarantined" in labels:
+        return " (quarantined)"
+    age = todoist.get_task_age(labels)
+    return f" (age{age})" if age > 0 else ""
 
 
 # ---------------------------------------------------------------------------
@@ -64,188 +74,52 @@ async def optimize_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await update.message.reply_text("Fetching tasks…")
 
     all_tasks = await asyncio.to_thread(todoist.get_all_tasks)
-    unlabeled = [t for t in all_tasks if "actionable" not in (t.get("labels") or [])]
-
-    if not unlabeled:
-        await update.message.reply_text(
-            "All tasks already have the 'actionable' label — nothing to do!"
-        )
+    if not all_tasks:
+        await update.message.reply_text("No tasks found.")
         return ConversationHandler.END
+
+    sorted_tasks = sorted(all_tasks, key=_sort_key)[:_MAX_LIST]
+    _sessions[chat_id] = OptimizeSession(tasks=sorted_tasks)
+
+    buttons = []
+    for task in sorted_tasks:
+        label = f"{task['title']}{_age_badge(task)}"
+        if len(label) > 64:
+            label = label[:61] + "…"
+        buttons.append([InlineKeyboardButton(label, callback_data=f"{_PICK_PREFIX}{task['id']}")])
 
     await context.bot.send_message(
         chat_id,
-        f"Judging {len(unlabeled)} task{'s' if len(unlabeled) != 1 else ''}…",
+        "Pick a task to break down:",
+        reply_markup=InlineKeyboardMarkup(buttons),
     )
-
-    results = await llm.judge_tasks(unlabeled)
-
-    # Build id → original task lookup for label merging
-    task_by_id = {t["id"]: t for t in unlabeled}
-
-    actionable = [r for r in results if r["actionable"]]
-    # Merge original task fields (title, labels, notes) into judge results so
-    # downstream handlers (skip_cb, breakdown) can access them without KeyError.
-    non_actionable = [
-        {**task_by_id.get(r["id"], {}), **r}
-        for r in results
-        if not r["actionable"]
-    ]
-
-    # Auto-label actionable tasks + apply title cleanup concurrently
-    await asyncio.gather(*[
-        apply_actionable_label(r, task_by_id, "optimize/auto_label")
-        for r in actionable
-    ])
-
-    total = len(unlabeled)
-    n_labeled = len(actionable)
-    n_review = len(non_actionable)
-
-    summary = (
-        f"Found {total} task{'s' if total != 1 else ''} without 'actionable' label.\n"
-        f"Auto-labeled {n_labeled} as actionable."
-    )
-    if n_review == 0:
-        await context.bot.send_message(chat_id, summary + "\n\nAll done!")
-        return ConversationHandler.END
-
-    summary += f"\n{n_review} need{'s' if n_review == 1 else ''} your attention."
-    await context.bot.send_message(chat_id, summary)
-
-    _sessions[chat_id] = OptimizeSession(queue=non_actionable, auto_labeled=n_labeled)
-    await _show_review_task(chat_id, context)
-    return REVIEWING
+    return PICKING
 
 
 # ---------------------------------------------------------------------------
-# Review loop
+# Pick
 # ---------------------------------------------------------------------------
 
 
-def _review_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("⚙️ Optimize", callback_data=_OPT_CB),
-            InlineKeyboardButton("⏭ Skip", callback_data=_SKIP_CB),
-            InlineKeyboardButton("🗑 Delete", callback_data=_DELETE_CB),
-        ],
-        [InlineKeyboardButton("✅ It's actionable", callback_data=_OVERRIDE_CB)],
-    ])
-
-
-async def _show_review_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
-    session = _sessions.get(chat_id)
-    if not session or not session.queue:
-        await _finish_session(chat_id, context)
-        return
-
-    task = session.queue[0]
-    title = task.get("clean_title") or task["title"]
-    reason = task.get("reason") or "Unclear next step"
-    idx = len(session.queue)
-    text = (
-        f"*{title}*\n"
-        f"_Why not actionable: {reason}_\n\n"
-        f"_{idx} task{'s' if idx != 1 else ''} remaining_"
-    )
-    await context.bot.send_message(
-        chat_id, text, reply_markup=_review_keyboard(), parse_mode="Markdown"
-    )
-
-
-async def skip_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def pick_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     chat_id = query.message.chat_id
     session = _sessions.get(chat_id)
-    if not session or not session.queue:
+    if not session:
         return ConversationHandler.END
 
-    task = session.queue.pop(0)
-    session.skipped += 1
+    task_id = query.data[len(_PICK_PREFIX) :]
+    task = next((t for t in session.tasks if t["id"] == task_id), None)
+    if not task:
+        await query.answer("Task not found.", show_alert=True)
+        return PICKING
 
-    # Apply title cleanup for skipped tasks (they stay in Todoist)
-    clean = task.get("clean_title")
-    if clean:
-        new_content = restore_links(task["title"], clean)
-        try:
-            await asyncio.to_thread(todoist.update_todoist_task, task["id"], content=new_content)
-            audit.log("update", source="optimize/skip", trigger="user_skip",
-                      task_id=task["id"], title=task["title"],
-                      changes={"content": new_content})
-        except Exception as exc:
-            logger.error("[optimize] skip title cleanup failed for %s: %s", task["id"], exc)
-
-    await query.edit_message_reply_markup(reply_markup=None)
-    await _show_review_task(chat_id, context)
-    return REVIEWING
-
-
-async def delete_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    chat_id = query.message.chat_id
-    session = _sessions.get(chat_id)
-    if not session or not session.queue:
-        return ConversationHandler.END
-
-    task = session.queue.pop(0)
-    session.deleted += 1
-    try:
-        await asyncio.to_thread(todoist.delete_todoist_task, task["id"])
-        audit.log("delete", source="optimize/delete", trigger="user_delete",
-                  task_id=task["id"], title=task["title"])
-        logger.info("[optimize] deleted task %s '%s'", task["id"], task["title"][:60])
-    except Exception as exc:
-        logger.error("[optimize] delete failed for %s: %s", task["id"], exc)
-        await query.answer("Failed to delete task.", show_alert=True)
-
-    await query.edit_message_reply_markup(reply_markup=None)
-    await _show_review_task(chat_id, context)
-    return REVIEWING
-
-
-async def override_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    chat_id = query.message.chat_id
-    session = _sessions.get(chat_id)
-    if not session or not session.queue:
-        return ConversationHandler.END
-
-    task = session.queue.pop(0)
-    existing_labels = list(task.get("labels") or [])
-    if "actionable" not in existing_labels:
-        existing_labels.append("actionable")
-    try:
-        await asyncio.to_thread(todoist.update_todoist_task, task["id"], labels=existing_labels)
-        audit.log("update", source="optimize/override", trigger="user_override",
-                  task_id=task["id"], title=task["title"],
-                  changes={"labels": existing_labels})
-        logger.info("[optimize] override task %s '%s'", task["id"], task["title"][:60])
-    except Exception as exc:
-        logger.error("[optimize] override failed for %s: %s", task["id"], exc)
-        await query.answer("Failed to update task.", show_alert=True)
-
-    await query.edit_message_reply_markup(reply_markup=None)
-    await _show_review_task(chat_id, context)
-    return REVIEWING
-
-
-async def optimize_task_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-    chat_id = query.message.chat_id
-    session = _sessions.get(chat_id)
-    if not session or not session.queue:
-        return ConversationHandler.END
-
-    session.current_task = session.queue.pop(0)
-    title = session.current_task.get("clean_title") or session.current_task["title"]
+    session.current_task = task
     await query.edit_message_reply_markup(reply_markup=None)
     await context.bot.send_message(
         chat_id,
-        f"What's your plan for *{title}*?\n\nDescribe freely — I'll turn it into tasks:",
+        f"What's your plan for *{task['title']}*?\n\nDescribe freely — I'll turn it into tasks:",
         parse_mode="Markdown",
     )
     return BRAINSTORM_INPUT
@@ -283,27 +157,31 @@ async def brainstorm_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 def _proposal_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[
-        InlineKeyboardButton("✅ Accept", callback_data=_ACCEPT_CB),
-        InlineKeyboardButton("❌ Reject", callback_data=_REJECT_CB),
-    ]])
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("✅ Accept", callback_data=_ACCEPT_CB),
+                InlineKeyboardButton("❌ Reject", callback_data=_REJECT_CB),
+            ]
+        ]
+    )
 
 
 async def _show_proposal(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
     session = _sessions.get(chat_id)
     if not session:
         return
-
     if session.proposal_index >= len(session.proposed):
         await _finalize_breakdown(chat_id, context)
         return
-
     title = session.proposed[session.proposal_index]
     idx = session.proposal_index + 1
     total = len(session.proposed)
-    text = f"*Proposal {idx} of {total}*\n\n{title}"
     await context.bot.send_message(
-        chat_id, text, reply_markup=_proposal_keyboard(), parse_mode="Markdown"
+        chat_id,
+        f"*Proposal {idx} of {total}*\n\n{title}",
+        reply_markup=_proposal_keyboard(),
+        parse_mode="Markdown",
     )
 
 
@@ -317,24 +195,25 @@ async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     title = session.proposed[session.proposal_index]
     original = session.current_task
-    original_title = original.get("clean_title") or original["title"]
+    original_title = original["title"]
     task_url = _TODOIST_TASK_URL.format(id=original["id"])
     notes = f"From: [{original_title}]({task_url})"
     if original.get("notes"):
         notes += f"\n\n{original['notes']}"
 
-    task = Task(
-        title=title,
-        notes=notes,
-        priority=original.get("priority", "p4"),
-        labels=["actionable"],
-    )
+    task = Task(title=title, notes=notes, priority=original.get("priority", "p4"), labels=[])
     try:
         task_id = await asyncio.to_thread(todoist.create_todoist_task, task)
         session.created += 1
-        audit.log("create", source="optimize/breakdown", trigger="user_accept",
-                  task_id=task_id, title=title, original_task_id=original["id"],
-                  original_title=original_title)
+        audit.log(
+            "create",
+            source="optimize/breakdown",
+            trigger="user_accept",
+            task_id=task_id,
+            title=title,
+            original_task_id=original["id"],
+            original_title=original_title,
+        )
         logger.info("[optimize] created breakdown task: %s", title)
         await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
     except Exception as exc:
@@ -362,7 +241,7 @@ async def reject_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 # ---------------------------------------------------------------------------
-# Finalize breakdown
+# Finalize
 # ---------------------------------------------------------------------------
 
 
@@ -375,38 +254,24 @@ async def _finalize_breakdown(chat_id: int, context: ContextTypes.DEFAULT_TYPE) 
     original_id = original["id"]
     try:
         await asyncio.to_thread(todoist.delete_todoist_task, original_id)
-        session.broken_down += 1
-        audit.log("delete", source="optimize/breakdown_finalize", trigger="auto",
-                  task_id=original_id, title=original.get("title", ""),
-                  note="deleted after user broke it down into subtasks")
+        audit.log(
+            "delete",
+            source="optimize/breakdown_finalize",
+            trigger="auto",
+            task_id=original_id,
+            title=original.get("title", ""),
+            note="deleted after user broke it down into subtasks",
+        )
         logger.info("[optimize] deleted original task %s after breakdown", original_id)
     except Exception as exc:
         logger.error("[optimize] failed to delete original task %s: %s", original_id, exc)
 
-    session.current_task = None
-    session.proposed = []
-    session.proposal_index = 0
-    await _show_review_task(chat_id, context)
-
-
-# ---------------------------------------------------------------------------
-# Finish
-# ---------------------------------------------------------------------------
-
-
-async def _finish_session(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
-    session = _sessions.pop(chat_id, None)
-    if not session:
-        return
-    text = (
-        "Optimize complete.\n"
-        f"• Auto-labeled: {session.auto_labeled}\n"
-        f"• Deleted: {session.deleted}\n"
-        f"• Skipped: {session.skipped}\n"
-        f"• Broken down: {session.broken_down} → {session.created} new task"
-        f"{'s' if session.created != 1 else ''}"
+    created = session.created
+    _sessions.pop(chat_id, None)
+    await context.bot.send_message(
+        chat_id,
+        f"Done — created {created} task{'s' if created != 1 else ''}, original deleted.",
     )
-    await context.bot.send_message(chat_id, text)
 
 
 # ---------------------------------------------------------------------------
@@ -428,16 +293,11 @@ async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 optimize_conversation_handler = ConversationHandler(
     entry_points=[CommandHandler("optimize", optimize_cmd, WHITELIST_FILTER)],
     states={
-        REVIEWING: [
-            CallbackQueryHandler(optimize_task_cb, pattern=f"^{_OPT_CB}$"),
-            CallbackQueryHandler(skip_cb, pattern=f"^{_SKIP_CB}$"),
-            CallbackQueryHandler(delete_cb, pattern=f"^{_DELETE_CB}$"),
-            CallbackQueryHandler(override_cb, pattern=f"^{_OVERRIDE_CB}$"),
+        PICKING: [
+            CallbackQueryHandler(pick_cb, pattern=f"^{_PICK_PREFIX}"),
         ],
         BRAINSTORM_INPUT: [
-            MessageHandler(
-                filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, brainstorm_input_cb
-            ),
+            MessageHandler(filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, brainstorm_input_cb),
         ],
         BRAINSTORM_REVIEW: [
             CallbackQueryHandler(accept_proposal_cb, pattern=f"^{_ACCEPT_CB}$"),

@@ -5,7 +5,6 @@ responses based on keywords found in the system prompt. Tests can override
 the next response via the /test/set_next_response control plane endpoint.
 
 Routing logic (checked in order):
-  "actionability judge"    → judge_tasks array (parses task IDs from user msg)
   "extraction assistant"   → brainstorm extract array
   "breakdown assistant"    → breakdown subtasks array
   "task planning assistant"→ breakdown subtasks array
@@ -25,6 +24,7 @@ Control plane:
   POST /test/reset              — clear overrides and call log
   GET  /test/calls              — list of all requests received
 """
+
 from __future__ import annotations
 
 import json
@@ -61,35 +61,19 @@ def _msg_response(text: str, model: str = "claude-haiku-4-5-20251001") -> dict:
 # Canned response generators
 # ---------------------------------------------------------------------------
 
+
 def _enrich_response(user_msg: str) -> str:
     # Return a minimal valid enrichment JSON
-    return json.dumps({
-        "title": user_msg.strip()[:80],
-        "notes": "",
-        "due_date": None,
-        "priority": "p3",
-        "labels": [],
-        "duration_minutes": 30,
-    })
-
-
-def _judge_response(user_msg: str) -> str:
-    # User message is a JSON array of task objects with id and content
-    try:
-        tasks = json.loads(user_msg)
-        if isinstance(tasks, list):
-            return json.dumps([
-                {
-                    "id": t.get("id", str(i)),
-                    "actionable": True,
-                    "reason": "",
-                    "clean_title": f"✅ {t.get('content', 'Task')}",
-                }
-                for i, t in enumerate(tasks)
-            ])
-    except (json.JSONDecodeError, AttributeError):
-        pass
-    return json.dumps([])
+    return json.dumps(
+        {
+            "title": user_msg.strip()[:80],
+            "notes": "",
+            "due_date": None,
+            "priority": "p3",
+            "labels": [],
+            "duration_minutes": 30,
+        }
+    )
 
 
 def _brainstorm_response(_user_msg: str) -> str:
@@ -101,14 +85,16 @@ def _breakdown_response(_user_msg: str) -> str:
 
 
 def _plan_response(_user_msg: str) -> str:
-    return json.dumps({
-        "plan_markdown": (
-            "## Morning\n- Work on priority tasks\n\n"
-            "## Afternoon\n- Follow-ups and meetings\n\n"
-            "## Evening\n- Review and wrap up\n\n"
-            "_Focus: make progress on the most important task first._"
-        )
-    })
+    return json.dumps(
+        {
+            "plan_markdown": (
+                "## Morning\n- Work on priority tasks\n\n"
+                "## Afternoon\n- Follow-ups and meetings\n\n"
+                "## Evening\n- Review and wrap up\n\n"
+                "_Focus: make progress on the most important task first._"
+            )
+        }
+    )
 
 
 def _digest_response(_user_msg: str) -> str:
@@ -160,10 +146,9 @@ def _insights_response(_user_msg: str) -> str:
 # Router
 # ---------------------------------------------------------------------------
 
+
 def _route(system: str, user_msg: str, model: str) -> str:
     s = system.lower()
-    if "actionability judge" in s:
-        return _judge_response(user_msg)
     if "extraction assistant" in s:
         return _brainstorm_response(user_msg)
     if "breakdown assistant" in s or ("task planning assistant" in s and "subtask" in s.lower()):
@@ -193,6 +178,7 @@ def _route(system: str, user_msg: str, model: str) -> str:
 # Anthropic messages endpoint
 # ---------------------------------------------------------------------------
 
+
 @app.post("/v1/messages")
 async def create_message(request: Request) -> JSONResponse:
     body = await request.json()
@@ -212,7 +198,9 @@ async def create_message(request: Request) -> JSONResponse:
                     block.get("text", "") for block in content if block.get("type") == "text"
                 )
 
-    _call_log.append({"system_snippet": system[:100], "user_snippet": user_msg[:100], "model": model})
+    _call_log.append(
+        {"system_snippet": system[:100], "user_snippet": user_msg[:100], "model": model}
+    )
 
     # Use override queue if populated
     if _response_queue:
@@ -226,6 +214,7 @@ async def create_message(request: Request) -> JSONResponse:
 # ---------------------------------------------------------------------------
 # Control plane
 # ---------------------------------------------------------------------------
+
 
 @app.post("/test/set_next_response")
 async def set_next_response(request: Request) -> JSONResponse:

@@ -1,12 +1,13 @@
 """E2E tests for the multi-step /plan conversation flow.
 
 Covers:
-- Happy path: brainstorm → optimize → triage → plan generated, vault written
-- Skip brainstorm + skip optimize paths
+- Happy path: brainstorm → triage → plan generated, vault written
+- Skip brainstorm path
 - Triage actions: postpone, quarantine, delete
 - Session persistence: plan session survives bot restart
 - Nag suppression: active plan session suppresses hourly nag
 """
+
 from __future__ import annotations
 
 import json
@@ -17,29 +18,30 @@ import httpx
 import pytest
 
 from tests.e2e.conftest import APP_DIR, _wait_bot_ready
-from tests.e2e.constants import BS_SKIP, BS_START, OPT_SKIP
-from tests.e2e.helpers import BotClient, TodoistInspector
+from tests.e2e.constants import BS_SKIP, BS_START
+from tests.e2e.helpers import BotClient, LLMInspector, TodoistInspector
 from tests.staging import seed_data as sd
 
 pytestmark = pytest.mark.e2e
 
 
 class TestPlanSkipAll:
-    def test_plan_skip_brainstorm_and_optimize(
+    def test_plan_skip_brainstorm(
         self,
         bot: BotClient,
         todoist: TodoistInspector,
         staging_app: dict,
     ) -> None:
-        """Skip brainstorm and optimize phases, triage one task, verify plan written to vault."""
-        todoist.seed(tasks=[
-            sd.task("Send weekly report", due_today=True, priority=2, task_id="t_weekly"),
-        ])
+        """Skip brainstorm, triage one task, verify plan written to vault."""
+        todoist.seed(
+            tasks=[
+                sd.task("Send weekly report", due_today=True, priority=2, task_id="t_weekly"),
+            ]
+        )
 
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)  # "Starting your planning session."
         _skip_bs(bot)
-        _skip_opt(bot)
 
         # Triage header has no buttons; task card follows
         bot.wait_responses(1, timeout=10)  # "📋 Triage — 1 task to review."
@@ -53,9 +55,9 @@ class TestPlanSkipAll:
         # Timeslot picker may appear for prioritised tasks
         resp2 = bot.wait_responses(1, timeout=8)
         if resp2 and resp2[-1].get("reply_markup"):
-            bot.press_button_labeled_any("morning", timeout=3) or \
-            bot.press_button_labeled_any("afternoon", timeout=2) or \
-            bot.press_button_labeled_any("evening", timeout=2)
+            bot.press_button_labeled_any("morning", timeout=3) or bot.press_button_labeled_any(
+                "afternoon", timeout=2
+            ) or bot.press_button_labeled_any("evening", timeout=2)
 
         # Plan generation — wait for vault to be written
         vault_dir = Path(staging_app["vault_dir"])
@@ -67,7 +69,6 @@ class TestPlanSkipAll:
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)  # "Starting your planning session."
         _skip_bs(bot)
-        _skip_opt(bot)
 
         # No tasks to triage — bot should still respond (plan generated or "nothing to triage")
         final = bot.wait_responses(1, timeout=20)
@@ -77,14 +78,15 @@ class TestPlanSkipAll:
 class TestPlanTriageActions:
     def test_triage_postpone(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Postponing a task in triage calls remove_task_due_date (Sync API)."""
-        todoist.seed(tasks=[
-            sd.task("Review backlog", due_today=True, task_id="t_backlog"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Review backlog", due_today=True, task_id="t_backlog"),
+            ]
+        )
 
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)
         _skip_bs(bot)
-        _skip_opt(bot)
         bot.wait_responses(1, timeout=10)  # "📋 Triage — 1 task to review."
         pressed = bot.press_button_labeled_any("Postpone", timeout=10)
         assert pressed, "Postpone button not found in triage keyboard"
@@ -94,14 +96,15 @@ class TestPlanTriageActions:
 
     def test_triage_delete(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Deleting a task in triage calls delete in Todoist."""
-        todoist.seed(tasks=[
-            sd.task("Old task to delete", due_today=True, task_id="t_delete"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Old task to delete", due_today=True, task_id="t_delete"),
+            ]
+        )
 
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)
         _skip_bs(bot)
-        _skip_opt(bot)
         bot.wait_responses(1, timeout=10)  # "📋 Triage — 1 task to review."
         pressed = bot.press_button_labeled_any("Delete", timeout=10)
         assert pressed, "Delete button not found in triage keyboard"
@@ -113,15 +116,20 @@ class TestPlanTriageActions:
         """Quarantining an aged task adds the quarantined label (button requires age label)."""
         from lib.todoist import MAX_TRIAGE_AGE
 
-        todoist.seed(tasks=[
-            sd.task("Chronic deferral task", due_today=True, task_id="t_quarantine",
-                    labels=[f"age{MAX_TRIAGE_AGE}"]),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task(
+                    "Chronic deferral task",
+                    due_today=True,
+                    task_id="t_quarantine",
+                    labels=[f"age{MAX_TRIAGE_AGE}"],
+                ),
+            ]
+        )
 
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)
         _skip_bs(bot)
-        _skip_opt(bot)
         bot.wait_responses(1, timeout=10)  # "📋 Triage — 1 task to review."
         pressed = bot.press_button_labeled_any("Quarantine", timeout=10)
         assert pressed, "Quarantine button not found (task needs age label for it to appear)"
@@ -167,6 +175,33 @@ class TestPlanBrainstorm:
         created = [h for h in todoist.history() if h["op"] == "create"]
         assert len(created) > 0, "No tasks were created from brainstorm"
 
+    def test_brainstorm_skip_after_no_extraction(self, bot: BotClient, llm: LLMInspector) -> None:
+        """Skip button shown after zero-extraction input should advance to triage."""
+        bot.send_message("/plan")
+        resp1 = bot.wait_responses(1, timeout=10)
+        msg_id = resp1[0].get("message_id", 1) if resp1 else 1
+        bot.press_button(BS_START, message_id=msg_id)
+        bot.wait_responses(1, timeout=8)  # "What's on your mind?"
+
+        # Make LLM return empty extraction
+        llm.set_next_response("[]")
+        bot.send_message("Nothing")
+        resp2 = bot.wait_responses(1, timeout=10)
+        assert resp2, "Expected 'Couldn't find tasks' message"
+        assert any("skip" in r.get("text", "").lower() or r.get("has_keyboard") for r in resp2), (
+            "Expected Skip button after zero-extraction"
+        )
+
+        # Tap Skip — this is the bug path: conversation is in BS_INPUT state
+        skip_msg_id = resp2[0].get("message_id", msg_id) if resp2 else msg_id
+        bot.press_button(BS_SKIP, message_id=skip_msg_id)
+        resp3 = bot.wait_responses(1, timeout=10)
+        assert resp3, "Bot did not respond after Skip in BS_INPUT state"
+        text = " ".join(r.get("text", "") for r in resp3).lower()
+        assert "triage" in text or any(r.get("has_keyboard") for r in resp3), (
+            f"Expected triage or response after skip, got: {text!r}"
+        )
+
 
 class TestPlanSessionPersistence:
     def test_plan_session_survives_restart(
@@ -176,9 +211,11 @@ class TestPlanSessionPersistence:
         staging_app: dict,
     ) -> None:
         """Start /plan, kill the bot, restart it — session should resume."""
-        todoist.seed(tasks=[
-            sd.task("Persistent task", due_today=True, task_id="t_persist"),
-        ])
+        todoist.seed(
+            tasks=[
+                sd.task("Persistent task", due_today=True, task_id="t_persist"),
+            ]
+        )
 
         # Start plan, skip brainstorm, wait for optimize prompt to confirm session saved
         bot.send_message("/plan")
@@ -235,8 +272,9 @@ class TestPlanSessionPersistence:
         resp = bot.wait_responses(2, timeout=15)  # resume header + phase UI
         assert resp, "Bot did not respond to /plan after restart"
         text = " ".join(r.get("text", "") for r in resp).lower()
-        assert any(kw in text for kw in ("resuming", "resume", "planning session")), \
+        assert any(kw in text for kw in ("resuming", "resume", "planning session")), (
             f"Bot restart response didn't mention plan session: {text!r}"
+        )
 
         new_proc.terminate()
         try:
@@ -249,6 +287,7 @@ class TestPlanSessionPersistence:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _skip_bs(bot: BotClient) -> None:
     """Wait for the brainstorm prompt then inject the skip callback directly."""
     resp = bot.wait_responses(1, timeout=10)
@@ -256,16 +295,10 @@ def _skip_bs(bot: BotClient) -> None:
     bot.press_button(BS_SKIP, message_id=msg_id)
 
 
-def _skip_opt(bot: BotClient) -> None:
-    """Wait for the optimize prompt then inject the skip callback directly."""
-    resp = bot.wait_responses(1, timeout=10)
-    msg_id = resp[0].get("message_id", 1) if resp else 1
-    bot.press_button(OPT_SKIP, message_id=msg_id)
-
-
 def _wait_for_vault_plan(vault_dir: Path, timeout: float = 15.0) -> bool:
     """Wait until today's daily note contains a ## Daily Plan section."""
     from datetime import date
+
     note_path = vault_dir / "Daily" / f"{date.today().isoformat()}.md"
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:

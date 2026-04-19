@@ -100,39 +100,6 @@ Example input: "wash all dishes, take the garbage out, clean the fridge, maybe d
 Example output: ["Wash all dishes", "Take the garbage out", "Clean the fridge",
   "Deal with kzradio"]"""
 
-_ACTIONABILITY_JUDGE_SYSTEM = """You are a task actionability judge.
-For each task determine whether it is actionable: you can start doing it immediately
-without any further planning, research, or clarification.
-Examples — actionable: "Wash the dishes", "Call dad", "Buy groceries at Tiv Taam",
-  "Tidy the living room", "Do the laundry", "Clean the kitchen".
-Examples — NOT actionable: "Plan vacation" (requires planning first),
-  "Deal with tax stuff" (too vague — unclear what to do),
-  "Handle work things" (no clear next action),
-  "Research project options" (open-ended, no clear completion).
-The bar is: could you open this task right now and immediately start working on it?
-If yes — actionable. If you'd need to think about what to do first — not actionable.
-
-For EVERY task also return a clean_title.
-Rules for clean_title:
-1. Fix obvious typos, capitalise properly, and add a single context-appropriate leading emoji
-   (e.g. 🍽️ Wash the dishes).
-2. PRESERVE THE ORIGINAL LANGUAGE. If the input is in Hebrew, the clean_title must be in Hebrew.
-   Do NOT translate between languages.
-3. If the title is formatted as [description](url), only rewrite the description part and keep
-   the url: [New description](original_url).
-4. NEVER guess or hallucinate details. If "SIM" is written, do not change it to "Simon".
-   If "Fiz" is written, do not assume it's a person if it looks like "Physical".
-   When in doubt, keep the word as-is.
-
-Return a JSON array — one object per input task — with exactly these fields:
-- "id": string (the task id, unchanged)
-- "actionable": boolean
-- "reason": string (3–6 words explaining why NOT actionable; empty string if actionable)
-- "clean_title": string (always populated — cleaned title with leading emoji)
-
-Return ONLY valid JSON array, no prose, no markdown fences.
-Today is {today}."""
-
 _BREAKDOWN_OPTIMIZE_SYSTEM = """You are a task breakdown assistant helping convert a \
 non-actionable task into the minimum number of concrete, atomic, actionable subtasks.
 
@@ -317,7 +284,6 @@ async def generate_digest(tasks: list[dict]) -> str:
     return await asyncio.to_thread(_call, HAIKU, system, f"Today's tasks:\n{tasks_text}", 400)
 
 
-
 async def generate_weekly_review(completed: list[dict], overdue: list[dict]) -> str:
     """Generate a weekly review using Sonnet."""
     content = (
@@ -366,9 +332,7 @@ async def generate_project_plan(project_name: str, tasks: list[dict]) -> str:
     return await asyncio.to_thread(_call, SONNET, system, content, 800)
 
 
-async def generate_plan(
-    tasks: list[dict], settings=None
-) -> str:
+async def generate_plan(tasks: list[dict], settings=None) -> str:
     """Generate a timeblocked daily plan using Sonnet. Returns plan markdown."""
     morning = settings.morning_block if settings else "09:00-12:00"
     afternoon = settings.afternoon_block if settings else "12:00-17:00"
@@ -377,8 +341,7 @@ async def generate_plan(
         **_today_fmt(), morning=morning, afternoon=afternoon, evening=evening
     )
     tasks_with_duration = [
-        {**t, "duration_minutes": t.get("duration_minutes") or 30}
-        for t in tasks
+        {**t, "duration_minutes": t.get("duration_minutes") or 30} for t in tasks
     ]
     user_content = f"Tasks:\n{json.dumps(tasks_with_duration, default=str)}"
     raw = await asyncio.to_thread(_call, SONNET, system, user_content, 1000)
@@ -425,56 +388,6 @@ async def generate_insights(
             f"{json.dumps(quarantined, default=str)}"
         )
     return await asyncio.to_thread(_call, SONNET, _INSIGHTS_SYSTEM, content, 1000)
-
-
-_JUDGE_CHUNK_SIZE = 15
-
-
-async def judge_tasks(tasks: list[dict]) -> list[dict]:
-    """Judge a list of tasks for actionability using Haiku.
-
-    Processes in chunks of 15. Returns list of:
-      {"id": str, "actionable": bool, "reason": str, "clean_title": str}
-    On parse failure for a chunk, defaults all tasks in that chunk to actionable=True.
-    """
-    today = date.today().isoformat()
-    system = _ACTIONABILITY_JUDGE_SYSTEM.format(today=today)
-
-    def _judge_chunk(chunk: list[dict]) -> list[dict]:
-        content = json.dumps(
-            [{"id": t["id"], "title": t["title"], "notes": t.get("notes", "")} for t in chunk],
-            default=str,
-        )
-        raw = _call(HAIKU, system, content, 800)
-        try:
-            data = json.loads(_strip_fences(raw))
-            if not isinstance(data, list):
-                raise ValueError("expected list")
-            results = []
-            for item in data:
-                if not isinstance(item, dict) or not item.get("id"):
-                    continue
-                results.append({
-                    "id": str(item["id"]),
-                    "actionable": bool(item.get("actionable", True)),
-                    "reason": str(item.get("reason", "")),
-                    "clean_title": str(item.get("clean_title", "")) or None,
-                })
-            return results
-        except (json.JSONDecodeError, ValueError) as exc:
-            logger.warning("judge_tasks: parse error: %s — raw: %s", exc, raw[:200])
-            return [
-                {"id": t["id"], "actionable": True, "reason": "", "clean_title": None}
-                for t in chunk
-            ]
-
-    chunks = [
-        tasks[i : i + _JUDGE_CHUNK_SIZE] for i in range(0, len(tasks), _JUDGE_CHUNK_SIZE)
-    ]
-    chunk_results = await asyncio.gather(
-        *[asyncio.to_thread(_judge_chunk, chunk) for chunk in chunks]
-    )
-    return [item for chunk in chunk_results for item in chunk]
 
 
 async def breakdown_tasks_for_optimize(original_task: dict, user_plan: str) -> list[str]:
