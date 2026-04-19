@@ -20,6 +20,8 @@ TODOIST_KEY: str = _require("TODOIST_KEY")
 ANTHROPIC_KEY: str = _require("ANTHROPIC_KEY")
 TELEGRAM_USER_ID: int = int(_require("TELEGRAM_USER_ID"))
 VAULT_PATH: str = os.environ.get("VAULT_PATH", "/home/ubuntu/vault")
+
+
 def _parse_int(key: str, default: int) -> int:
     raw = os.environ.get(key, str(default))
     try:

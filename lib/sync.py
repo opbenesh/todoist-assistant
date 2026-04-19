@@ -74,12 +74,22 @@ def _sync() -> None:
                 if note_changed:
                     if obs_checked:
                         todoist.complete_todoist_task(tod["id"])
-                        audit.log("complete", source="sync", trigger="obsidian_checked",
-                                  task_id=tod["id"], title=title)
+                        audit.log(
+                            "complete",
+                            source="sync",
+                            trigger="obsidian_checked",
+                            task_id=tod["id"],
+                            title=title,
+                        )
                     else:
                         todoist.uncomplete_todoist_task(tod["id"])
-                        audit.log("uncomplete", source="sync", trigger="obsidian_unchecked",
-                                  task_id=tod["id"], title=title)
+                        audit.log(
+                            "uncomplete",
+                            source="sync",
+                            trigger="obsidian_unchecked",
+                            task_id=tod["id"],
+                            title=title,
+                        )
                     logger.debug("Obsidian wins for '%s': checked=%s", title, obs_checked)
                 else:
                     obs_checked = tod_completed
@@ -106,8 +116,13 @@ def _sync() -> None:
             if note_changed:
                 task = completed_by_title[title]
                 todoist.uncomplete_todoist_task(task["id"])
-                audit.log("uncomplete", source="sync", trigger="obsidian_unchecked",
-                          task_id=task["id"], title=title)
+                audit.log(
+                    "uncomplete",
+                    source="sync",
+                    trigger="obsidian_unchecked",
+                    task_id=task["id"],
+                    title=title,
+                )
                 dirty = True
                 logger.debug("Obsidian unchecks completed task '%s'", title)
             updated_lines.append(format_task_line(title, obs_checked))
@@ -116,8 +131,13 @@ def _sync() -> None:
             task = Task(title=title)
             try:
                 task_id = todoist.create_todoist_task(task)
-                audit.log("create", source="sync", trigger="obsidian_new_task",
-                          task_id=task_id, title=title)
+                audit.log(
+                    "create",
+                    source="sync",
+                    trigger="obsidian_new_task",
+                    task_id=task_id,
+                    title=title,
+                )
                 logger.info("Created Todoist task from Obsidian: '%s' (%s)", title, task_id)
                 # prevent double-create if title appears again this run
                 all_todoist_titles.add(title)

@@ -37,6 +37,7 @@ _DEBUG_CHAT = Chat(id=CHAT_ID, type=Chat.PRIVATE)
 
 # ── terminal rendering ────────────────────────────────────────────────────────
 
+
 def _print_keyboard(markup: InlineKeyboardMarkup) -> None:
     buttons = [btn for row in markup.inline_keyboard for btn in row]
     parts = [f"[{i + 1}] {btn.text}" for i, btn in enumerate(buttons)]
@@ -56,6 +57,7 @@ def _render_message(text: str, reply_markup: Any, edited: bool = False) -> None:
 
 
 # ── CliBot ────────────────────────────────────────────────────────────────────
+
 
 class CliBot(Bot):
     """Prints to stdout instead of calling the Telegram API."""
@@ -157,6 +159,7 @@ class CliBot(Bot):
 
 # ── Update factories ──────────────────────────────────────────────────────────
 
+
 def _next_update_id() -> int:
     global _update_id
     _update_id += 1
@@ -203,16 +206,12 @@ def _make_callback_update(data: str, bot: CliBot) -> Update:
 
 # ── REPL ─────────────────────────────────────────────────────────────────────
 
+
 async def run() -> None:
     load_settings()
 
     cli_bot = CliBot(token=TELEGRAM_BOT_KEY)
-    app: Application = (
-        Application.builder()
-        .bot(cli_bot)
-        .post_init(_post_init)
-        .build()
-    )
+    app: Application = Application.builder().bot(cli_bot).post_init(_post_init).build()
     register_handlers(app)
 
     await app.initialize()

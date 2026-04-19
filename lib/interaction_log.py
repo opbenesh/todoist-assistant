@@ -109,8 +109,12 @@ class LoggedBot(ExtBot):
 
     async def edit_message_text(self, text: str, **kwargs: Any) -> Any:
         result = await super().edit_message_text(text, **kwargs)
-        log_outgoing("edit_message_text", kwargs.get("chat_id"), text,
-                     **{k: v for k, v in kwargs.items() if k != "chat_id"})
+        log_outgoing(
+            "edit_message_text",
+            kwargs.get("chat_id"),
+            text,
+            **{k: v for k, v in kwargs.items() if k != "chat_id"},
+        )
         return result
 
     async def answer_callback_query(self, callback_query_id: str, **kwargs: Any) -> Any:

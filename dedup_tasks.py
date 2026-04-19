@@ -4,6 +4,7 @@
 Keeps the task with the most metadata (due date > priority > notes).
 Run with: uv run python dedup_tasks.py [--dry-run]
 """
+
 import sys
 
 import lib.todoist as todoist
