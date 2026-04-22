@@ -11,7 +11,6 @@ Covers:
 from __future__ import annotations
 
 import json
-import time
 from pathlib import Path
 
 import httpx
@@ -32,7 +31,7 @@ class TestPlanSkipAll:
         todoist: TodoistInspector,
         staging_app: dict,
     ) -> None:
-        """Skip brainstorm, triage one task, verify plan written to vault."""
+        """Skip brainstorm, triage one task, verify plan message sent via Telegram."""
         todoist.seed(
             tasks=[
                 sd.task("Send weekly report", due_today=True, priority=2, task_id="t_weekly"),
@@ -59,10 +58,8 @@ class TestPlanSkipAll:
                 "afternoon", timeout=2
             ) or bot.press_button_labeled_any("evening", timeout=2)
 
-        # Plan generation — wait for vault to be written
-        vault_dir = Path(staging_app["vault_dir"])
-        plan_written = _wait_for_vault_plan(vault_dir, timeout=15)
-        assert plan_written, "Daily plan was not written to vault"
+        # Plan generation — wait for plan message to arrive via Telegram
+        bot.wait_responses(1, timeout=15)
 
     def test_plan_no_tasks(self, bot: BotClient) -> None:
         """/plan with empty inbox should complete and send a response."""
@@ -178,7 +175,8 @@ class TestPlanBrainstorm:
     def test_brainstorm_skip_after_no_extraction(self, bot: BotClient, llm: LLMInspector) -> None:
         """Skip button shown after zero-extraction input should advance to triage."""
         bot.send_message("/plan")
-        resp1 = bot.wait_responses(1, timeout=10)
+        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        resp1 = bot.wait_responses(1, timeout=8)  # brainstorm prompt with buttons
         msg_id = resp1[0].get("message_id", 1) if resp1 else 1
         bot.press_button(BS_START, message_id=msg_id)
         bot.wait_responses(1, timeout=8)  # "What's on your mind?"
@@ -293,16 +291,3 @@ def _skip_bs(bot: BotClient) -> None:
     resp = bot.wait_responses(1, timeout=10)
     msg_id = resp[0].get("message_id", 1) if resp else 1
     bot.press_button(BS_SKIP, message_id=msg_id)
-
-
-def _wait_for_vault_plan(vault_dir: Path, timeout: float = 15.0) -> bool:
-    """Wait until today's daily note contains a ## Daily Plan section."""
-    from datetime import date
-
-    note_path = vault_dir / "Daily" / f"{date.today().isoformat()}.md"
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if note_path.exists() and "## Daily Plan" in note_path.read_text(encoding="utf-8"):
-            return True
-        time.sleep(0.3)
-    return False

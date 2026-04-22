@@ -825,10 +825,7 @@ async def _finalize_planning(
             llm.generate_plan(tasks_today, _settings),
             llm.generate_digest(tasks_today),
         )
-        await asyncio.gather(
-            context.bot.send_message(chat_id, plan_md, parse_mode="Markdown"),
-            asyncio.to_thread(obsidian.append_plan, plan_md),
-        )
+        await context.bot.send_message(chat_id, plan_md, parse_mode="Markdown")
         await context.bot.send_message(chat_id, f"📅 *Digest*\n\n{digest}", parse_mode="Markdown")
     except Exception as exc:
         logger.error("Plan/digest generation failed: %s", exc)
