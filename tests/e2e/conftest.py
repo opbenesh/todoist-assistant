@@ -200,22 +200,20 @@ def staging_app(
         "STATE_PATH": str(state_file),
         "OBSIDIAN_POLL_SECONDS": "2",  # fast sync for tests
         "OBSIDIAN_SYNC_FIRST_SECONDS": "2",  # first sync fires quickly in tests
+        "TODOIST_POLL_SECONDS": "2",  # fast Todoist sync for tests
+        "TODOIST_POLL_FIRST_SECONDS": "2",  # first Todoist poll fires quickly in tests
         "DEBUG_LOGGING": "false",
         # Unset dotenv loading so test env is clean
         "DOTENV_PATH": "",
     }
 
     profile_out = tmp_path / "bot.prof.json"
+    if os.environ.get("E2E_PROFILE"):
+        cmd = [sys.executable, "-m", "pyinstrument", "--renderer=json", "-o", str(profile_out), "main.py"]
+    else:
+        cmd = [sys.executable, "main.py"]
     proc = subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "pyinstrument",
-            "--renderer=json",
-            "-o",
-            str(profile_out),
-            "main.py",
-        ],
+        cmd,
         cwd=str(APP_DIR),
         env=env,
         stdout=subprocess.PIPE,
@@ -257,7 +255,7 @@ def staging_app(
         proc.wait(timeout=5)
     except subprocess.TimeoutExpired:
         proc.kill()
-    if profile_out.exists() and profile_out.stat().st_size > 0:
+    if os.environ.get("E2E_PROFILE") and profile_out.exists() and profile_out.stat().st_size > 0:
         bot_profiles.append(str(profile_out))
 
 
