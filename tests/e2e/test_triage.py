@@ -260,9 +260,7 @@ class TestTriageQuarantine:
                 f"Unexpected quarantine confirmation: {[r.get('text') for r in resp]!r}"
             )
 
-    def test_quarantine_available_at_age_1(
-        self, bot: BotClient, todoist: TodoistInspector
-    ) -> None:
+    def test_quarantine_available_at_age_1(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Quarantine button appears at age >= 1, not only at MAX_TRIAGE_AGE."""
         todoist.seed(
             tasks=[
@@ -285,9 +283,7 @@ class TestTriageQuarantine:
         labels = op.get("changes", {}).get("labels", [])
         assert "quarantined" in labels, f"Expected quarantined label, got: {labels}"
 
-    def test_quarantine_not_shown_at_age_0(
-        self, bot: BotClient, todoist: TodoistInspector
-    ) -> None:
+    def test_quarantine_not_shown_at_age_0(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Fresh tasks (age 0) do not show a Quarantine button."""
         import json
 

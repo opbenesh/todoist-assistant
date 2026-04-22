@@ -110,7 +110,11 @@ class TestSessionState:
         todoist.seed(
             tasks=[
                 sd.task(
-                    "Vague task needing improvement", no_due_date=True, priority=1, task_id="t_opt"
+                    "Vague task needing improvement",
+                    no_due_date=True,
+                    priority=1,
+                    task_id="t_opt",
+                    labels=["quarantined"],
                 ),
             ]
         )

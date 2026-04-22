@@ -52,19 +52,11 @@ def test_postpone_from_resumed_triage_state(
         "sync_cursor": "*",
         "last_sync_ts": now,
         "plan_session": {
-            "phase": 7,  # TRIAGING
+            "phase": 3,  # TRIAGING
             "session": {
                 "bs_proposed": ["Idea 1", "Idea 2"],
                 "bs_index": 2,
                 "bs_created": 2,
-                "opt_queue": [],
-                "opt_auto_labeled": 0,
-                "opt_current_task": None,
-                "opt_proposed": [],
-                "opt_proposal_index": 0,
-                "opt_broken_down": 0,
-                "opt_created": 0,
-                "opt_processed_ids": [],
                 "triage_tasks": triage_tasks,
                 "triage_index": 0,
                 "triage_pending_priority": None,

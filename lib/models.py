@@ -96,6 +96,7 @@ class TaskStore:
 
     def load_plan_session(self) -> tuple[int, dict] | None:
         """Return (phase, session_data) if a checkpoint exists, else None."""
+        self.load()
         entry = self._data.get("plan_session")
         if not entry:
             return None

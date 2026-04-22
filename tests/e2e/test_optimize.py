@@ -82,7 +82,9 @@ class TestOptimizeTaskList:
 
 class TestOptimizeBreakdown:
     def _start_and_pick(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        todoist.seed(tasks=[sd.task("Plan the project", task_id=_QUARANTINE_ID, labels=["quarantined"])])
+        todoist.seed(
+            tasks=[sd.task("Plan the project", task_id=_QUARANTINE_ID, labels=["quarantined"])]
+        )
         bot.send_message("/optimize")
         bot.wait_responses(2, timeout=15)  # "Fetching…" + list
         # Pick the only task by pressing its button
@@ -125,7 +127,11 @@ class TestOptimizeBreakdown:
         """Subtasks created from breakdown should not carry age or quarantine labels."""
         todoist.seed(
             tasks=[
-                sd.task("Aged task to break down", task_id=_QUARANTINE_ID, labels=["quarantined", "age5"]),
+                sd.task(
+                    "Aged task to break down",
+                    task_id=_QUARANTINE_ID,
+                    labels=["quarantined", "age5"],
+                ),
             ]
         )
         bot.send_message("/optimize")
@@ -264,7 +270,7 @@ class TestOptimizeProject:
         bot.wait_responses(1, timeout=10)
 
         created_tasks = [t for t in todoist.tasks() if t.get("content", "").strip()]
-        titles = [t["content"] for t in created_tasks if t["id"] != _TASK_ID]
+        titles = [t["content"] for t in created_tasks if t["id"] != _QUARANTINE_ID]
         assert titles, "No created task titles found"
         # First accepted task should be numbered "1"
         first = titles[0]
