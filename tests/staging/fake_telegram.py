@@ -402,6 +402,20 @@ async def test_wait_responses(request: Request) -> JSONResponse:
     return JSONResponse({"responses": _responses, "count": len(_responses)})
 
 
+@app.get("/test/wait_response_containing")
+async def test_wait_response_containing(request: Request) -> JSONResponse:
+    substring = request.query_params.get("substring", "").lower()
+    from_index = int(request.query_params.get("from_index", 0))
+    timeout = float(request.query_params.get("timeout", 10.0))
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        for resp in _responses[from_index:]:
+            if substring in (resp.get("text") or "").lower():
+                return JSONResponse({"response": resp})
+        await asyncio.sleep(0.05)
+    return JSONResponse({"response": None})
+
+
 @app.post("/test/reset")
 async def test_reset() -> JSONResponse:
     _reset_state()

@@ -26,6 +26,8 @@ Control plane:
 
 from __future__ import annotations
 
+import asyncio
+import time
 import uuid
 from datetime import date, datetime, timezone
 from typing import Any
@@ -459,6 +461,34 @@ async def test_get_tasks() -> JSONResponse:
 @app.get("/test/history")
 async def test_get_history() -> JSONResponse:
     return JSONResponse({"history": _history})
+
+
+@app.get("/test/wait_op")
+async def test_wait_op(request: Request) -> JSONResponse:
+    op = request.query_params.get("op", "")
+    timeout = float(request.query_params.get("timeout", 10.0))
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        matched = next((h for h in _history if h.get("op") == op), None)
+        if matched:
+            return JSONResponse({"entry": matched})
+        await asyncio.sleep(0.05)
+    return JSONResponse({"entry": None})
+
+
+@app.get("/test/wait_task")
+async def test_wait_task(request: Request) -> JSONResponse:
+    fragment = request.query_params.get("fragment", "").lower()
+    timeout = float(request.query_params.get("timeout", 10.0))
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        matched = next(
+            (t for t in _tasks.values() if fragment in t.get("content", "").lower()), None
+        )
+        if matched:
+            return JSONResponse({"task": matched})
+        await asyncio.sleep(0.05)
+    return JSONResponse({"task": None})
 
 
 @app.get("/health")
