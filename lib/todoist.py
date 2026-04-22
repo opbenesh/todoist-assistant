@@ -7,7 +7,7 @@ from todoist_api_python.api import TodoistAPI
 
 from lib import config as _config
 from lib.config import TODOIST_KEY, UserSettings
-from lib.models import PRIORITY_TO_TODOIST, TODOIST_TO_PRIORITY, Task
+from lib.models import PRIORITY_TO_TODOIST, TODOIST_TO_PRIORITY, Task, store
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +134,7 @@ def create_todoist_task(
         kwargs["project_id"] = project_id
 
     result = _api.add_task(task.title, **kwargs)  # content is positional in v4
+    store.add_known_task(result.id, task.title)
     return result.id
 
 
@@ -230,6 +231,7 @@ def get_completed_tasks(since_days: int = 7) -> list[dict]:
 
 def complete_todoist_task(task_id: str) -> None:
     _api.complete_task(task_id)
+    store.remove_known_task(task_id)
 
 
 def uncomplete_todoist_task(task_id: str) -> None:
@@ -242,6 +244,7 @@ def update_todoist_task(task_id: str, **kwargs) -> None:
 
 def delete_todoist_task(task_id: str) -> None:
     _api.delete_task(task_id)
+    store.remove_known_task(task_id)
 
 
 # ---------------------------------------------------------------------------

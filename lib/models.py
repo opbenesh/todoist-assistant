@@ -106,6 +106,31 @@ class TaskStore:
         self._data.pop("plan_session", None)
         self.save()
 
+    @property
+    def known_active_ids(self) -> dict[str, str] | None:
+        """Snapshot of active task IDs → titles from the last Todoist poll.
+
+        Returns None if the snapshot has never been initialized (first run).
+        Returns {} if initialized but all tasks have been removed.
+        """
+        return self._data.get("known_active_ids")
+
+    @known_active_ids.setter
+    def known_active_ids(self, value: dict[str, str]) -> None:
+        self._data["known_active_ids"] = value
+
+    def add_known_task(self, task_id: str, title: str) -> None:
+        """Record a bot-created task in the snapshot so it isn't flagged as external."""
+        self._data.setdefault("known_active_ids", {})[task_id] = title
+        self.save()
+
+    def remove_known_task(self, task_id: str) -> None:
+        """Remove a bot-completed/deleted task from the snapshot."""
+        known = self._data.get("known_active_ids")
+        if known is not None:
+            known.pop(task_id, None)
+            self.save()
+
 
 def _resolve_state_path() -> Path:
     if os.getenv("CLI_MODE"):

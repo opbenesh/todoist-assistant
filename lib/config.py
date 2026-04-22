@@ -32,6 +32,8 @@ def _parse_int(key: str, default: int) -> int:
 
 OBSIDIAN_POLL_SECONDS: int = _parse_int("OBSIDIAN_POLL_SECONDS", 300)
 OBSIDIAN_SYNC_FIRST_SECONDS: int = _parse_int("OBSIDIAN_SYNC_FIRST_SECONDS", 10)
+TODOIST_POLL_SECONDS: int = _parse_int("TODOIST_POLL_SECONDS", 60)
+TODOIST_POLL_FIRST_SECONDS: int = _parse_int("TODOIST_POLL_FIRST_SECONDS", 30)
 DEBUG_LOGGING: bool = os.environ.get("DEBUG_LOGGING", "false").lower() in ("1", "true", "yes")
 
 # Staging / testing overrides — point at fake service servers
