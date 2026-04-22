@@ -12,19 +12,11 @@ from telegram.ext import (
 from lib.config import DEBUG_LOGGING, TELEGRAM_API_BASE_URL, TELEGRAM_BOT_KEY, TELEGRAM_USER_ID
 from lib.handlers.auth import WHITELIST_FILTER
 from lib.handlers.brainstorm import brainstorm_handler
-from lib.handlers.capture import (
-    completed_handler,
-    done_handler,
-    list_handler,
-    task_conversation_handler,
-)
+from lib.handlers.capture import list_handler
 from lib.handlers.common import help_cmd, session_cmd, start_cmd
-from lib.handlers.deepdive import deepdive_handler
-from lib.handlers.digest import digest_handler
 from lib.handlers.insights import insights_handler
 from lib.handlers.optimize import optimize_conversation_handler
 from lib.handlers.plan import has_active_plan_session, plan_handler
-from lib.handlers.project_plan import project_handler
 from lib.interaction_log import LoggedBot, log_error, log_incoming
 from lib.obsidian import read_tasks_section  # noqa: F401 — ensure vault is accessible
 from lib.scheduler import attach_scheduler, configure
@@ -60,16 +52,10 @@ def _load_profile() -> dict:
 
 
 _COMMANDS = [
-    BotCommand("task", "Add and enrich a new task"),
     BotCommand("list", "Show today's tasks"),
-    BotCommand("done", "Complete a task by ID"),
-    BotCommand("completed", "List recently completed tasks"),
     BotCommand("plan", "Generate a timeblocked plan for today"),
-    BotCommand("digest", "Get today's task digest"),
     BotCommand("optimize", "Review and improve task hygiene"),
-    BotCommand("deepdive", "Deep-dive analysis on a single task"),
     BotCommand("insights", "Pattern insights: habits, workload, clusters"),
-    BotCommand("project", "Project-level plan and next actions"),
     BotCommand("brainstorm", "Extract tasks from free-form text"),
     BotCommand("help", "Show available commands"),
     BotCommand("session", "Show current plan session state"),
@@ -139,10 +125,7 @@ def register_handlers(app: Application) -> None:
     app.add_handler(CommandHandler("help", help_cmd, WHITELIST_FILTER))
     app.add_handler(CommandHandler("session", session_cmd, WHITELIST_FILTER))
     app.add_handler(brainstorm_handler)
-    app.add_handler(task_conversation_handler)
     app.add_handler(list_handler)
-    app.add_handler(done_handler)
-    app.add_handler(completed_handler)
     app.add_handler(plan_handler)
     # Stale-session fallback: catches plan_triage/plan_timeslot callbacks when the
     # ConversationHandler has no state (e.g. after bot restart). Runs at group=1
@@ -151,11 +134,8 @@ def register_handlers(app: Application) -> None:
         CallbackQueryHandler(_stale_plan_cb, pattern="^(plan_triage:|plan_timeslot:)"),
         group=1,
     )
-    app.add_handler(digest_handler)
     app.add_handler(optimize_conversation_handler)
-    app.add_handler(deepdive_handler)
     app.add_handler(insights_handler)
-    app.add_handler(project_handler)
 
 
 def main() -> None:
