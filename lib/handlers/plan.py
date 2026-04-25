@@ -75,6 +75,7 @@ class PlanFlowSession:
     triage_pending_priority: str | None = None  # set while awaiting timeslot pick
     triage_processed: list[tuple[str, str, list[str]]] = field(default_factory=list)
     # each entry: (task_id, action, labels_at_triage_time)
+    projects: dict[str, str] = field(default_factory=dict)  # project_id -> name (ephemeral)
 
     # resumption metadata
     last_user_action_ts: float = field(default_factory=_time.time)
@@ -295,7 +296,17 @@ async def bs_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     if not session:
         return ConversationHandler.END
 
-    proposed = await llm.brainstorm_extract_tasks(update.message.text.strip())
+    try:
+        proposed = await llm.brainstorm_extract_tasks(update.message.text.strip())
+    except Exception as exc:
+        logger.error("[plan/bs] LLM extraction failed: %s", exc)
+        await update.message.reply_text(
+            "Couldn't reach AI — please try again.",
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("⏭ Skip", callback_data=_BS_SKIP)]]
+            ),
+        )
+        return BS_INPUT
     logger.info("[plan/bs] extracted %d tasks", len(proposed))
     if not proposed:
         await update.message.reply_text(
@@ -432,10 +443,14 @@ async def bs_next_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("[plan] phase=triage chat=%s", chat_id)
-    tasks = await asyncio.to_thread(todoist.get_triage_tasks)
+    tasks, projects = await asyncio.gather(
+        asyncio.to_thread(todoist.get_triage_tasks),
+        asyncio.to_thread(todoist.get_all_projects),
+    )
     session = _sessions.get(chat_id)
     if not session:
         return
+    session.projects = projects
     already_done = {tid for tid, _, _ in session.triage_processed}
     if already_done:
         tasks = [t for t in tasks if t["id"] not in already_done]
@@ -542,21 +557,25 @@ async def _show_triage_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) ->
     idx = session.triage_index + 1
     total = len(session.triage_tasks)
     priority = task.get("priority", "p4").upper()
-    due = task.get("due_date") or "no due date"
     duration = task.get("duration_minutes")
     is_recurring = task.get("is_recurring", False)
     age = 0 if is_recurring else todoist.get_task_age(task.get("labels") or [])
 
-    meta = f"Priority: {priority} · Due: {due}"
+    project_name = session.projects.get(task.get("project_id") or "", "")
+    project_part = f" · 📁 {project_name}" if project_name else ""
+    age_part = f" · age {age}" if age > 0 else ""
+
+    meta = priority
     if is_recurring:
-        meta += " · 🔁"
+        rule = task.get("due_string") or "recurring"
+        meta += f" · {rule} · 🔁"
     if duration:
         meta += f" · {duration}min"
+    meta += project_part + age_part
 
-    age_badge = f" `#age{age}`" if age > 0 else ""
     await context.bot.send_message(
         chat_id,
-        f"*Task {idx} of {total}*\n\n{task['title']}{age_badge}\n_{meta}_",
+        f"*Task {idx} of {total}*\n\n{task['title']}\n_{meta}_",
         reply_markup=_triage_keyboard(age),
         parse_mode="Markdown",
     )

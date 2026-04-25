@@ -42,6 +42,7 @@ app = FastAPI()
 
 _call_log: list[dict] = []
 _response_queue: deque[str] = deque()
+_error_queue: deque[int] = deque()
 
 
 def _msg_response(text: str, model: str = "claude-haiku-4-5-20251001") -> dict:
@@ -215,6 +216,13 @@ async def create_message(request: Request) -> JSONResponse:
         {"system_snippet": system[:100], "user_snippet": user_msg[:100], "model": model}
     )
 
+    if _error_queue:
+        status = _error_queue.popleft()
+        return JSONResponse(
+            {"type": "error", "error": {"type": "api_error", "message": "Simulated error"}},
+            status_code=status,
+        )
+
     # Use override queue if populated
     if _response_queue:
         text = _response_queue.popleft()
@@ -239,10 +247,21 @@ async def set_next_response(request: Request) -> JSONResponse:
     return JSONResponse({"ok": True, "queued": count})
 
 
+@app.post("/test/fail_next")
+async def fail_next(request: Request) -> JSONResponse:
+    body = await request.json()
+    status = int(body.get("status", 400))
+    count = int(body.get("count", 1))
+    for _ in range(count):
+        _error_queue.append(status)
+    return JSONResponse({"ok": True, "queued": count})
+
+
 @app.post("/test/reset")
 async def test_reset() -> JSONResponse:
     _call_log.clear()
     _response_queue.clear()
+    _error_queue.clear()
     return JSONResponse({"ok": True})
 
 

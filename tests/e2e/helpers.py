@@ -325,5 +325,9 @@ class LLMInspector:
             json={"text": text, "count": count},
         )
 
+    def fail_next(self, count: int = 1, status: int = 400) -> None:
+        """Make the next `count` LLM requests return an HTTP error (default 400)."""
+        self._client.post(f"{self._url}/test/fail_next", json={"count": count, "status": status})
+
     def reset(self) -> None:
         self._client.post(f"{self._url}/test/reset")

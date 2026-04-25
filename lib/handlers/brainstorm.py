@@ -69,7 +69,17 @@ async def input_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return ConversationHandler.END
 
     await update.message.reply_text("Extracting tasks…")
-    tasks = await llm.brainstorm_extract_tasks(update.message.text.strip())
+    try:
+        tasks = await llm.brainstorm_extract_tasks(update.message.text.strip())
+    except Exception as exc:
+        logger.error("[brainstorm] LLM extraction failed: %s", exc)
+        await update.message.reply_text(
+            "Couldn't reach AI — please try again.",
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("⏭ Skip", callback_data=_DONE_CB)]]
+            ),
+        )
+        return WAITING_INPUT
 
     if not tasks:
         await update.message.reply_text(

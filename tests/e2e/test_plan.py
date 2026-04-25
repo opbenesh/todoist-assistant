@@ -172,6 +172,38 @@ class TestPlanBrainstorm:
         created = [h for h in todoist.history() if h["op"] == "create"]
         assert len(created) > 0, "No tasks were created from brainstorm"
 
+    def test_brainstorm_llm_error_shows_retry(
+        self, bot: BotClient, llm: LLMInspector
+    ) -> None:
+        """LLM API error during brainstorm must show a retry message, not a dead end."""
+        bot.send_message("/plan")
+        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        resp1 = bot.wait_responses(1, timeout=8)  # brainstorm prompt with buttons
+        msg_id = resp1[0].get("message_id", 1) if resp1 else 1
+        bot.press_button(BS_START, message_id=msg_id)
+        bot.wait_responses(1, timeout=8)  # "What's on your mind?"
+
+        llm.fail_next(count=1)
+        bot.send_message("trim nails, credit card bonus, revive foodie 1.0")
+
+        resp = bot.wait_responses(1, timeout=10)
+        assert resp, "Bot did not respond after LLM error"
+        text = " ".join(r.get("text", "") for r in resp).lower()
+        assert "try again" in text, f"Expected retry message, got: {text!r}"
+        # Must include a Skip button so the user isn't stuck
+        assert any(r.get("reply_markup") for r in resp), (
+            "Expected Skip button after LLM error so user can escape"
+        )
+
+        # Session must still be alive — user can re-submit and get task proposals
+        bot.send_message("trim nails, credit card bonus")
+        resp2 = bot.wait_responses(1, timeout=10)
+        assert resp2, "No response after retry — session appears dead"
+        text2 = " ".join(r.get("text", "") for r in resp2).lower()
+        assert "task" in text2 or any(r.get("reply_markup") for r in resp2), (
+            f"Expected task proposal after retry, got: {text2!r}"
+        )
+
     def test_brainstorm_skip_after_no_extraction(self, bot: BotClient, llm: LLMInspector) -> None:
         """Skip button shown after zero-extraction input should advance to triage."""
         bot.send_message("/plan")
