@@ -76,6 +76,7 @@ class PlanFlowSession:
     triage_processed: list[tuple[str, str, list[str]]] = field(default_factory=list)
     # each entry: (task_id, action, labels_at_triage_time)
     projects: dict[str, str] = field(default_factory=dict)  # project_id -> name (ephemeral)
+    project_incomplete_counts: dict[str, int] = field(default_factory=dict)  # ephemeral
 
     # resumption metadata
     last_user_action_ts: float = field(default_factory=_time.time)
@@ -447,10 +448,30 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
         asyncio.to_thread(todoist.get_triage_tasks),
         asyncio.to_thread(todoist.get_all_projects),
     )
+
+    # For each project in the triage set, fetch all incomplete tasks to determine
+    # which step is first and how many remain.
+    project_ids = {t["project_id"] for t in tasks if t.get("project_id")}
+    if project_ids:
+        ptask_lists = await asyncio.gather(
+            *[asyncio.to_thread(todoist.get_tasks_by_project, pid) for pid in project_ids]
+        )
+        project_tasks = dict(zip(project_ids, ptask_lists))
+        first_ids = {pid: ptasks[0]["id"] for pid, ptasks in project_tasks.items() if ptasks}
+        project_counts = {pid: len(ptasks) for pid, ptasks in project_tasks.items()}
+        tasks = [
+            t
+            for t in tasks
+            if not t.get("project_id") or t["id"] == first_ids.get(t["project_id"], t["id"])
+        ]
+    else:
+        project_counts = {}
+
     session = _sessions.get(chat_id)
     if not session:
         return
     session.projects = projects
+    session.project_incomplete_counts = project_counts
     already_done = {tid for tid, _, _ in session.triage_processed}
     if already_done:
         tasks = [t for t in tasks if t["id"] not in already_done]
@@ -561,8 +582,11 @@ async def _show_triage_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) ->
     is_recurring = task.get("is_recurring", False)
     age = 0 if is_recurring else todoist.get_task_age(task.get("labels") or [])
 
-    project_name = session.projects.get(task.get("project_id") or "", "")
+    pid = task.get("project_id") or ""
+    project_name = session.projects.get(pid, "")
     project_part = f" · 📁 {project_name}" if project_name else ""
+    step_count = session.project_incomplete_counts.get(pid, 1)
+    step_part = f" · step 1 of {step_count}" if step_count > 1 else ""
     age_part = f" · age {age}" if age > 0 else ""
 
     meta = priority
@@ -571,7 +595,7 @@ async def _show_triage_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) ->
         meta += f" · {rule} · 🔁"
     if duration:
         meta += f" · {duration}min"
-    meta += project_part + age_part
+    meta += project_part + step_part + age_part
 
     await context.bot.send_message(
         chat_id,
@@ -640,10 +664,13 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             )
             logger.info("[plan/triage] set %s → %s (no timeslot available)", task_id, action)
         elif action == "complete":
+            project_id = task.get("project_id")
             await asyncio.gather(
                 asyncio.to_thread(todoist.strip_age_labels, task_id, labels),
                 asyncio.to_thread(todoist.complete_todoist_task, task_id),
             )
+            if project_id:
+                await asyncio.to_thread(todoist.reset_next_project_task_age, project_id)
             audit.log(
                 "complete",
                 source="plan/triage",
@@ -815,16 +842,18 @@ async def _finish_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> No
     store.clear_plan_session()
 
     # Persist today's task list to daily note, then chain to plan + digest
-    tasks_today = await asyncio.to_thread(todoist.get_today_tasks)
-    lines = [
-        obsidian.format_task_line(
-            t["title"],
-            t["is_completed"],
-            t.get("priority", "p4"),
-            t.get("duration_minutes"),
-        )
-        for t in tasks_today
-    ]
+    tasks_today, (projects, inbox_id) = await asyncio.gather(
+        asyncio.to_thread(todoist.get_today_tasks),
+        asyncio.to_thread(todoist.get_projects_info),
+    )
+    lines = obsidian.build_tasks_section(
+        tasks_today,
+        projects,
+        inbox_id,
+        _settings.morning_block,
+        _settings.afternoon_block,
+        _settings.evening_block,
+    )
     await asyncio.to_thread(obsidian.write_tasks_section, lines)
     await _finalize_planning(chat_id, context, tasks_today)
 

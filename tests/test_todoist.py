@@ -8,6 +8,7 @@ from lib.todoist import (
     complete_todoist_task,
     create_todoist_task,
     get_all_tasks,
+    get_projects_info,
     get_triage_tasks,
     get_user_settings,
     uncomplete_todoist_task,
@@ -122,6 +123,50 @@ def test_build_user_settings_defaults_when_both_empty():
     assert settings.timezone == "UTC"
     assert settings.first_day_of_week == 0
     assert settings.default_project == "Inbox"
+
+
+# ---------------------------------------------------------------------------
+# get_projects_info
+# ---------------------------------------------------------------------------
+
+
+def test_get_projects_info_returns_inbox_id(mock_todoist_api):
+    inbox = MagicMock()
+    inbox.id = "inbox_123"
+    inbox.name = "Inbox"
+    inbox.is_inbox_project = True
+
+    work = MagicMock()
+    work.id = "work_456"
+    work.name = "Work"
+    work.is_inbox_project = False
+
+    mock_todoist_api.get_projects.return_value = [[inbox, work]]
+
+    projects, inbox_id = get_projects_info()
+
+    assert projects == {"inbox_123": "Inbox", "work_456": "Work"}
+    assert inbox_id == "inbox_123"
+
+
+def test_get_projects_info_no_inbox_returns_none(mock_todoist_api):
+    proj = MagicMock()
+    proj.id = "p1"
+    proj.name = "Work"
+    proj.is_inbox_project = False
+
+    mock_todoist_api.get_projects.return_value = [[proj]]
+
+    _, inbox_id = get_projects_info()
+    assert inbox_id is None
+
+
+def test_get_projects_info_empty_returns_none(mock_todoist_api):
+    mock_todoist_api.get_projects.return_value = [[]]
+
+    projects, inbox_id = get_projects_info()
+    assert projects == {}
+    assert inbox_id is None
 
 
 # ---------------------------------------------------------------------------

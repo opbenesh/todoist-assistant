@@ -293,6 +293,13 @@ def strip_age_labels(task_id: str, current_labels: list[str] | None = None) -> N
         update_todoist_task(task_id, labels=clean)
 
 
+def reset_next_project_task_age(project_id: str) -> None:
+    """Strip age labels from the first incomplete task in a project (Todoist native order)."""
+    tasks = get_tasks_by_project(project_id)
+    if tasks:
+        strip_age_labels(tasks[0]["id"], tasks[0].get("labels") or [])
+
+
 def get_quarantined_tasks() -> list[dict]:
     """Return all tasks with quarantined label."""
     paginator = _api.filter_tasks(query="label:quarantined")
@@ -303,6 +310,18 @@ def get_all_projects() -> dict[str, str]:
     """Return mapping of project_id -> project_name."""
     paginator = _api.get_projects()
     return {p.id: p.name for page in paginator for p in page}
+
+
+def get_projects_info() -> tuple[dict[str, str], str | None]:
+    """Return (id→name mapping, inbox_project_id)."""
+    projects: dict[str, str] = {}
+    inbox_id: str | None = None
+    for page in _api.get_projects():
+        for p in page:
+            projects[p.id] = p.name
+            if p.is_inbox_project:
+                inbox_id = p.id
+    return projects, inbox_id
 
 
 def get_tasks_to_optimize(
@@ -376,6 +395,7 @@ def _task_to_dict(t) -> dict:
         "notes": t.description or "",
         "priority": TODOIST_TO_PRIORITY.get(t.priority, "p4"),
         "labels": t.labels or [],
+        "project_id": t.project_id,
         "due_date": due.isoformat() if due else None,
         "deadline": deadline.isoformat() if deadline else None,
         "duration_minutes": t.duration.amount if t.duration else None,
