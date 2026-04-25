@@ -1,0 +1,984 @@
+{"ts": "2026-04-25T17:29:18.605+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:18.612+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:18.618+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "No quarantined tasks found."}
+{"ts": "2026-04-25T17:29:18.701+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/brainstorm"}
+{"ts": "2026-04-25T17:29:18.706+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm mode — tell me what's on your plate. I'll extract tasks for you to accept or reject.\n\nJust type your thoughts freely:"}
+{"ts": "2026-04-25T17:29:18.733+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/list"}
+{"ts": "2026-04-25T17:29:18.742+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/brainstorm"}
+{"ts": "2026-04-25T17:29:18.742+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "No tasks for today."}
+{"ts": "2026-04-25T17:29:18.747+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm mode — tell me what's on your plate. I'll extract tasks for you to accept or reject.\n\nJust type your thoughts freely:"}
+{"ts": "2026-04-25T17:29:18.808+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "I need to review the quarterly report and schedule a team sync"}
+{"ts": "2026-04-25T17:29:18.813+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Extracting tasks…"}
+{"ts": "2026-04-25T17:29:18.849+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/cancel"}
+{"ts": "2026-04-25T17:29:18.854+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm cancelled."}
+{"ts": "2026-04-25T17:29:18.864+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\n📝 Review emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:18.915+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1005}
+{"ts": "2026-04-25T17:29:18.919+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:18.938+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Review emails", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:18.941+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 2*\n\n📝 Follow up on pending items", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:19.022+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1007}
+{"ts": "2026-04-25T17:29:19.026+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:19.032+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Follow up on pending items", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:19.035+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "All done! Created 2 tasks, rejected 0.\n\nContinue brainstorming or finish?", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:19.130+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:done", "message_id": 1009}
+{"ts": "2026-04-25T17:29:19.134+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:19.136+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "Brainstorm complete. 2 tasks added to Todoist."}
+{"ts": "2026-04-25T17:29:22.155+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:22.162+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:22.185+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "No quarantined tasks found."}
+{"ts": "2026-04-25T17:29:22.503+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/insights"}
+{"ts": "2026-04-25T17:29:22.507+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating insights… (this may take a moment)"}
+{"ts": "2026-04-25T17:29:22.587+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/brainstorm"}
+{"ts": "2026-04-25T17:29:22.590+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Productivity Insights\n\n**Habit gaps:** Some recurring tasks were deferred.\n\n**Workload:** Completion rate is moderate.\n\n**Clusters:** Most tasks in the Inbox — consider triaging.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:22.593+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "_Saved to vault: insights-2026-04-25.md_", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:22.593+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm mode — tell me what's on your plate. I'll extract tasks for you to accept or reject.\n\nJust type your thoughts freely:"}
+{"ts": "2026-04-25T17:29:22.645+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Nothing"}
+{"ts": "2026-04-25T17:29:22.648+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/brainstorm"}
+{"ts": "2026-04-25T17:29:22.649+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Extracting tasks…"}
+{"ts": "2026-04-25T17:29:22.653+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm mode — tell me what's on your plate. I'll extract tasks for you to accept or reject.\n\nJust type your thoughts freely:"}
+{"ts": "2026-04-25T17:29:22.699+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Couldn't find any tasks in that. Try again or /cancel to exit.", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:22.755+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Draft blog post and update the wiki page"}
+{"ts": "2026-04-25T17:29:22.759+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Extracting tasks…"}
+{"ts": "2026-04-25T17:29:22.809+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\n📝 Review emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:22.861+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1005}
+{"ts": "2026-04-25T17:29:22.864+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:22.882+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Review emails", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:22.885+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 2*\n\n📝 Follow up on pending items", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:22.968+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:reject", "message_id": 1007}
+{"ts": "2026-04-25T17:29:22.971+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:22.974+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "❌ _Rejected:_ Follow up on pending items", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:22.977+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "All done! Created 1 task, rejected 1.\n\nContinue brainstorming or finish?", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:23.075+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:done", "message_id": 1009}
+{"ts": "2026-04-25T17:29:23.078+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:23.080+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "Brainstorm complete. 1 task added to Todoist."}
+{"ts": "2026-04-25T17:29:25.512+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:25.519+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:25.541+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:25.823+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:25.829+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:25.847+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:26.324+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/list"}
+{"ts": "2026-04-25T17:29:26.344+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "1. ○ Review pull request [P2] — 2026-04-25  `de099fa6-3af1-4cfd-919d-ef4166718d8d`\n2. ○ Write tests [P3] — 2026-04-25  `afccca3b-f1df-4489-bf09-428bb5fa0db5`", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:26.749+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/brainstorm"}
+{"ts": "2026-04-25T17:29:26.754+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm mode — tell me what's on your plate. I'll extract tasks for you to accept or reject.\n\nJust type your thoughts freely:"}
+{"ts": "2026-04-25T17:29:26.856+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Set up CI pipeline and write unit tests"}
+{"ts": "2026-04-25T17:29:26.860+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Extracting tasks…"}
+{"ts": "2026-04-25T17:29:26.909+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\n📝 Review emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:26.963+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1005}
+{"ts": "2026-04-25T17:29:26.966+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:26.983+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Review emails", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:26.986+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 2*\n\n📝 Follow up on pending items", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:27.069+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1007}
+{"ts": "2026-04-25T17:29:27.073+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:27.079+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Follow up on pending items", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:27.082+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "All done! Created 2 tasks, rejected 0.\n\nContinue brainstorming or finish?", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:27.177+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:continue", "message_id": 1009}
+{"ts": "2026-04-25T17:29:27.180+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:27.183+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "Keep going — what else is on your mind?"}
+{"ts": "2026-04-25T17:29:27.284+00:00", "dir": "in", "update_id": 7, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Also need to fix the deployment script"}
+{"ts": "2026-04-25T17:29:27.289+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Extracting tasks…"}
+{"ts": "2026-04-25T17:29:27.298+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\n📝 Review emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:27.396+00:00", "dir": "in", "update_id": 8, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1013}
+{"ts": "2026-04-25T17:29:27.403+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:27.415+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Review emails", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:27.420+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 2*\n\n📝 Follow up on pending items", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:28.555+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:28.561+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:28.607+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:28.714+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:29:28.723+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:28.738+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:28.780+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:29:28.859+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:28.898+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:confirm_proj", "message_id": 1007}
+{"ts": "2026-04-25T17:29:28.911+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:28.931+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-task-breakdown* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:28.939+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.007+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:accept", "message_id": 1010}
+{"ts": "2026-04-25T17:29:29.013+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:29.025+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ 🔧 1 Research options", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.032+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 2 of 3*\n\n🔧 Draft plan", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.032+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:29.032+00:00", "dir": "in", "update_id": 7, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:29:29.041+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:29.041+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:29.047+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "❌ _Rejected:_ 🔧 Draft plan", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.057+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 3 of 3*\n\n🔧 Execute first step", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.058+00:00", "dir": "in", "update_id": 8, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:29:29.063+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:29.064+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:29.068+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "❌ _Rejected:_ 🔧 Execute first step", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.076+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Done — created 1 task in *#proj-task-breakdown*, original deleted.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.076+00:00", "dir": "in", "update_id": 9, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:29:29.079+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:29.079+00:00", "dir": "in", "update_id": 10, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:29:29.079+00:00", "dir": "in", "update_id": 11, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:29:29.079+00:00", "dir": "in", "update_id": 12, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:29:29.143+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:29:29.148+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:29.154+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.250+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:29:29.298+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.359+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "my-custom-plan"}
+{"ts": "2026-04-25T17:29:29.371+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-my-custom-plan* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.373+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.906+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:29.912+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:29:29.915+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:29.935+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:29.941+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:29:29.943+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:30.012+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:29:30.015+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:30.041+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:29:30.044+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:30.049+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:30.052+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nSend weekly report\n_P3 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:30.076+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:30.080+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nOld task to delete\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:30.119+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:p2", "message_id": 1006}
+{"ts": "2026-04-25T17:29:30.122+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:30.126+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "*Send weekly report*\n_Priority: P2 — when should this run?_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:30.147+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:delete", "message_id": 1006}
+{"ts": "2026-04-25T17:29:30.150+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:30.159+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:29:30.166+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:29:30.238+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:30.241+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:30.243+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:29:32.224+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:32.230+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:32.247+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:32.333+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:29:32.336+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:32.342+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Aged task to break down*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.440+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Split into two parts"}
+{"ts": "2026-04-25T17:29:32.475+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:32.485+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:32.503+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.511+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:32.588+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:29:32.593+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:32.600+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.602+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:confirm_proj", "message_id": 1007}
+{"ts": "2026-04-25T17:29:32.605+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:32.617+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-task-breakdown* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.620+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.696+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:29:32.749+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.760+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:accept", "message_id": 1010}
+{"ts": "2026-04-25T17:29:32.763+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:32.769+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ 🔧 1 Research options", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.772+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 2 of 3*\n\n🔧 Draft plan", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.805+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:confirm_proj", "message_id": 1007}
+{"ts": "2026-04-25T17:29:32.808+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:32.823+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-task-breakdown* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.825+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.912+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:accept", "message_id": 1010}
+{"ts": "2026-04-25T17:29:32.916+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:32.923+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ 🔧 1 Research options", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:32.926+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 2 of 3*\n\n🔧 Draft plan", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:33.355+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:33.361+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:29:33.364+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:33.464+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:29:33.467+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:33.497+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:33.500+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nChronic deferral task\n_P4 · 📁 Inbox · age 3_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:33.571+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:quarantine", "message_id": 1006}
+{"ts": "2026-04-25T17:29:33.574+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:33.580+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🚫 _Chronic deferral task_ quarantined — hidden from future planning.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:33.586+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:29:33.596+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:29:33.666+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:33.669+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:33.671+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:29:33.848+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Aged task to break down"}
+{"ts": "2026-04-25T17:29:35.309+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_timeslot:evening", "message_id": 1006}
+{"ts": "2026-04-25T17:29:35.324+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:35.347+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:29:35.364+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:29:35.455+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:35.461+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:35.467+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:29:35.791+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:35.795+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:35.811+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:35.897+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:29:35.900+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:35.906+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:35.998+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:36.002+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:36.004+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:29:36.019+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:36.052+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:36.105+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:29:36.108+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:36.114+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:36.212+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:29:36.262+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:36.318+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:confirm_proj", "message_id": 1007}
+{"ts": "2026-04-25T17:29:36.321+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:36.333+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-task-breakdown* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:36.336+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:36.425+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:accept", "message_id": 1010}
+{"ts": "2026-04-25T17:29:36.428+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:36.434+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ 🔧 1 Research options", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:36.437+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 2 of 3*\n\n🔧 Draft plan", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:36.725+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:36.731+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:29:36.734+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:36.831+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_start", "message_id": 1002}
+{"ts": "2026-04-25T17:29:36.834+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:36.840+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's on your mind? Type freely:"}
+{"ts": "2026-04-25T17:29:36.841+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "call mum, buy milk, fix the leak under the sink"}
+{"ts": "2026-04-25T17:29:36.892+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\nReview emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:38.383+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:38.396+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:29:38.400+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:38.502+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:29:38.506+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:38.522+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "No tasks to triage — moving to planning."}
+{"ts": "2026-04-25T17:29:38.528+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:29:38.604+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:38.607+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:39.162+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:39.166+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:39.185+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:39.270+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:29:39.273+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:39.279+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:39.377+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:29:39.429+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:39.484+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:confirm_proj", "message_id": 1007}
+{"ts": "2026-04-25T17:29:39.488+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:39.500+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-task-breakdown* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:39.502+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:39.668+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:39.675+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:29:39.679+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:39.776+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_start", "message_id": 1003}
+{"ts": "2026-04-25T17:29:39.780+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:39.785+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's on your mind? Type freely:"}
+{"ts": "2026-04-25T17:29:39.883+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Nothing"}
+{"ts": "2026-04-25T17:29:39.933+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Couldn't find tasks in that — try again or tap Skip.", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:39.948+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_accept", "message_id": 1007}
+{"ts": "2026-04-25T17:29:39.952+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:39.970+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Review emails", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:39.973+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 2*\n\nFollow up on pending items", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:39.991+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1007}
+{"ts": "2026-04-25T17:29:39.995+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:40.012+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "No tasks to triage — moving to planning."}
+{"ts": "2026-04-25T17:29:40.017+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:29:40.027+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:40.030+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:41.718+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:41.723+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:29:41.726+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:41.825+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:29:41.828+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:41.861+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:41.865+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nReview backlog\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:41.935+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:postpone", "message_id": 1006}
+{"ts": "2026-04-25T17:29:41.938+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:42.003+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:29:42.015+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:29:42.102+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:42.105+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:42.108+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:29:42.644+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:42.649+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "↩ Resuming your planning session — *triage (1/24)*", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:42.653+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 24*\n\nTask 0\n_P4_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:42.851+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:postpone", "message_id": 1}
+{"ts": "2026-04-25T17:29:42.854+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:42.903+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 24*\n\nTask 1\n_P4_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:43.100+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:43.107+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:29:43.110+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:43.117+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_accept", "message_id": 1009}
+{"ts": "2026-04-25T17:29:43.121+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:43.127+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Follow up on pending items", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:43.131+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Created 2 tasks. Continue brainstorming or move on?", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:43.207+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:29:43.210+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:43.244+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:43.248+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nPersistent task\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:45.159+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/list"}
+{"ts": "2026-04-25T17:29:45.180+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "1. ○ State test task — 2026-04-25  `f27ffa13-d296-4952-9953-4960feec2e22`", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:46.041+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:46.047+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:29:46.050+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:46.201+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:29:46.207+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "↩ Resuming your planning session — *triage (1/1)*", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:46.210+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nPersistent task\n_P4_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:29:46.289+00:00", "dir": "in", "update_id": 7, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_accept", "message_id": 1009}
+{"ts": "2026-04-25T17:29:46.293+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:29:49.347+00:00", "dir": "in", "update_id": 8, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_accept", "message_id": 1009}
+{"ts": "2026-04-25T17:29:49.865+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:29:49.869+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:29:49.886+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:29:56.496+00:00", "dir": "in", "update_id": 9, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_accept", "message_id": 1009}
+{"ts": "2026-04-25T17:30:03.629+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:03.636+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:03.639+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:03.656+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Buy oat milk"}
+{"ts": "2026-04-25T17:30:03.736+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_start", "message_id": 1003}
+{"ts": "2026-04-25T17:30:03.740+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:03.746+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's on your mind? Type freely:"}
+{"ts": "2026-04-25T17:30:03.843+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "trim nails, credit card bonus, revive foodie 1.0"}
+{"ts": "2026-04-25T17:30:03.858+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Couldn't reach AI — please try again.", "has_keyboard": true}
+{"ts": "2026-04-25T17:30:03.951+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "trim nails, credit card bonus"}
+{"ts": "2026-04-25T17:30:04.003+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\nReview emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:04.010+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Buy milk"}
+{"ts": "2026-04-25T17:30:05.999+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Completed in Todoist: Buy milk"}
+{"ts": "2026-04-25T17:30:07.095+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:07.105+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:07.108+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:07.202+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:07.205+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:07.236+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:07.239+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nReview backlog\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:07.411+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:postpone", "message_id": 1006}
+{"ts": "2026-04-25T17:30:07.414+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:07.461+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:30:07.471+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:30:07.546+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:07.549+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:07.551+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:30:08.587+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Old task"}
+{"ts": "2026-04-25T17:30:10.427+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Stand-up"}
+{"ts": "2026-04-25T17:30:10.536+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:10.542+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:10.545+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:10.582+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Deleted in Todoist: Old task"}
+{"ts": "2026-04-25T17:30:10.642+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:10.646+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:10.677+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:10.680+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nFinish the report\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:10.851+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:complete", "message_id": 1006}
+{"ts": "2026-04-25T17:30:10.854+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:10.866+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:30:10.877+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:30:10.948+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:10.951+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:10.954+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:30:12.416+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Completed in Todoist: Stand-up"}
+{"ts": "2026-04-25T17:30:12.777+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Finish report"}
+{"ts": "2026-04-25T17:30:12.836+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/done", "args": ["t_bot_done"]}
+{"ts": "2026-04-25T17:30:13.649+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:13.655+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:13.658+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:13.755+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:13.758+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:13.789+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:13.792+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nDaily standup\n_P4 · every day · 🔁 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:13.929+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:13.936+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:13.939+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:13.962+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:postpone", "message_id": 1006}
+{"ts": "2026-04-25T17:30:13.965+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:13.974+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:30:13.981+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:30:14.036+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:14.039+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:14.054+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:14.057+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:14.059+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:30:14.069+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:14.072+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nWeekly review\n_P4 · every day · 🔁 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:14.244+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:delete", "message_id": 1006}
+{"ts": "2026-04-25T17:30:14.247+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:14.252+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "⚠️ Recurring task — deleting removes all future occurrences. Use ✅ Done to skip this occurrence, or delete from Todoist directly."}
+{"ts": "2026-04-25T17:30:17.016+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:17.024+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:17.027+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:17.127+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:17.133+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:17.167+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:17.171+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nChronic deferral task\n_P4 · 📁 Inbox · age 3_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:17.338+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:quarantine", "message_id": 1006}
+{"ts": "2026-04-25T17:30:17.343+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:17.352+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🚫 _Chronic deferral task_ quarantined — hidden from future planning.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:17.358+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:30:17.375+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:30:17.444+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:17.447+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:17.450+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:30:17.927+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:17.933+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:17.936+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.034+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:18.037+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:18.067+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.070+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nOnce-deferred task\n_P4 · 📁 Inbox · age 1_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.242+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:quarantine", "message_id": 1006}
+{"ts": "2026-04-25T17:30:18.246+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:18.255+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🚫 _Once-deferred task_ quarantined — hidden from future planning.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.261+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:30:18.273+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:30:18.343+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.346+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.348+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:30:18.533+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:18.539+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:18.542+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.639+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:18.643+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:18.673+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.676+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nAncient stale task\n_P4 · 📁 Inbox · age 3_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.848+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:postpone", "message_id": 1006}
+{"ts": "2026-04-25T17:30:18.851+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:18.897+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "⚠️ _Ancient stale task_ has been postponed 3 times.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.902+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:30:18.913+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:30:18.987+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.990+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:18.992+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:30:20.471+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:20.481+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:20.491+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:20.531+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:20.537+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:20.567+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:20.570+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nBrand new task\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:21.409+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:21.415+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:21.418+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:21.519+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:21.528+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:21.587+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:21.592+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nImportant focused work\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:21.747+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:p2", "message_id": 1006}
+{"ts": "2026-04-25T17:30:21.752+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:21.756+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "*Important focused work*\n_Priority: P2 — when should this run?_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:21.806+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_timeslot:evening", "message_id": 1006}
+{"ts": "2026-04-25T17:30:21.809+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:21.827+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:30:21.843+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:30:21.925+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:21.928+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:21.931+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:30:22.072+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:22.078+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:22.082+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.180+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:22.184+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:22.200+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:30:22.207+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:30:22.210+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.216+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.219+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nOld stale task to delete\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.306+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:30:22.310+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:22.341+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.344+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nCritical urgent task\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.388+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:delete", "message_id": 1006}
+{"ts": "2026-04-25T17:30:22.391+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:22.402+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:30:22.411+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:30:22.505+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.508+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.510+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:30:22.516+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:p1", "message_id": 1006}
+{"ts": "2026-04-25T17:30:22.520+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:22.523+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "*Critical urgent task*\n_Priority: P1 — when should this run?_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.624+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_timeslot:evening", "message_id": 1006}
+{"ts": "2026-04-25T17:30:22.627+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:30:22.641+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:30:22.653+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:30:22.731+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.734+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:30:22.737+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:31:41.860+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/list"}
+{"ts": "2026-04-25T17:31:41.870+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "No tasks for today."}
+{"ts": "2026-04-25T17:31:42.077+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/brainstorm"}
+{"ts": "2026-04-25T17:31:42.081+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm mode — tell me what's on your plate. I'll extract tasks for you to accept or reject.\n\nJust type your thoughts freely:"}
+{"ts": "2026-04-25T17:31:42.088+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:31:42.093+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:31:42.105+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "No quarantined tasks found."}
+{"ts": "2026-04-25T17:31:42.184+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "I need to review the quarterly report and schedule a team sync"}
+{"ts": "2026-04-25T17:31:42.188+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Extracting tasks…"}
+{"ts": "2026-04-25T17:31:42.241+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\n📝 Review emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:42.292+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1005}
+{"ts": "2026-04-25T17:31:42.296+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:42.305+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/brainstorm"}
+{"ts": "2026-04-25T17:31:42.311+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm mode — tell me what's on your plate. I'll extract tasks for you to accept or reject.\n\nJust type your thoughts freely:"}
+{"ts": "2026-04-25T17:31:42.314+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Review emails", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:42.317+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 2*\n\n📝 Follow up on pending items", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:42.400+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1007}
+{"ts": "2026-04-25T17:31:42.403+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:42.409+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Follow up on pending items", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:42.411+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "All done! Created 2 tasks, rejected 0.\n\nContinue brainstorming or finish?", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:42.413+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/cancel"}
+{"ts": "2026-04-25T17:31:42.417+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm cancelled."}
+{"ts": "2026-04-25T17:31:42.507+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:done", "message_id": 1009}
+{"ts": "2026-04-25T17:31:42.510+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:42.513+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "Brainstorm complete. 2 tasks added to Todoist."}
+{"ts": "2026-04-25T17:31:45.727+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:31:45.735+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:31:45.773+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "No quarantined tasks found."}
+{"ts": "2026-04-25T17:31:45.788+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/insights"}
+{"ts": "2026-04-25T17:31:45.792+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating insights… (this may take a moment)"}
+{"ts": "2026-04-25T17:31:45.873+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Productivity Insights\n\n**Habit gaps:** Some recurring tasks were deferred.\n\n**Workload:** Completion rate is moderate.\n\n**Clusters:** Most tasks in the Inbox — consider triaging.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:45.876+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "_Saved to vault: insights-2026-04-25.md_", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:46.105+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/brainstorm"}
+{"ts": "2026-04-25T17:31:46.110+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm mode — tell me what's on your plate. I'll extract tasks for you to accept or reject.\n\nJust type your thoughts freely:"}
+{"ts": "2026-04-25T17:31:46.136+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/brainstorm"}
+{"ts": "2026-04-25T17:31:46.140+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm mode — tell me what's on your plate. I'll extract tasks for you to accept or reject.\n\nJust type your thoughts freely:"}
+{"ts": "2026-04-25T17:31:46.213+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Nothing"}
+{"ts": "2026-04-25T17:31:46.217+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Extracting tasks…"}
+{"ts": "2026-04-25T17:31:46.243+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Draft blog post and update the wiki page"}
+{"ts": "2026-04-25T17:31:46.247+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Extracting tasks…"}
+{"ts": "2026-04-25T17:31:46.270+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Couldn't find any tasks in that. Try again or /cancel to exit.", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:46.300+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\n📝 Review emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:46.349+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1005}
+{"ts": "2026-04-25T17:31:46.353+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:46.371+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Review emails", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:46.374+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 2*\n\n📝 Follow up on pending items", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:46.456+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:reject", "message_id": 1007}
+{"ts": "2026-04-25T17:31:46.460+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:46.462+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "❌ _Rejected:_ Follow up on pending items", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:46.465+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "All done! Created 1 task, rejected 1.\n\nContinue brainstorming or finish?", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:46.564+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:done", "message_id": 1009}
+{"ts": "2026-04-25T17:31:46.567+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:46.569+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "Brainstorm complete. 1 task added to Todoist."}
+{"ts": "2026-04-25T17:31:48.427+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/list"}
+{"ts": "2026-04-25T17:31:48.467+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "1. ○ Review pull request [P2] — 2026-04-25  `f19bf412-6256-4263-8814-e05ccd3aaede`\n2. ○ Write tests [P3] — 2026-04-25  `c65c1018-1204-4cc4-be62-93027d764376`", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:49.150+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:31:49.154+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:31:49.172+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:49.190+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:31:49.196+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:31:49.224+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:49.864+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/brainstorm"}
+{"ts": "2026-04-25T17:31:49.869+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Brainstorm mode — tell me what's on your plate. I'll extract tasks for you to accept or reject.\n\nJust type your thoughts freely:"}
+{"ts": "2026-04-25T17:31:49.972+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Set up CI pipeline and write unit tests"}
+{"ts": "2026-04-25T17:31:49.976+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Extracting tasks…"}
+{"ts": "2026-04-25T17:31:50.033+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\n📝 Review emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:50.129+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1005}
+{"ts": "2026-04-25T17:31:50.133+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:50.152+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Review emails", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:50.156+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 2*\n\n📝 Follow up on pending items", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:50.239+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1007}
+{"ts": "2026-04-25T17:31:50.244+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:50.251+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Follow up on pending items", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:50.255+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "All done! Created 2 tasks, rejected 0.\n\nContinue brainstorming or finish?", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:50.349+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:continue", "message_id": 1009}
+{"ts": "2026-04-25T17:31:50.363+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:50.371+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "Keep going — what else is on your mind?"}
+{"ts": "2026-04-25T17:31:50.464+00:00", "dir": "in", "update_id": 7, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Also need to fix the deployment script"}
+{"ts": "2026-04-25T17:31:50.473+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Extracting tasks…"}
+{"ts": "2026-04-25T17:31:50.497+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\n📝 Review emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:50.526+00:00", "dir": "in", "update_id": 8, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:accept", "message_id": 1013}
+{"ts": "2026-04-25T17:31:50.529+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:50.536+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Review emails", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:50.539+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 2*\n\n📝 Follow up on pending items", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:50.636+00:00", "dir": "in", "update_id": 9, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "brainstorm:done", "message_id": 1009}
+{"ts": "2026-04-25T17:31:50.643+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:50.648+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "Brainstorm complete. 3 tasks added to Todoist."}
+{"ts": "2026-04-25T17:31:51.527+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:31:51.533+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:31:51.550+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:51.639+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:31:51.643+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:51.649+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:51.746+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:31:51.802+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:51.858+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:confirm_proj", "message_id": 1007}
+{"ts": "2026-04-25T17:31:51.865+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:51.878+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-task-breakdown* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:51.881+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:51.971+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:accept", "message_id": 1010}
+{"ts": "2026-04-25T17:31:51.977+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:51.989+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ 🔧 1 Research options", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:51.996+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 2 of 3*\n\n🔧 Draft plan", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:51.997+00:00", "dir": "in", "update_id": 7, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:31:52.001+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:52.005+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "❌ _Rejected:_ 🔧 Draft plan", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.010+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 3 of 3*\n\n🔧 Execute first step", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.010+00:00", "dir": "in", "update_id": 8, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:31:52.015+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:52.018+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "❌ _Rejected:_ 🔧 Execute first step", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.024+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Done — created 1 task in *#proj-task-breakdown*, original deleted.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.024+00:00", "dir": "in", "update_id": 9, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:31:52.027+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:52.028+00:00", "dir": "in", "update_id": 10, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:31:52.028+00:00", "dir": "in", "update_id": 11, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:31:52.028+00:00", "dir": "in", "update_id": 12, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:reject", "message_id": 1010}
+{"ts": "2026-04-25T17:31:52.500+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:31:52.505+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:31:52.523+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:52.607+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:31:52.611+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:52.617+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.654+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:31:52.660+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:31:52.664+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.713+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:31:52.760+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:31:52.765+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.768+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:52.807+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.812+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nSend weekly report\n_P3 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.825+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "my-custom-plan"}
+{"ts": "2026-04-25T17:31:52.843+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-my-custom-plan* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.847+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:52.872+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:p2", "message_id": 1006}
+{"ts": "2026-04-25T17:31:52.876+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:52.880+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "*Send weekly report*\n_Priority: P2 — when should this run?_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:54.156+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:31:54.162+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:31:54.165+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:54.213+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:31:54.218+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:54.258+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:54.263+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nOld task to delete\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:54.372+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:delete", "message_id": 1006}
+{"ts": "2026-04-25T17:31:54.380+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:54.390+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:31:54.398+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:31:54.480+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:54.484+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:54.487+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:31:55.387+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:31:55.392+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:31:55.409+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:55.494+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:31:55.498+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:55.503+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Aged task to break down*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:55.601+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Split into two parts"}
+{"ts": "2026-04-25T17:31:55.684+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:55.710+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:confirm_proj", "message_id": 1007}
+{"ts": "2026-04-25T17:31:55.715+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:55.727+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-task-breakdown* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:55.731+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:55.818+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:accept", "message_id": 1010}
+{"ts": "2026-04-25T17:31:55.821+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:55.827+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ 🔧 1 Research options", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:55.829+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 2 of 3*\n\n🔧 Draft plan", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:55.998+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:31:56.003+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:31:56.020+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:56.105+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:31:56.109+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:56.114+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:56.213+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:31:56.267+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:56.321+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:confirm_proj", "message_id": 1007}
+{"ts": "2026-04-25T17:31:56.324+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:56.337+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-task-breakdown* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:56.340+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:56.428+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:accept", "message_id": 1010}
+{"ts": "2026-04-25T17:31:56.432+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:56.438+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ 🔧 1 Research options", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:56.441+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 2 of 3*\n\n🔧 Draft plan", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:57.412+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:31:57.418+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:31:57.422+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:57.518+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:31:57.522+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:57.569+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:57.573+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nChronic deferral task\n_P4 · 📁 Inbox · age 3_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:57.626+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:quarantine", "message_id": 1006}
+{"ts": "2026-04-25T17:31:57.633+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:57.640+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🚫 _Chronic deferral task_ quarantined — hidden from future planning.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:57.647+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:31:57.664+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:31:57.749+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:57.753+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:57.756+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:31:58.074+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_timeslot:evening", "message_id": 1006}
+{"ts": "2026-04-25T17:31:58.081+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:58.095+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:31:58.107+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:31:58.191+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:58.194+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:58.196+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:31:59.104+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:31:59.110+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:31:59.129+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:59.214+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:31:59.218+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:59.225+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:59.323+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:31:59.402+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:59.675+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:31:59.679+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:31:59.719+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:31:59.783+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:31:59.795+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:31:59.807+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:31:59.891+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:31:59.953+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:00.054+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:confirm_proj", "message_id": 1007}
+{"ts": "2026-04-25T17:32:00.059+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:00.071+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-task-breakdown* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:00.075+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:00.161+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:accept", "message_id": 1010}
+{"ts": "2026-04-25T17:32:00.166+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:00.173+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ 🔧 1 Research options", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:00.176+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 2 of 3*\n\n🔧 Draft plan", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:00.776+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:00.782+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:00.785+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:00.881+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_start", "message_id": 1002}
+{"ts": "2026-04-25T17:32:00.884+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:00.891+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's on your mind? Type freely:"}
+{"ts": "2026-04-25T17:32:00.892+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "call mum, buy milk, fix the leak under the sink"}
+{"ts": "2026-04-25T17:32:00.963+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\nReview emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:01.289+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:01.296+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:01.299+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:01.400+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:01.405+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:01.421+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "No tasks to triage — moving to planning."}
+{"ts": "2026-04-25T17:32:01.427+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:01.504+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:01.508+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:02.543+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:32:02.548+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:32:02.566+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:32:02.653+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt_pick:t_opt_quarantined", "message_id": 1003}
+{"ts": "2026-04-25T17:32:02.657+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:02.664+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's your plan for *Plan the project*?\n\nDescribe freely — I'll turn it into tasks:", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:02.760+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Research first, then write a draft"}
+{"ts": "2026-04-25T17:32:02.815+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Suggested project: *#proj-task-breakdown*\n\nReply with a different name to change it, or confirm:", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:02.870+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "opt:confirm_proj", "message_id": 1007}
+{"ts": "2026-04-25T17:32:02.874+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:02.886+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Project *#proj-task-breakdown* created.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:02.890+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Proposal 1 of 3*\n\n🔧 Research options", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:03.251+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:03.258+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:03.261+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:03.356+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_start", "message_id": 1003}
+{"ts": "2026-04-25T17:32:03.360+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:03.365+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's on your mind? Type freely:"}
+{"ts": "2026-04-25T17:32:03.464+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "Nothing"}
+{"ts": "2026-04-25T17:32:03.516+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Couldn't find tasks in that — try again or tap Skip.", "has_keyboard": true}
+{"ts": "2026-04-25T17:32:03.573+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1007}
+{"ts": "2026-04-25T17:32:03.576+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:03.592+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "No tasks to triage — moving to planning."}
+{"ts": "2026-04-25T17:32:03.597+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:03.607+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:03.609+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:04.057+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_accept", "message_id": 1007}
+{"ts": "2026-04-25T17:32:04.062+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:04.080+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Review emails", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:04.084+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 2*\n\nFollow up on pending items", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:04.495+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:04.501+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:04.503+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:04.602+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:04.606+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:04.642+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:04.646+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nReview backlog\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:04.711+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:postpone", "message_id": 1006}
+{"ts": "2026-04-25T17:32:04.717+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:04.792+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:32:04.806+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:04.878+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:04.881+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:04.883+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:32:06.036+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:06.042+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "↩ Resuming your planning session — *triage (1/24)*", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:06.045+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 24*\n\nTask 0\n_P4_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:06.194+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:postpone", "message_id": 1}
+{"ts": "2026-04-25T17:32:06.199+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:06.257+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 2 of 24*\n\nTask 1\n_P4_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:06.789+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:06.795+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:06.798+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:06.895+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:06.898+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:06.940+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:06.947+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nPersistent task\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:07.232+00:00", "dir": "in", "update_id": 6, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_accept", "message_id": 1009}
+{"ts": "2026-04-25T17:32:07.240+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:07.255+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "✅ _Created:_ Follow up on pending items", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:07.263+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Created 2 tasks. Continue brainstorming or move on?", "has_keyboard": true}
+{"ts": "2026-04-25T17:32:08.549+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/list"}
+{"ts": "2026-04-25T17:32:08.569+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "1. ○ State test task — 2026-04-25  `fbd042af-b282-4d9f-806c-75215adfa964`", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:09.959+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:09.979+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:09.985+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "↩ Resuming your planning session — *triage (1/1)*", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:09.987+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:09.988+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nPersistent task\n_P4_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:09.990+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:10.420+00:00", "dir": "in", "update_id": 7, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_accept", "message_id": 1009}
+{"ts": "2026-04-25T17:32:10.423+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:13.225+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/optimize"}
+{"ts": "2026-04-25T17:32:13.229+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Fetching tasks…"}
+{"ts": "2026-04-25T17:32:13.247+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Pick a task to break down:", "has_keyboard": true}
+{"ts": "2026-04-25T17:32:13.485+00:00", "dir": "in", "update_id": 8, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_accept", "message_id": 1009}
+{"ts": "2026-04-25T17:32:20.566+00:00", "dir": "in", "update_id": 9, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_accept", "message_id": 1009}
+{"ts": "2026-04-25T17:32:27.014+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Buy oat milk"}
+{"ts": "2026-04-25T17:32:27.069+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Buy milk"}
+{"ts": "2026-04-25T17:32:27.477+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:27.483+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:27.486+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:27.583+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_start", "message_id": 1003}
+{"ts": "2026-04-25T17:32:27.587+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:27.592+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "What's on your mind? Type freely:"}
+{"ts": "2026-04-25T17:32:27.691+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "trim nails, credit card bonus, revive foodie 1.0"}
+{"ts": "2026-04-25T17:32:27.706+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Couldn't reach AI — please try again.", "has_keyboard": true}
+{"ts": "2026-04-25T17:32:27.796+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "message", "text": "trim nails, credit card bonus"}
+{"ts": "2026-04-25T17:32:27.843+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 2*\n\nReview emails", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:29.038+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Completed in Todoist: Buy milk"}
+{"ts": "2026-04-25T17:32:30.810+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:30.815+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:30.818+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:30.918+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:30.921+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:30.950+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:30.953+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nReview backlog\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:31.127+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:postpone", "message_id": 1006}
+{"ts": "2026-04-25T17:32:31.132+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:31.180+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:32:31.195+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:31.265+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:31.268+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:31.270+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:32:32.414+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Old task"}
+{"ts": "2026-04-25T17:32:33.809+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Stand-up"}
+{"ts": "2026-04-25T17:32:34.190+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:34.195+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:34.198+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:34.297+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:34.300+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:34.330+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:34.333+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nFinish the report\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:34.404+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Deleted in Todoist: Old task"}
+{"ts": "2026-04-25T17:32:34.504+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:complete", "message_id": 1006}
+{"ts": "2026-04-25T17:32:34.507+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:34.518+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:32:34.526+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:34.600+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:34.603+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:34.605+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:32:35.738+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "New in Todoist: Finish report"}
+{"ts": "2026-04-25T17:32:35.808+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Completed in Todoist: Stand-up"}
+{"ts": "2026-04-25T17:32:35.834+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/done", "args": ["t_bot_done"]}
+{"ts": "2026-04-25T17:32:37.413+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:37.419+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:37.423+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:37.520+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:37.523+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:37.528+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:37.534+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:37.536+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:37.552+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:37.556+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nDaily standup\n_P4 · every day · 🔁 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:37.635+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:37.639+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:37.668+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:37.671+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nWeekly review\n_P4 · every day · 🔁 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:37.728+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:postpone", "message_id": 1006}
+{"ts": "2026-04-25T17:32:37.731+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:37.739+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:32:37.747+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:37.820+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:37.823+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:37.825+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:32:37.843+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:delete", "message_id": 1006}
+{"ts": "2026-04-25T17:32:37.847+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:37.850+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "⚠️ Recurring task — deleting removes all future occurrences. Use ✅ Done to skip this occurrence, or delete from Todoist directly."}
+{"ts": "2026-04-25T17:32:40.735+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:40.743+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:40.746+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:40.841+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:40.844+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:40.874+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:40.877+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nChronic deferral task\n_P4 · 📁 Inbox · age 3_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.050+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:quarantine", "message_id": 1006}
+{"ts": "2026-04-25T17:32:41.053+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:41.059+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🚫 _Chronic deferral task_ quarantined — hidden from future planning.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.066+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:32:41.075+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:41.154+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.176+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.179+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:32:41.503+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:41.509+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:41.512+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.612+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:41.615+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:41.644+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.647+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nOnce-deferred task\n_P4 · 📁 Inbox · age 1_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.820+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:quarantine", "message_id": 1006}
+{"ts": "2026-04-25T17:32:41.823+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:41.829+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🚫 _Once-deferred task_ quarantined — hidden from future planning.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.835+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:32:41.842+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:41.877+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:41.883+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:41.886+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.912+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.915+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:41.928+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:32:41.983+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:41.986+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:42.015+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:42.018+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nAncient stale task\n_P4 · 📁 Inbox · age 3_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:42.189+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:postpone", "message_id": 1006}
+{"ts": "2026-04-25T17:32:42.193+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:42.238+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "⚠️ _Ancient stale task_ has been postponed 3 times.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:42.244+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:32:42.257+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:42.331+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:42.334+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:42.336+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:32:44.378+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:44.385+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:44.388+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:44.488+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:44.499+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:44.554+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:44.561+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nBrand new task\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.208+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:45.214+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:45.218+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.316+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:45.319+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:45.353+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.357+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nOld stale task to delete\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.465+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:45.471+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:45.474+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.525+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:delete", "message_id": 1006}
+{"ts": "2026-04-25T17:32:45.528+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:45.539+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:32:45.548+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:45.572+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:45.576+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:45.609+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.613+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nImportant focused work\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.618+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.621+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.624+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:32:45.697+00:00", "dir": "in", "update_id": 2, "chat_id": 99999, "user_id": 99999, "type": "command", "cmd": "/plan"}
+{"ts": "2026-04-25T17:32:45.703+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Starting your planning session."}
+{"ts": "2026-04-25T17:32:45.706+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "🧠 *Brainstorm* — capture anything on your mind before planning.", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.781+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:p2", "message_id": 1006}
+{"ts": "2026-04-25T17:32:45.784+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:45.787+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "*Important focused work*\n_Priority: P2 — when should this run?_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.805+00:00", "dir": "in", "update_id": 3, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "pf:bs_skip", "message_id": 1003}
+{"ts": "2026-04-25T17:32:45.808+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:45.838+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📋 *Triage* — 1 task to review.", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.841+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "*Task 1 of 1*\n\nCritical urgent task\n_P4 · 📁 Inbox_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.888+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_timeslot:evening", "message_id": 1006}
+{"ts": "2026-04-25T17:32:45.891+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:45.902+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:32:45.913+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:45.986+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.989+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:45.991+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}
+{"ts": "2026-04-25T17:32:46.014+00:00", "dir": "in", "update_id": 4, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_triage:p1", "message_id": 1006}
+{"ts": "2026-04-25T17:32:46.017+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:46.020+00:00", "dir": "out", "method": "edit_message_text", "chat_id": 99999, "text": "*Critical urgent task*\n_Priority: P1 — when should this run?_", "has_keyboard": true, "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:46.120+00:00", "dir": "in", "update_id": 5, "chat_id": 99999, "user_id": 99999, "type": "callback", "data": "plan_timeslot:evening", "message_id": 1006}
+{"ts": "2026-04-25T17:32:46.123+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null}
+{"ts": "2026-04-25T17:32:46.135+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Triage complete ✓"}
+{"ts": "2026-04-25T17:32:46.145+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "Generating your plan…"}
+{"ts": "2026-04-25T17:32:46.217+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "## Morning\n- Work on priority tasks\n\n## Afternoon\n- Follow-ups and meetings\n\n## Evening\n- Review and wrap up\n\n_Focus: make progress on the most important task first._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:46.220+00:00", "dir": "out", "method": "send_message", "chat_id": 99999, "text": "📅 *Digest*\n\nGood morning! Here's your daily digest.\n\n- **High priority**: focus tasks first.\n- Check your calendar for meetings.\n\n_Suggested focus: tackle the top task before noon._", "parse_mode": "Markdown"}
+{"ts": "2026-04-25T17:32:46.223+00:00", "dir": "out", "method": "answer_callback_query", "chat_id": null, "text": "Session expired — send /plan to resume."}

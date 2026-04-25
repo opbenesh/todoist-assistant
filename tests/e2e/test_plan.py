@@ -111,7 +111,8 @@ class TestPlanTriageActions:
 
     def test_triage_quarantine(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Quarantining an aged task adds the quarantined label (button requires age label)."""
-        from lib.todoist import MAX_TRIAGE_AGE
+        MAX_TRIAGE_AGE = 3
+        MAX_TRIAGE_AGE = 3
 
         todoist.seed(
             tasks=[
