@@ -172,9 +172,7 @@ class TestPlanBrainstorm:
         created = [h for h in todoist.history() if h["op"] == "create"]
         assert len(created) > 0, "No tasks were created from brainstorm"
 
-    def test_brainstorm_llm_error_shows_retry(
-        self, bot: BotClient, llm: LLMInspector
-    ) -> None:
+    def test_brainstorm_llm_error_shows_retry(self, bot: BotClient, llm: LLMInspector) -> None:
         """LLM API error during brainstorm must show a retry message, not a dead end."""
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)  # "Starting your planning session."

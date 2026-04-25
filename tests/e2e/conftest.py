@@ -209,7 +209,15 @@ def staging_app(
 
     profile_out = tmp_path / "bot.prof.json"
     if os.environ.get("E2E_PROFILE"):
-        cmd = [sys.executable, "-m", "pyinstrument", "--renderer=json", "-o", str(profile_out), "main.py"]
+        cmd = [
+            sys.executable,
+            "-m",
+            "pyinstrument",
+            "--renderer=json",
+            "-o",
+            str(profile_out),
+            "main.py",
+        ]
     else:
         cmd = [sys.executable, "main.py"]
     proc = subprocess.Popen(
