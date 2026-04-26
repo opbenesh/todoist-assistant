@@ -11,8 +11,8 @@ from lib.todoist import (
     get_projects_info,
     get_triage_tasks,
     get_user_settings,
-    uncomplete_todoist_task,
     strip_age_labels,
+    uncomplete_todoist_task,
 )
 
 # ---------------------------------------------------------------------------
