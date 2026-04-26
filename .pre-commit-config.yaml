@@ -3,3 +3,11 @@ repos:
     rev: v8.24.3
     hooks:
       - id: gitleaks
+  - repo: local
+    hooks:
+      - id: pytest-all
+        name: full test suite
+        entry: uv run pytest --override-ini="addopts=-n auto"
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
