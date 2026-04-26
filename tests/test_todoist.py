@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
 import pytest
+from unittest.mock import MagicMock, patch
 
 import lib.todoist
 from lib.models import PRIORITY_TO_TODOIST, Task
@@ -17,6 +16,15 @@ from lib.todoist import (
     strip_age_labels,
     uncomplete_todoist_task,
 )
+
+@pytest.fixture(autouse=True)
+def reset_projects_cache():
+    lib.todoist._projects_cache = None
+    lib.todoist._projects_cache_time = 0.0
+    yield
+    lib.todoist._projects_cache = None
+    lib.todoist._projects_cache_time = 0.0
+
 
 # ---------------------------------------------------------------------------
 # Priority mapping
@@ -207,6 +215,57 @@ def test_get_projects_info_empty_returns_none(mock_todoist_api):
     projects, inbox_id = get_projects_info()
     assert projects == {}
     assert inbox_id is None
+
+
+def test_get_projects_info_caches_results(mock_todoist_api):
+    inbox = MagicMock()
+    inbox.id = "inbox_123"
+    inbox.name = "Inbox"
+    inbox.is_inbox_project = True
+
+    mock_todoist_api.get_projects.return_value = [[inbox]]
+
+    # First call should hit the API
+    projects1, inbox_id1 = get_projects_info()
+    assert projects1 == {"inbox_123": "Inbox"}
+    assert mock_todoist_api.get_projects.call_count == 1
+
+    # Second call should use cache
+    projects2, inbox_id2 = get_projects_info()
+    assert projects2 == {"inbox_123": "Inbox"}
+    assert mock_todoist_api.get_projects.call_count == 1
+
+    # get_all_projects should also use the cache
+    projects3 = lib.todoist.get_all_projects()
+    assert projects3 == {"inbox_123": "Inbox"}
+    assert mock_todoist_api.get_projects.call_count == 1
+
+
+@patch("lib.todoist.time.time")
+def test_get_projects_info_cache_expiration(mock_time, mock_todoist_api):
+    inbox = MagicMock()
+    inbox.id = "inbox_123"
+    inbox.name = "Inbox"
+    inbox.is_inbox_project = True
+
+    mock_todoist_api.get_projects.return_value = [[inbox]]
+
+    # Mock time at 0
+    mock_time.return_value = 0.0
+
+    # First call hits API
+    get_projects_info()
+    assert mock_todoist_api.get_projects.call_count == 1
+
+    # Time moves forward but still within TTL (300)
+    mock_time.return_value = 200.0
+    get_projects_info()
+    assert mock_todoist_api.get_projects.call_count == 1
+
+    # Time moves forward past TTL
+    mock_time.return_value = 301.0
+    get_projects_info()
+    assert mock_todoist_api.get_projects.call_count == 2
 
 
 # ---------------------------------------------------------------------------

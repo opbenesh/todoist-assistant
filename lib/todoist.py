@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 import httpx
 from todoist_api_python.api import TodoistAPI
@@ -13,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 _TODOIST_BASE = _config.TODOIST_BASE_URL.rstrip("/")
 _http = httpx.Client(timeout=15)
+
+_PROJECTS_CACHE_TTL = 300
+_projects_cache: tuple[dict[str, str], str | None] | None = None
+_projects_cache_time: float = 0.0
 
 
 class _BaseUrlTransport(httpx.BaseTransport):
@@ -315,12 +320,18 @@ def get_quarantined_tasks() -> list[dict]:
 
 def get_all_projects() -> dict[str, str]:
     """Return mapping of project_id -> project_name."""
-    paginator = _api.get_projects()
-    return {p.id: p.name for page in paginator for p in page}
+    projects, _ = get_projects_info()
+    return projects
 
 
 def get_projects_info() -> tuple[dict[str, str], str | None]:
-    """Return (id→name mapping, inbox_project_id)."""
+    """Return (id→name mapping, inbox_project_id), caching the result."""
+    global _projects_cache, _projects_cache_time
+    now = time.time()
+
+    if _projects_cache is not None and now - _projects_cache_time < _PROJECTS_CACHE_TTL:
+        return _projects_cache
+
     projects: dict[str, str] = {}
     inbox_id: str | None = None
     for page in _api.get_projects():
@@ -328,7 +339,10 @@ def get_projects_info() -> tuple[dict[str, str], str | None]:
             projects[p.id] = p.name
             if p.is_inbox_project:
                 inbox_id = p.id
-    return projects, inbox_id
+
+    _projects_cache = (projects, inbox_id)
+    _projects_cache_time = now
+    return _projects_cache
 
 
 def get_tasks_to_optimize(
