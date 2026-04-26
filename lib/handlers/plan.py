@@ -8,7 +8,7 @@ from datetime import date, datetime
 from datetime import time as dt_time
 from zoneinfo import ZoneInfo
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
@@ -619,7 +619,12 @@ async def _advance_triage(
 
 
 async def _handle_triage_priority(
-    chat_id: int, query, session, task_id: str, title: str, action: str
+    chat_id: int,
+    query: CallbackQuery,
+    session: PlanFlowSession,
+    task_id: str,
+    title: str,
+    action: str,
 ) -> int | None:
     valid_slots = _valid_timeslots()
     if valid_slots:
@@ -789,6 +794,7 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         elif action == "quarantine":
             await _handle_triage_quarantine(chat_id, context, task_id, title, labels)
         elif action == "delete":
+            # returns True if we should block advancement (e.g. for recurring tasks)
             skip_advance = await _handle_triage_delete(
                 chat_id, context, task_id, title, is_recurring, labels
             )
