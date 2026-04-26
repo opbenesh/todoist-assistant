@@ -34,17 +34,19 @@ def read_tasks_section(day: date | None = None) -> list[str]:
 
 
 def _extract_task_lines(text: str) -> list[str]:
-    in_section = False
-    lines = []
-    for line in text.splitlines():
-        if re.match(r"^## Tasks", line):
-            in_section = True
-            continue
-        if in_section and re.match(r"^## ", line):
-            break
-        if in_section and line.strip():
-            lines.append(line)
-    return lines
+    match = re.search(r"^## Tasks[^\n]*(?:\n|$)", text, flags=re.MULTILINE)
+    if not match:
+        return []
+
+    start_pos = match.end()  # character index of first line after the Tasks header
+    next_header_match = re.search(r"^## ", text[start_pos:], flags=re.MULTILINE)
+
+    if next_header_match:
+        section_text = text[start_pos : start_pos + next_header_match.start()]
+    else:
+        section_text = text[start_pos:]
+
+    return [line for line in section_text.splitlines() if line.strip()]
 
 
 def parse_task_line(line: str) -> tuple[str, bool] | None:
