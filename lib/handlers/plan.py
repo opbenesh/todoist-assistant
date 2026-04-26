@@ -128,7 +128,12 @@ def _checkpoint(chat_id: int, phase: int) -> None:
     session = _sessions.get(chat_id)
     if session:
         session.last_user_action_ts = _time.time()
-        store.save_plan_session(phase, session.to_dict())
+        d = session.to_dict()
+        logger.info(
+            "[plan/checkpoint] phase=%d triage_tasks=%d triage_index=%d",
+            phase, len(d.get("triage_tasks", [])), d.get("triage_index", 0),
+        )
+        store.save_plan_session(phase, d)
 
 
 def _phase_label(phase: int, session: PlanFlowSession) -> str:
@@ -411,6 +416,7 @@ async def bs_reject_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
     title = session.bs_proposed[session.bs_index]
     await query.edit_message_text(f"❌ _Rejected:_ {title}", parse_mode="Markdown")
+    logger.info("[plan/bs] rejected %r (index %d)", title, session.bs_index)
     session.bs_index += 1
     _checkpoint(chat_id, BS_REVIEW)
     await _show_bs_proposal(chat_id, context)
@@ -444,14 +450,20 @@ async def bs_next_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("[plan] phase=triage chat=%s", chat_id)
-    tasks, projects = await asyncio.gather(
+    (tasks, (projects, inbox_id)) = await asyncio.gather(
         asyncio.to_thread(todoist.get_triage_tasks),
-        asyncio.to_thread(todoist.get_all_projects),
+        asyncio.to_thread(todoist.get_projects_info),
     )
+    logger.info("[plan/triage] fetched %d tasks", len(tasks))
 
     # For each project in the triage set, fetch all incomplete tasks to determine
-    # which step is first and how many remain.
-    project_ids = {t["project_id"] for t in tasks if t.get("project_id")}
+    # which step is first and how many remain. Inbox tasks are treated as
+    # independent (no project), so exclude inbox_id from grouping.
+    project_ids = {
+        t["project_id"]
+        for t in tasks
+        if t.get("project_id") and t["project_id"] != inbox_id
+    }
     if project_ids:
         ptask_lists = await asyncio.gather(
             *[asyncio.to_thread(todoist.get_tasks_by_project, pid) for pid in project_ids]
@@ -459,11 +471,18 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
         project_tasks = dict(zip(project_ids, ptask_lists))
         first_ids = {pid: ptasks[0]["id"] for pid, ptasks in project_tasks.items() if ptasks}
         project_counts = {pid: len(ptasks) for pid, ptasks in project_tasks.items()}
+        _n = len(tasks)
         tasks = [
             t
             for t in tasks
-            if not t.get("project_id") or t["id"] == first_ids.get(t["project_id"], t["id"])
+            if not t.get("project_id")
+            or t["project_id"] == inbox_id
+            or t["id"] == first_ids.get(t["project_id"], t["id"])
         ]
+        logger.info(
+            "[plan/triage] project filter: %d→%d tasks (%d non-first-step excluded)",
+            _n, len(tasks), _n - len(tasks),
+        )
     else:
         project_counts = {}
 
@@ -474,8 +493,11 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
     session.project_incomplete_counts = project_counts
     already_done = {tid for tid, _, _ in session.triage_processed}
     if already_done:
+        _n = len(tasks)
         tasks = [t for t in tasks if t["id"] not in already_done]
+        logger.info("[plan/triage] already-done filter: %d→%d tasks", _n, len(tasks))
     if not tasks:
+        logger.info("[plan/triage] no tasks remain — skipping to generate")
         await context.bot.send_message(chat_id, "No tasks to triage — moving to planning.")
         tasks_today = await asyncio.to_thread(todoist.get_today_tasks)
         await _finalize_planning(chat_id, context, tasks_today)
@@ -483,6 +505,7 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
     session.triage_tasks = tasks
     session.triage_index = 0
     _checkpoint(chat_id, TRIAGING)  # persist tasks before showing first one
+    logger.info("[plan/triage] presenting %d tasks: %s", len(tasks), [t["title"] for t in tasks])
     total = len(tasks)
     await context.bot.send_message(
         chat_id,
@@ -661,7 +684,8 @@ async def _handle_triage_complete(task: dict, task_id: str, title: str, labels: 
         asyncio.to_thread(todoist.strip_age_labels, task_id, labels),
         asyncio.to_thread(todoist.complete_todoist_task, task_id),
     )
-    if project_id:
+    _, inbox_id = await asyncio.to_thread(todoist.get_projects_info)
+    if project_id and project_id != inbox_id:
         await asyncio.to_thread(todoist.reset_next_project_task_age, project_id)
     audit.log(
         "complete",
