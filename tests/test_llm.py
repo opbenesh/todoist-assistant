@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lib.llm import propose_enrichment
+from lib.llm import propose_enrichment, restore_links
 
 
 def _mock_response(text: str):
@@ -148,3 +148,48 @@ async def test_propose_enrichment_falls_back_to_raw_title_on_missing_title():
         task = await propose_enrichment("original title")
 
     assert task.title == "original title"
+
+
+# ---------------------------------------------------------------------------
+# restore_links
+# ---------------------------------------------------------------------------
+
+
+def test_restore_links_no_links_in_original():
+    original = "Just a normal task"
+    proposed = "A very normal task"
+    assert restore_links(original, proposed) == "A very normal task"
+
+
+def test_restore_links_all_links_preserved():
+    original = "Review [PR 123](https://github.com/org/repo/pull/123)"
+    proposed = "Review [PR 123](https://github.com/org/repo/pull/123) and merge"
+    assert restore_links(original, proposed) == proposed
+
+
+def test_restore_links_all_links_missing():
+    original = "Review [PR 123](https://github.com/org/repo/pull/123)"
+    proposed = "Review PR 123"
+    expected = "Review PR 123 [PR 123](https://github.com/org/repo/pull/123)"
+    assert restore_links(original, proposed) == expected
+
+
+def test_restore_links_some_links_missing():
+    original = "Review [PR 123](https://example.com/1) and [Issue 456](https://example.com/2)"
+    proposed = "Review [PR 123](https://example.com/1) and Issue 456"
+    expected = "Review [PR 123](https://example.com/1) and Issue 456 [Issue 456](https://example.com/2)"
+    assert restore_links(original, proposed) == expected
+
+
+def test_restore_links_with_trailing_whitespace():
+    original = "Review [PR 123](https://example.com/1)"
+    proposed = "Review PR 123    "
+    expected = "Review PR 123 [PR 123](https://example.com/1)"
+    assert restore_links(original, proposed) == expected
+
+
+def test_restore_links_preserves_new_links_in_proposed():
+    original = "Task with [old](https://old.com)"
+    proposed = "Task with [new](https://new.com)"
+    expected = "Task with [new](https://new.com) [old](https://old.com)"
+    assert restore_links(original, proposed) == expected
