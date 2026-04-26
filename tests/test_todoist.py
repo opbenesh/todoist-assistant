@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 import lib.todoist
 from lib.models import PRIORITY_TO_TODOIST, Task
@@ -16,6 +17,7 @@ from lib.todoist import (
     strip_age_labels,
     uncomplete_todoist_task,
 )
+
 
 @pytest.fixture(autouse=True)
 def reset_projects_cache():

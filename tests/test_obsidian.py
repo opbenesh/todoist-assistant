@@ -469,11 +469,11 @@ def test_sync_obsidian_wins_when_note_newer(tmp_path):
         patch("lib.sync.read_tasks_section", return_value=["- [x] Buy milk"]),
         patch("lib.sync.todoist.get_today_tasks", return_value=todoist_tasks),
         patch("lib.sync.todoist.get_all_tasks", return_value=todoist_tasks),
-        patch("lib.sync.todoist.complete_todoist_task") as mock_complete,
+        patch("lib.sync.todoist.batch_update_task_status") as mock_batch,
         patch("lib.sync.write_tasks_section"),
     ):
         from lib.sync import _sync
 
         _sync()
 
-    mock_complete.assert_called_once_with("t1")
+    mock_batch.assert_called_once_with(["t1"], [])

@@ -62,6 +62,9 @@ def _sync() -> None:
     processed_titles: set[str] = set()
     dirty = False
 
+    complete_ids: list[str] = []
+    uncomplete_ids: list[str] = []
+
     for title, obs_checked in obsidian_tasks.items():
         processed_titles.add(title)
 
@@ -73,7 +76,7 @@ def _sync() -> None:
                 dirty = True
                 if note_changed:
                     if obs_checked:
-                        todoist.complete_todoist_task(tod["id"])
+                        complete_ids.append(tod["id"])
                         audit.log(
                             "complete",
                             source="sync",
@@ -82,7 +85,7 @@ def _sync() -> None:
                             title=title,
                         )
                     else:
-                        todoist.uncomplete_todoist_task(tod["id"])
+                        uncomplete_ids.append(tod["id"])
                         audit.log(
                             "uncomplete",
                             source="sync",
@@ -115,7 +118,7 @@ def _sync() -> None:
             # Task was recently completed but user unchecked it — uncomplete
             if note_changed:
                 task = completed_by_title[title]
-                todoist.uncomplete_todoist_task(task["id"])
+                uncomplete_ids.append(task["id"])
                 audit.log(
                     "uncomplete",
                     source="sync",
@@ -158,6 +161,9 @@ def _sync() -> None:
             )
             logger.info("Appended Todoist task to daily note: '%s'", title)
             dirty = True
+
+    if complete_ids or uncomplete_ids:
+        todoist.batch_update_task_status(complete_ids, uncomplete_ids)
 
     if dirty or updated_lines != raw_lines:
         write_tasks_section(updated_lines)

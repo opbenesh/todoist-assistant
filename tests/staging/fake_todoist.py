@@ -377,6 +377,20 @@ async def sync_api(request: Request) -> JSONResponse:
                     _tasks[task_id]["due"] = None
                     _tasks[task_id]["updated_at"] = _now_str()
                     _history.append({"op": "remove_due_date", "task_id": task_id})
+        elif cmd.get("type") == "item_close":
+            args = cmd.get("args", {})
+            task_id = args.get("id")
+            if task_id and task_id in _tasks:
+                _tasks[task_id]["completed_at"] = _now_str()
+                _tasks[task_id]["updated_at"] = _now_str()
+                _history.append({"op": "complete", "task_id": task_id})
+        elif cmd.get("type") == "item_uncomplete":
+            args = cmd.get("args", {})
+            task_id = args.get("id")
+            if task_id and task_id in _tasks:
+                _tasks[task_id]["completed_at"] = None
+                _tasks[task_id]["updated_at"] = _now_str()
+                _history.append({"op": "uncomplete", "task_id": task_id})
     return JSONResponse({"sync_status": {}})
 
 
