@@ -44,6 +44,7 @@ def _run_sync(
     all_tasks: list[dict] | None = None,
     note_newer: bool = True,
     is_day_planned: bool = True,
+    batch_side_effect=None,
 ):
     """Run _sync() with fully controlled inputs.
 
@@ -77,7 +78,10 @@ def _run_sync(
             patch("lib.sync.todoist.get_all_tasks", return_value=all_tasks),
             patch("lib.sync.todoist.get_completed_tasks", return_value=[]),
             patch("lib.sync.todoist.create_todoist_task", return_value="new-id") as mock_create,
-            patch("lib.sync.todoist.batch_update_task_status") as mock_batch_update,
+            patch(
+                "lib.sync.todoist.batch_update_task_status",
+                side_effect=batch_side_effect,
+            ) as mock_batch_update,
             patch("lib.sync.write_tasks_section", side_effect=lambda lines: written.extend(lines)),
             patch("lib.sync.audit.log"),
         ):
@@ -242,3 +246,17 @@ def test_sync_skips_when_not_planned():
     create.assert_not_called()
     batch_update.assert_not_called()
     assert written == []
+
+
+def test_batch_failure_prevents_note_write():
+    """If batch_update_task_status raises, _sync should propagate and NOT write the note."""
+    task = _todoist_task("Buy milk", is_completed=False)
+    import pytest
+
+    with pytest.raises(RuntimeError, match="Todoist down"):
+        _run_sync(
+            obsidian_lines=["- [x] Buy milk"],
+            today_tasks=[task],
+            note_newer=True,
+            batch_side_effect=RuntimeError("Todoist down"),
+        )

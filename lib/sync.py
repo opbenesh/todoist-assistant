@@ -163,10 +163,7 @@ def _sync() -> None:
             dirty = True
 
     if complete_ids or uncomplete_ids:
-        try:
-            todoist.batch_update_task_status(complete_ids, uncomplete_ids)
-        except Exception as exc:
-            logger.error("Failed to batch update tasks: %s", exc)
+        todoist.batch_update_task_status(complete_ids, uncomplete_ids)
 
     if dirty or updated_lines != raw_lines:
         write_tasks_section(updated_lines)
