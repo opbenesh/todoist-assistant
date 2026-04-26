@@ -107,10 +107,13 @@ def _sync() -> None:
             # Task exists in Todoist but not due today (rescheduled) — keep Obsidian line as-is
             logger.debug("Task '%s' exists in Todoist but not due today — skipping create", title)
             updated_lines.append(format_task_line(title, obs_checked))
+            continue
         elif obs_checked:
-            # Checked in Obsidian but absent from Todoist — already completed, skip
-            logger.debug("Task '%s' checked in Obsidian but absent from Todoist — skipping", title)
+            # Checked in Obsidian but absent from Todoist — already completed.
+            # We explicitly skip creation to avoid incorrectly recreating a checked, absent task.
+            logger.debug("Task '%s' checked in Obsidian but absent from Todoist — skipping creation", title)
             updated_lines.append(format_task_line(title, obs_checked))
+            continue
         elif title in completed_by_title and not obs_checked:
             # Task was recently completed but user unchecked it — uncomplete
             if note_changed:
