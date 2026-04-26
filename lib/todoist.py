@@ -51,6 +51,8 @@ else:
 # User settings
 # ---------------------------------------------------------------------------
 
+_USER_SETTINGS_CACHE: dict | None = None
+
 
 def get_user_settings() -> dict:
     """Fetch user settings from Todoist API v1.
@@ -59,6 +61,10 @@ def get_user_settings() -> dict:
     start_day / time_format are not available in v1 — profile.md handles those.
     Returns empty dict on failure.
     """
+    global _USER_SETTINGS_CACHE
+    if _USER_SETTINGS_CACHE is not None:
+        return _USER_SETTINGS_CACHE
+
     try:
         r = httpx.get(
             f"{_TODOIST_BASE}/api/v1/user",
@@ -66,7 +72,8 @@ def get_user_settings() -> dict:
             timeout=10,
         )
         r.raise_for_status()
-        return r.json()
+        _USER_SETTINGS_CACHE = r.json()
+        return _USER_SETTINGS_CACHE
     except Exception as exc:
         logger.warning("Could not fetch Todoist user settings: %s", exc)
         return {}

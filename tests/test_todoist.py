@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+import lib.todoist
 from lib.models import PRIORITY_TO_TODOIST, Task
 from lib.todoist import (
     build_user_settings,
@@ -77,6 +80,14 @@ def test_create_task_with_due_date():
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def reset_user_settings_cache():
+    """Reset the user settings cache before each test."""
+    lib.todoist._USER_SETTINGS_CACHE = None
+    yield
+    lib.todoist._USER_SETTINGS_CACHE = None
+
+
 def test_get_user_settings_returns_dict_on_success():
     mock_response = MagicMock()
     mock_response.json.return_value = {"timezone": "Europe/Amsterdam", "lang": "en"}
@@ -93,6 +104,34 @@ def test_get_user_settings_returns_empty_on_failure():
         result = get_user_settings()
 
     assert result == {}
+
+
+def test_get_user_settings_caches_success():
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"timezone": "UTC"}
+    mock_response.raise_for_status = MagicMock()
+
+    with patch("lib.todoist.httpx.get", return_value=mock_response) as mock_get:
+        # First call fetches data
+        res1 = get_user_settings()
+        assert res1["timezone"] == "UTC"
+        assert mock_get.call_count == 1
+
+        # Second call uses cache
+        res2 = get_user_settings()
+        assert res2["timezone"] == "UTC"
+        assert mock_get.call_count == 1
+
+
+def test_get_user_settings_does_not_cache_failure():
+    with patch("lib.todoist.httpx.get", side_effect=Exception("network error")) as mock_get:
+        res1 = get_user_settings()
+        assert res1 == {}
+        assert mock_get.call_count == 1
+
+        res2 = get_user_settings()
+        assert res2 == {}
+        assert mock_get.call_count == 2
 
 
 def test_build_user_settings_from_todoist_data():
