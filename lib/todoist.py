@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
 
 import httpx
 from todoist_api_python.api import TodoistAPI
@@ -257,6 +258,46 @@ def update_todoist_task(task_id: str, **kwargs) -> None:
 def delete_todoist_task(task_id: str) -> None:
     _api.delete_task(task_id)
     store.remove_known_task(task_id)
+
+
+def batch_update_task_status(complete_ids: list[str], uncomplete_ids: list[str]) -> None:
+    """Batch complete and uncomplete tasks via the Sync API (chunked to 100 commands max)."""
+
+    if not complete_ids and not uncomplete_ids:
+        return
+
+    commands = []
+    for task_id in complete_ids:
+        commands.append(
+            {
+                "type": "item_close",
+                "uuid": str(uuid.uuid4()),
+                "args": {"id": task_id},
+            }
+        )
+
+    for task_id in uncomplete_ids:
+        commands.append(
+            {
+                "type": "item_uncomplete",
+                "uuid": str(uuid.uuid4()),
+                "args": {"id": task_id},
+            }
+        )
+
+    # Todoist Sync API accepts a max of 100 commands per request
+    for i in range(0, len(commands), 100):
+        chunk = commands[i : i + 100]
+        r = httpx.post(
+            f"{_TODOIST_BASE}/api/v1/sync",
+            headers={"Authorization": f"Bearer {TODOIST_KEY}"},
+            json={"commands": chunk},
+            timeout=10,
+        )
+        r.raise_for_status()
+
+    for task_id in complete_ids:
+        store.remove_known_task(task_id)
 
 
 # ---------------------------------------------------------------------------

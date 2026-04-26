@@ -77,8 +77,7 @@ def _run_sync(
             patch("lib.sync.todoist.get_all_tasks", return_value=all_tasks),
             patch("lib.sync.todoist.get_completed_tasks", return_value=[]),
             patch("lib.sync.todoist.create_todoist_task", return_value="new-id") as mock_create,
-            patch("lib.sync.todoist.complete_todoist_task") as mock_complete,
-            patch("lib.sync.todoist.uncomplete_todoist_task") as mock_uncomplete,
+            patch("lib.sync.todoist.batch_update_task_status") as mock_batch_update,
             patch("lib.sync.write_tasks_section", side_effect=lambda lines: written.extend(lines)),
             patch("lib.sync.audit.log"),
         ):
@@ -86,7 +85,7 @@ def _run_sync(
 
             _sync()
 
-        return written, mock_create, mock_complete, mock_uncomplete
+        return written, mock_create, mock_batch_update
 
 
 # ---------------------------------------------------------------------------
@@ -97,13 +96,12 @@ def _run_sync(
 def test_branch_1a_states_match_no_api_call():
     """obs_checked=F, todoist=uncomplete, note_newer=T → keep line, no API call."""
     task = _todoist_task("Buy milk", is_completed=False)
-    written, create, complete, uncomplete = _run_sync(
+    written, create, batch_update = _run_sync(
         obsidian_lines=["- [ ] Buy milk"],
         today_tasks=[task],
         note_newer=True,
     )
-    complete.assert_not_called()
-    uncomplete.assert_not_called()
+    batch_update.assert_not_called()
     create.assert_not_called()
 
 
@@ -115,13 +113,12 @@ def test_branch_1a_states_match_no_api_call():
 def test_branch_1b_obsidian_wins_complete():
     """Checking a task in Obsidian when note is newer should complete it in Todoist."""
     task = _todoist_task("Buy milk", is_completed=False)
-    written, create, complete, uncomplete = _run_sync(
+    written, create, batch_update = _run_sync(
         obsidian_lines=["- [x] Buy milk"],
         today_tasks=[task],
         note_newer=True,
     )
-    complete.assert_called_once_with("id-Buy milk")
-    uncomplete.assert_not_called()
+    batch_update.assert_called_once_with(["id-Buy milk"], [])
 
 
 # ---------------------------------------------------------------------------
@@ -132,13 +129,12 @@ def test_branch_1b_obsidian_wins_complete():
 def test_branch_1c_obsidian_wins_uncomplete():
     """Unchecking a completed Todoist task in Obsidian (note newer) should uncomplete it."""
     task = _todoist_task("Buy milk", is_completed=True)
-    written, create, complete, uncomplete = _run_sync(
+    written, create, batch_update = _run_sync(
         obsidian_lines=["- [ ] Buy milk"],
         today_tasks=[task],
         note_newer=True,
     )
-    uncomplete.assert_called_once_with("id-Buy milk")
-    complete.assert_not_called()
+    batch_update.assert_called_once_with([], ["id-Buy milk"])
 
 
 # ---------------------------------------------------------------------------
@@ -149,13 +145,12 @@ def test_branch_1c_obsidian_wins_uncomplete():
 def test_branch_1d_todoist_wins_when_note_older():
     """When note is older than last sync, Todoist state wins — no API calls, obs updated."""
     task = _todoist_task("Buy milk", is_completed=True)
-    written, create, complete, uncomplete = _run_sync(
+    written, create, batch_update = _run_sync(
         obsidian_lines=["- [ ] Buy milk"],  # unchecked in obsidian
         today_tasks=[task],  # but completed in todoist
         note_newer=False,
     )
-    complete.assert_not_called()
-    uncomplete.assert_not_called()
+    batch_update.assert_not_called()
     create.assert_not_called()
     # Todoist wins: line should reflect completed state
     assert any("[x]" in line and "Buy milk" in line for line in written)
@@ -170,7 +165,7 @@ def test_branch_2_rescheduled_task_not_recreated():
     """Task rescheduled to future date is absent from today_tasks but present in all_tasks.
     Should NOT be created as a new task."""
     rescheduled = _todoist_task("Rescheduled task")
-    written, create, complete, uncomplete = _run_sync(
+    written, create, batch_update = _run_sync(
         obsidian_lines=["- [ ] Rescheduled task"],
         today_tasks=[],  # not due today
         all_tasks=[rescheduled],  # but exists in Todoist
@@ -191,7 +186,7 @@ def test_branch_3_checked_absent_task_not_recreated():
     + absent and (incorrectly) re-created them. The fix: checked + absent → already
     done, skip creation.
     """
-    written, create, complete, uncomplete = _run_sync(
+    written, create, batch_update = _run_sync(
         obsidian_lines=["- [x] Already done"],
         today_tasks=[],  # absent from today
         all_tasks=[],  # absent from all tasks
@@ -206,7 +201,7 @@ def test_branch_3_checked_absent_task_not_recreated():
 
 def test_branch_4_unchecked_absent_task_is_created():
     """Unchecked task absent from all Todoist lists should be created."""
-    written, create, complete, uncomplete = _run_sync(
+    written, create, batch_update = _run_sync(
         obsidian_lines=["- [ ] New task from obsidian"],
         today_tasks=[],
         all_tasks=[],
@@ -224,7 +219,7 @@ def test_branch_4_unchecked_absent_task_is_created():
 def test_append_todoist_task_not_in_obsidian():
     """A Todoist task absent from the Obsidian note should be appended."""
     task = _todoist_task("From todoist")
-    written, create, complete, uncomplete = _run_sync(
+    written, create, batch_update = _run_sync(
         obsidian_lines=[],
         today_tasks=[task],
     )
@@ -239,11 +234,11 @@ def test_append_todoist_task_not_in_obsidian():
 
 def test_sync_skips_when_not_planned():
     """_sync() should be a no-op if is_day_planned() returns False."""
-    written, create, complete, uncomplete = _run_sync(
+    written, create, batch_update = _run_sync(
         obsidian_lines=["- [ ] Some task"],
         today_tasks=[],
         is_day_planned=False,
     )
     create.assert_not_called()
-    complete.assert_not_called()
+    batch_update.assert_not_called()
     assert written == []
