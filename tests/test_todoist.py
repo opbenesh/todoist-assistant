@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
 import pytest
+from unittest.mock import MagicMock, patch
 
 import lib.todoist
 from lib.models import PRIORITY_TO_TODOIST, Task
@@ -17,6 +16,15 @@ from lib.todoist import (
     strip_age_labels,
     uncomplete_todoist_task,
 )
+
+@pytest.fixture(autouse=True)
+def reset_projects_cache():
+    lib.todoist._projects_cache = None
+    lib.todoist._projects_cache_time = 0.0
+    yield
+    lib.todoist._projects_cache = None
+    lib.todoist._projects_cache_time = 0.0
+
 
 # ---------------------------------------------------------------------------
 # Priority mapping
@@ -171,10 +179,6 @@ def test_build_user_settings_defaults_when_both_empty():
 
 
 def test_get_projects_info_returns_inbox_id(mock_todoist_api):
-    import lib.todoist
-
-    lib.todoist._projects_cache = None
-
     inbox = MagicMock()
     inbox.id = "inbox_123"
     inbox.name = "Inbox"
@@ -194,10 +198,6 @@ def test_get_projects_info_returns_inbox_id(mock_todoist_api):
 
 
 def test_get_projects_info_no_inbox_returns_none(mock_todoist_api):
-    import lib.todoist
-
-    lib.todoist._projects_cache = None
-
     proj = MagicMock()
     proj.id = "p1"
     proj.name = "Work"
@@ -210,10 +210,6 @@ def test_get_projects_info_no_inbox_returns_none(mock_todoist_api):
 
 
 def test_get_projects_info_empty_returns_none(mock_todoist_api):
-    import lib.todoist
-
-    lib.todoist._projects_cache = None
-
     mock_todoist_api.get_projects.return_value = [[]]
 
     projects, inbox_id = get_projects_info()
@@ -222,10 +218,6 @@ def test_get_projects_info_empty_returns_none(mock_todoist_api):
 
 
 def test_get_projects_info_caches_results(mock_todoist_api):
-    import lib.todoist
-
-    lib.todoist._projects_cache = None
-
     inbox = MagicMock()
     inbox.id = "inbox_123"
     inbox.name = "Inbox"
@@ -251,10 +243,6 @@ def test_get_projects_info_caches_results(mock_todoist_api):
 
 @patch("lib.todoist.time.time")
 def test_get_projects_info_cache_expiration(mock_time, mock_todoist_api):
-    import lib.todoist
-
-    lib.todoist._projects_cache = None
-
     inbox = MagicMock()
     inbox.id = "inbox_123"
     inbox.name = "Inbox"
