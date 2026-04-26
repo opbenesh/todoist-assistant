@@ -122,8 +122,7 @@ class TestTriagePostpone:
         self, bot: BotClient, todoist: TodoistInspector
     ) -> None:
         """Postponing a task with age >= MAX_TRIAGE_AGE shows a warning message."""
-        MAX_TRIAGE_AGE = 3
-        MAX_TRIAGE_AGE = 3
+        from lib.todoist import MAX_TRIAGE_AGE
 
         todoist.seed(
             tasks=[
@@ -227,8 +226,7 @@ class TestTriageQuarantine:
 
         Quarantine appears on the keyboard when task_age >= MAX_TRIAGE_AGE.
         """
-        MAX_TRIAGE_AGE = 3
-        MAX_TRIAGE_AGE = 3
+        from lib.todoist import MAX_TRIAGE_AGE
 
         todoist.seed(
             tasks=[
