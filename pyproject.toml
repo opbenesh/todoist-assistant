@@ -12,13 +12,24 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest", "pytest-asyncio", "ruff", "ty", "fastapi", "uvicorn", "pre-commit>=3.7", "pyinstrument"]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "ty",
+    "fastapi",
+    "uvicorn",
+    "pre-commit>=3.7",
+    "pyinstrument",
+    "pytest-xdist>=3.8.0",
+    "pytest-env>=1.6.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
 asyncio_mode = "auto"
-addopts = "-m 'not e2e'"
+addopts = "-m 'not e2e' -n auto"
 markers = ["e2e: end-to-end tests that start the real bot process against fake services"]
 
 [tool.ruff]
@@ -29,3 +40,9 @@ select = ["E", "F", "I"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["E501"]
+
+[tool.pytest_env]
+TELEGRAM_BOT_KEY = "test_key"
+TODOIST_KEY = "test_key"
+ANTHROPIC_KEY = "test_key"
+TELEGRAM_USER_ID = "123"

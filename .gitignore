@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .env
 data/state.json
+data/*.jsonl
 .ruff_cache/
 .pytest_cache/
 docs/

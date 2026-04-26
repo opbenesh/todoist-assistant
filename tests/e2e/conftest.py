@@ -183,8 +183,9 @@ def staging_app(
         encoding="utf-8",
     )
 
-    state_file = tmp_path / "state.json"
-    data_dir = tmp_path / "data"
+    import uuid
+    state_file = tmp_path / f"state_{uuid.uuid4().hex}.json"
+    data_dir = tmp_path / f"data_{uuid.uuid4().hex}"
     data_dir.mkdir()
 
     env = {
