@@ -38,7 +38,7 @@ def _extract_task_lines(text: str) -> list[str]:
     if not match:
         return []
 
-    start_pos = match.end()
+    start_pos = match.end()  # character index of first line after the Tasks header
     next_header_match = re.search(r"^## ", text[start_pos:], flags=re.MULTILINE)
 
     if next_header_match:
