@@ -11,6 +11,7 @@ from lib.todoist import (
     get_projects_info,
     get_triage_tasks,
     get_user_settings,
+    strip_age_labels,
     uncomplete_todoist_task,
 )
 
@@ -320,3 +321,44 @@ def test_uncomplete_todoist_task_calls_sdk_uncomplete(mock_todoist_api):
     """uncomplete_todoist_task must call _api.uncomplete_task."""
     uncomplete_todoist_task("t1")
     mock_todoist_api.uncomplete_task.assert_called_once_with("t1")
+
+
+# ---------------------------------------------------------------------------
+# Age Labels Handling
+# ---------------------------------------------------------------------------
+
+
+def test_strip_age_labels_with_labels_no_change():
+    """Test that providing current_labels without age/quarantine labels does not update."""
+    current_labels = ["work", "important"]
+    with patch("lib.todoist.update_todoist_task") as mock_update:
+        strip_age_labels("t1", current_labels=current_labels)
+        mock_update.assert_not_called()
+
+
+def test_strip_age_labels_with_labels_strips_target_labels():
+    """Test that age and quarantine labels are removed and task is updated."""
+    current_labels = ["work", "age1", "age42", "quarantined", "important"]
+    with patch("lib.todoist.update_todoist_task") as mock_update:
+        strip_age_labels("t1", current_labels=current_labels)
+        mock_update.assert_called_once_with("t1", labels=["work", "important"])
+
+
+def test_strip_age_labels_without_labels_fetches_task_and_strips():
+    """Test that if current_labels is omitted, it fetches the task and updates it."""
+    task_data = {"labels": ["age3", "home", "quarantined"]}
+    with patch("lib.todoist.get_task_by_id", return_value=task_data) as mock_get:
+        with patch("lib.todoist.update_todoist_task") as mock_update:
+            strip_age_labels("t1")
+            mock_get.assert_called_once_with("t1")
+            mock_update.assert_called_once_with("t1", labels=["home"])
+
+
+def test_strip_age_labels_without_labels_fetches_task_no_labels():
+    """Test that if current_labels is omitted and task has no labels, it does not crash."""
+    task_data = {}
+    with patch("lib.todoist.get_task_by_id", return_value=task_data) as mock_get:
+        with patch("lib.todoist.update_todoist_task") as mock_update:
+            strip_age_labels("t1")
+            mock_get.assert_called_once_with("t1")
+            mock_update.assert_not_called()
