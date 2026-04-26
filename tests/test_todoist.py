@@ -171,6 +171,10 @@ def test_build_user_settings_defaults_when_both_empty():
 
 
 def test_get_projects_info_returns_inbox_id(mock_todoist_api):
+    import lib.todoist
+
+    lib.todoist._projects_cache = None
+
     inbox = MagicMock()
     inbox.id = "inbox_123"
     inbox.name = "Inbox"
@@ -190,6 +194,10 @@ def test_get_projects_info_returns_inbox_id(mock_todoist_api):
 
 
 def test_get_projects_info_no_inbox_returns_none(mock_todoist_api):
+    import lib.todoist
+
+    lib.todoist._projects_cache = None
+
     proj = MagicMock()
     proj.id = "p1"
     proj.name = "Work"
@@ -202,11 +210,74 @@ def test_get_projects_info_no_inbox_returns_none(mock_todoist_api):
 
 
 def test_get_projects_info_empty_returns_none(mock_todoist_api):
+    import lib.todoist
+
+    lib.todoist._projects_cache = None
+
     mock_todoist_api.get_projects.return_value = [[]]
 
     projects, inbox_id = get_projects_info()
     assert projects == {}
     assert inbox_id is None
+
+
+def test_get_projects_info_caches_results(mock_todoist_api):
+    import lib.todoist
+
+    lib.todoist._projects_cache = None
+
+    inbox = MagicMock()
+    inbox.id = "inbox_123"
+    inbox.name = "Inbox"
+    inbox.is_inbox_project = True
+
+    mock_todoist_api.get_projects.return_value = [[inbox]]
+
+    # First call should hit the API
+    projects1, inbox_id1 = get_projects_info()
+    assert projects1 == {"inbox_123": "Inbox"}
+    assert mock_todoist_api.get_projects.call_count == 1
+
+    # Second call should use cache
+    projects2, inbox_id2 = get_projects_info()
+    assert projects2 == {"inbox_123": "Inbox"}
+    assert mock_todoist_api.get_projects.call_count == 1
+
+    # get_all_projects should also use the cache
+    projects3 = lib.todoist.get_all_projects()
+    assert projects3 == {"inbox_123": "Inbox"}
+    assert mock_todoist_api.get_projects.call_count == 1
+
+
+@patch("lib.todoist.time.time")
+def test_get_projects_info_cache_expiration(mock_time, mock_todoist_api):
+    import lib.todoist
+
+    lib.todoist._projects_cache = None
+
+    inbox = MagicMock()
+    inbox.id = "inbox_123"
+    inbox.name = "Inbox"
+    inbox.is_inbox_project = True
+
+    mock_todoist_api.get_projects.return_value = [[inbox]]
+
+    # Mock time at 0
+    mock_time.return_value = 0.0
+
+    # First call hits API
+    get_projects_info()
+    assert mock_todoist_api.get_projects.call_count == 1
+
+    # Time moves forward but still within TTL (300)
+    mock_time.return_value = 200.0
+    get_projects_info()
+    assert mock_todoist_api.get_projects.call_count == 1
+
+    # Time moves forward past TTL
+    mock_time.return_value = 301.0
+    get_projects_info()
+    assert mock_todoist_api.get_projects.call_count == 2
 
 
 # ---------------------------------------------------------------------------
