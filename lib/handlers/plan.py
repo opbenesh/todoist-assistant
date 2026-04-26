@@ -8,7 +8,7 @@ from datetime import date, datetime
 from datetime import time as dt_time
 from zoneinfo import ZoneInfo
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
@@ -618,6 +618,153 @@ async def _advance_triage(
     return TRIAGING
 
 
+async def _handle_triage_priority(
+    chat_id: int,
+    query: CallbackQuery,
+    session: PlanFlowSession,
+    task_id: str,
+    title: str,
+    action: str,
+) -> int | None:
+    valid_slots = _valid_timeslots()
+    if valid_slots:
+        session.triage_pending_priority = action
+        await query.edit_message_text(
+            f"*{title}*\n_Priority: {action.upper()} — when should this run?_",
+            reply_markup=_timeslot_keyboard(valid_slots),
+            parse_mode="Markdown",
+        )
+        _checkpoint(chat_id, TRIAGE_TIMESLOT)
+        return TRIAGE_TIMESLOT
+    # No slots left today — schedule without a time
+    await asyncio.to_thread(
+        todoist.update_todoist_task,
+        task_id,
+        priority=PRIORITY_TO_TODOIST[action],
+        due_string="today",
+    )
+    audit.log(
+        "update",
+        source="plan/triage",
+        trigger=f"user_set_{action}",
+        task_id=task_id,
+        title=title,
+        changes={"priority": action, "due": "today"},
+    )
+    logger.info("[plan/triage] set %s → %s (no timeslot available)", task_id, action)
+    return None
+
+
+async def _handle_triage_complete(task: dict, task_id: str, title: str, labels: list[str]) -> None:
+    project_id = task.get("project_id")
+    await asyncio.gather(
+        asyncio.to_thread(todoist.strip_age_labels, task_id, labels),
+        asyncio.to_thread(todoist.complete_todoist_task, task_id),
+    )
+    if project_id:
+        await asyncio.to_thread(todoist.reset_next_project_task_age, project_id)
+    audit.log(
+        "complete",
+        source="plan/triage",
+        trigger="user_complete",
+        task_id=task_id,
+        title=title,
+    )
+    logger.info("[plan/triage] completed %s", task_id)
+
+
+async def _handle_triage_postpone(
+    chat_id: int,
+    context: ContextTypes.DEFAULT_TYPE,
+    task_id: str,
+    title: str,
+    is_recurring: bool,
+    labels: list[str],
+) -> None:
+    if is_recurring:
+        # Removing the due date would destroy the recurrence pattern.
+        # Complete this occurrence instead so Todoist advances the schedule.
+        await asyncio.to_thread(todoist.complete_todoist_task, task_id)
+        audit.log(
+            "complete",
+            source="plan/triage",
+            trigger="user_postpone_recurring",
+            task_id=task_id,
+            title=title,
+        )
+        logger.info("[plan/triage] recurring postpone → completed %s", task_id)
+    else:
+        age = todoist.get_task_age(labels)
+        await asyncio.to_thread(todoist.remove_task_due_date, task_id)
+        audit.log(
+            "remove_due_date",
+            source="plan/triage",
+            trigger="user_postpone",
+            task_id=task_id,
+            title=title,
+        )
+        logger.info("[plan/triage] postponed %s", task_id)
+        if age >= MAX_TRIAGE_AGE:
+            await context.bot.send_message(
+                chat_id,
+                f"⚠️ _{title}_ has been postponed {age} times.",
+                parse_mode="Markdown",
+            )
+
+
+async def _handle_triage_quarantine(
+    chat_id: int, context: ContextTypes.DEFAULT_TYPE, task_id: str, title: str, labels: list[str]
+) -> None:
+    await asyncio.to_thread(todoist.quarantine_task, task_id, labels)
+    audit.log(
+        "update",
+        source="plan/triage",
+        trigger="user_quarantine",
+        task_id=task_id,
+        title=title,
+        changes={"labels": "+quarantined"},
+    )
+    logger.info("[plan/triage] quarantined %s", task_id)
+    await context.bot.send_message(
+        chat_id,
+        f"🚫 _{title}_ quarantined — hidden from future planning.",
+        parse_mode="Markdown",
+    )
+
+
+async def _handle_triage_delete(
+    chat_id: int,
+    context: ContextTypes.DEFAULT_TYPE,
+    task_id: str,
+    title: str,
+    is_recurring: bool,
+    labels: list[str],
+) -> bool:
+    if is_recurring:
+        # Deleting a recurring task removes all future occurrences permanently.
+        # Block and let the user choose a different action.
+        await context.bot.send_message(
+            chat_id,
+            "⚠️ Recurring task — deleting removes all future occurrences. "
+            "Use ✅ Done to skip this occurrence, or delete from Todoist directly.",
+        )
+        return True
+    else:
+        await asyncio.gather(
+            asyncio.to_thread(todoist.strip_age_labels, task_id, labels),
+            asyncio.to_thread(todoist.delete_todoist_task, task_id),
+        )
+        audit.log(
+            "delete",
+            source="plan/triage",
+            trigger="user_delete",
+            task_id=task_id,
+            title=title,
+        )
+        logger.info("[plan/triage] deleted %s", task_id)
+        return False
+
+
 async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
@@ -637,117 +784,20 @@ async def triage_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     try:
         if action in ("p1", "p2", "p3"):
-            valid_slots = _valid_timeslots()
-            if valid_slots:
-                session.triage_pending_priority = action
-                await query.edit_message_text(
-                    f"*{title}*\n_Priority: {action.upper()} — when should this run?_",
-                    reply_markup=_timeslot_keyboard(valid_slots),
-                    parse_mode="Markdown",
-                )
-                _checkpoint(chat_id, TRIAGE_TIMESLOT)
-                return TRIAGE_TIMESLOT
-            # No slots left today — schedule without a time
-            await asyncio.to_thread(
-                todoist.update_todoist_task,
-                task_id,
-                priority=PRIORITY_TO_TODOIST[action],
-                due_string="today",
-            )
-            audit.log(
-                "update",
-                source="plan/triage",
-                trigger=f"user_set_{action}",
-                task_id=task_id,
-                title=title,
-                changes={"priority": action, "due": "today"},
-            )
-            logger.info("[plan/triage] set %s → %s (no timeslot available)", task_id, action)
+            res = await _handle_triage_priority(chat_id, query, session, task_id, title, action)
+            if res is not None:
+                return res
         elif action == "complete":
-            project_id = task.get("project_id")
-            await asyncio.gather(
-                asyncio.to_thread(todoist.strip_age_labels, task_id, labels),
-                asyncio.to_thread(todoist.complete_todoist_task, task_id),
-            )
-            if project_id:
-                await asyncio.to_thread(todoist.reset_next_project_task_age, project_id)
-            audit.log(
-                "complete",
-                source="plan/triage",
-                trigger="user_complete",
-                task_id=task_id,
-                title=title,
-            )
-            logger.info("[plan/triage] completed %s", task_id)
+            await _handle_triage_complete(task, task_id, title, labels)
         elif action == "postpone":
-            if is_recurring:
-                # Removing the due date would destroy the recurrence pattern.
-                # Complete this occurrence instead so Todoist advances the schedule.
-                await asyncio.to_thread(todoist.complete_todoist_task, task_id)
-                audit.log(
-                    "complete",
-                    source="plan/triage",
-                    trigger="user_postpone_recurring",
-                    task_id=task_id,
-                    title=title,
-                )
-                logger.info("[plan/triage] recurring postpone → completed %s", task_id)
-            else:
-                age = todoist.get_task_age(labels)
-                await asyncio.to_thread(todoist.remove_task_due_date, task_id)
-                audit.log(
-                    "remove_due_date",
-                    source="plan/triage",
-                    trigger="user_postpone",
-                    task_id=task_id,
-                    title=title,
-                )
-                logger.info("[plan/triage] postponed %s", task_id)
-                if age >= MAX_TRIAGE_AGE:
-                    await context.bot.send_message(
-                        chat_id,
-                        f"⚠️ _{title}_ has been postponed {age} times.",
-                        parse_mode="Markdown",
-                    )
+            await _handle_triage_postpone(chat_id, context, task_id, title, is_recurring, labels)
         elif action == "quarantine":
-            await asyncio.to_thread(todoist.quarantine_task, task_id, labels)
-            audit.log(
-                "update",
-                source="plan/triage",
-                trigger="user_quarantine",
-                task_id=task_id,
-                title=title,
-                changes={"labels": "+quarantined"},
-            )
-            logger.info("[plan/triage] quarantined %s", task_id)
-            await context.bot.send_message(
-                chat_id,
-                f"🚫 _{title}_ quarantined — hidden from future planning.",
-                parse_mode="Markdown",
-            )
+            await _handle_triage_quarantine(chat_id, context, task_id, title, labels)
         elif action == "delete":
-            if is_recurring:
-                # Deleting a recurring task removes all future occurrences permanently.
-                # Block and let the user choose a different action.
-                await context.bot.send_message(
-                    chat_id,
-                    "⚠️ Recurring task — deleting removes all future occurrences. "
-                    "Use ✅ Done to skip this occurrence, or delete from Todoist directly.",
-                )
-                skip_advance = True
-            else:
-                await asyncio.gather(
-                    asyncio.to_thread(todoist.strip_age_labels, task_id, labels),
-                    asyncio.to_thread(todoist.delete_todoist_task, task_id),
-                )
-                audit.log(
-                    "delete",
-                    source="plan/triage",
-                    trigger="user_delete",
-                    task_id=task_id,
-                    title=title,
-                )
-                logger.info("[plan/triage] deleted %s", task_id)
+            # returns True if we should block advancement (e.g. for recurring tasks)
+            skip_advance = await _handle_triage_delete(
+                chat_id, context, task_id, title, is_recurring, labels
+            )
     except Exception as exc:
         logger.error("Triage action %s on %s failed: %s", action, task_id, exc)
         await query.answer("Failed to update task.", show_alert=True)
