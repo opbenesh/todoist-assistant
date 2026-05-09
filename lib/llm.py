@@ -78,7 +78,8 @@ The user will write free-form text describing what they want or need to do.
 Extract every distinct actionable task and return them as a JSON array of short, clean task titles.
 Rules:
 - Each title should be clear and actionable (start with a verb where natural)
-- Fix typos and capitalise properly
+- Preserve the original language — NEVER translate; if the input is Hebrew, output Hebrew titles
+- Fix obvious typos and capitalise the first word only
 - Omit vague filler phrases ("maybe", "probably") but include the task if there's real intent
 - Titles under 80 characters each
 - Return ONLY a valid JSON array of strings, no prose, no markdown fences.
