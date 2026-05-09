@@ -74,14 +74,14 @@ class TestSessionState:
             except json.JSONDecodeError as e:
                 pytest.fail(f"state.json is not valid JSON: {e}\nContent: {content[:200]}")
 
-    def test_optimize_shows_task_list(
+    def test_unblock_shows_task_list(
         self,
         bot: BotClient,
         todoist: TodoistInspector,
         llm: LLMInspector,
         staging_app: dict,
     ) -> None:
-        """/optimize fetches tasks and shows an inline keyboard list."""
+        """/unblock fetches tasks and shows an inline keyboard list."""
         todoist.seed(
             tasks=[
                 sd.task(
@@ -94,8 +94,8 @@ class TestSessionState:
             ]
         )
 
-        bot.send_message("/optimize")
+        bot.send_message("/unblock")
         resp = bot.wait_responses(2, timeout=10)
-        assert resp, "Bot did not respond to /optimize"
+        assert resp, "Bot did not respond to /unblock"
         assert any(r.get("reply_markup") for r in resp), "Expected task list keyboard"
-        assert llm.call_count() == 0, "optimize should not call LLM at task list stage"
+        assert llm.call_count() == 0, "unblock should not call LLM at task list stage"

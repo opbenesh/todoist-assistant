@@ -310,7 +310,7 @@ def test_get_all_tasks_deduplicates_across_pages(mock_todoist_api):
     BUG: get_all_tasks() has no deduplication — unlike get_triage_tasks() which
     guards with a `seen` set. When the Todoist SDK paginator returns the same task
     on more than one page (possible for tasks that appear in multiple views or
-    during pagination boundary races), the optimize flow queues the task N times,
+    during pagination boundary races), the unblock flow queues the task N times,
     breaks it down N times, and produces N copies of the same sub-tasks.
     """
     task = _make_mock_task(task_id="dup-1", title="לשלם ליאיר!")
@@ -321,7 +321,7 @@ def test_get_all_tasks_deduplicates_across_pages(mock_todoist_api):
     ids = [t["id"] for t in result]
     assert ids.count("dup-1") == 1, (
         f"Expected task 'dup-1' once, got {ids.count('dup-1')} copies. "
-        "get_all_tasks() does not deduplicate across pages, causing the optimize "
+        "get_all_tasks() does not deduplicate across pages, causing the unblock "
         "flow to process and break down the same task multiple times."
     )
 

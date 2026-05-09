@@ -81,7 +81,7 @@ def _brainstorm_response(_user_msg: str) -> str:
     return json.dumps(["Review emails", "Follow up on pending items"])
 
 
-def _breakdown_optimize_response(_user_msg: str) -> str:
+def _breakdown_unblock_response(_user_msg: str) -> str:
     return json.dumps(
         {
             "project_slug": "task-breakdown",
@@ -162,7 +162,7 @@ def _route(system: str, user_msg: str, model: str) -> str:
     if "extraction assistant" in s:
         return _brainstorm_response(user_msg)
     if "breakdown assistant" in s:
-        return _breakdown_optimize_response(user_msg)
+        return _breakdown_unblock_response(user_msg)
     if "task planning assistant" in s:
         return _breakdown_response(user_msg)
     if "enrichment assistant" in s:

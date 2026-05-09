@@ -39,7 +39,7 @@ _SLUG_RE = re.compile(r"[^a-z0-9-]+")
 
 
 @dataclass
-class OptimizeSession:
+class UnblockSession:
     tasks: list[dict]
     current_task: dict | None = None
     proposed: list[str] = field(default_factory=list)
@@ -49,7 +49,7 @@ class OptimizeSession:
     created: int = 0
 
 
-_sessions: dict[int, OptimizeSession] = {}
+_sessions: dict[int, UnblockSession] = {}
 
 
 def _sort_key(task: dict) -> tuple[int, int]:
@@ -88,7 +88,7 @@ def _number_title(title: str, n: int) -> str:
 # ---------------------------------------------------------------------------
 
 
-async def optimize_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def unblock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = update.effective_chat.id
     await update.message.reply_text("Fetching tasks…")
 
@@ -99,7 +99,7 @@ async def optimize_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         return ConversationHandler.END
 
     sorted_tasks = quarantined[:_MAX_LIST]
-    _sessions[chat_id] = OptimizeSession(tasks=sorted_tasks)
+    _sessions[chat_id] = UnblockSession(tasks=sorted_tasks)
 
     buttons = []
     for task in sorted_tasks:
@@ -157,7 +157,7 @@ async def brainstorm_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE
         return ConversationHandler.END
 
     user_text = update.message.text.strip()
-    proposed, slug = await llm.breakdown_tasks_for_optimize(session.current_task, user_text)
+    proposed, slug = await llm.breakdown_tasks_for_unblock(session.current_task, user_text)
 
     if not proposed:
         await update.message.reply_text(
@@ -238,14 +238,14 @@ async def _create_project_and_start(
         session.project_id = project_id
         audit.log(
             "create_project",
-            source="optimize/breakdown",
+            source="unblock/breakdown",
             trigger="user_confirm",
             project_id=project_id,
             name=full_name,
         )
-        logger.info("[optimize] created project %s (%s)", full_name, project_id)
+        logger.info("[unblock] created project %s (%s)", full_name, project_id)
     except Exception as exc:
-        logger.error("[optimize] failed to create project '%s': %s", full_name, exc)
+        logger.error("[unblock] failed to create project '%s': %s", full_name, exc)
         await context.bot.send_message(chat_id, f"Failed to create project: {exc}")
         return ConversationHandler.END
 
@@ -317,7 +317,7 @@ async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
         session.created += 1
         audit.log(
             "create",
-            source="optimize/breakdown",
+            source="unblock/breakdown",
             trigger="user_accept",
             task_id=task_id,
             title=title,
@@ -325,10 +325,10 @@ async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
             original_title=original_title,
             project_id=session.project_id,
         )
-        logger.info("[optimize] created breakdown task: %s", title)
+        logger.info("[unblock] created breakdown task: %s", title)
         await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
     except Exception as exc:
-        logger.error("[optimize] failed to create task '%s': %s", title, exc)
+        logger.error("[unblock] failed to create task '%s': %s", title, exc)
         await query.answer("Failed to create task.", show_alert=True)
 
     session.proposal_index += 1
@@ -367,15 +367,15 @@ async def _finalize_breakdown(chat_id: int, context: ContextTypes.DEFAULT_TYPE) 
         await asyncio.to_thread(todoist.delete_todoist_task, original_id)
         audit.log(
             "delete",
-            source="optimize/breakdown_finalize",
+            source="unblock/breakdown_finalize",
             trigger="auto",
             task_id=original_id,
             title=original.get("title", ""),
             note="deleted after user broke it down into subtasks",
         )
-        logger.info("[optimize] deleted original task %s after breakdown", original_id)
+        logger.info("[unblock] deleted original task %s after breakdown", original_id)
     except Exception as exc:
-        logger.error("[optimize] failed to delete original task %s: %s", original_id, exc)
+        logger.error("[unblock] failed to delete original task %s: %s", original_id, exc)
 
     created = session.created
     project_name = f"#proj-{session.project_slug}" if session.project_slug else "project"
@@ -395,7 +395,7 @@ async def _finalize_breakdown(chat_id: int, context: ContextTypes.DEFAULT_TYPE) 
 
 async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     _sessions.pop(update.effective_chat.id, None)
-    await update.message.reply_text("Optimize cancelled.")
+    await update.message.reply_text("Unblock cancelled.")
     return ConversationHandler.END
 
 
@@ -404,8 +404,8 @@ async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 # ---------------------------------------------------------------------------
 
 
-optimize_conversation_handler = ConversationHandler(
-    entry_points=[CommandHandler("optimize", optimize_cmd, WHITELIST_FILTER)],
+unblock_conversation_handler = ConversationHandler(
+    entry_points=[CommandHandler("unblock", unblock_cmd, WHITELIST_FILTER)],
     states={
         PICKING: [
             CallbackQueryHandler(pick_cb, pattern=f"^{_PICK_PREFIX}"),
@@ -428,5 +428,5 @@ optimize_conversation_handler = ConversationHandler(
     per_chat=True,
     per_message=False,
     conversation_timeout=600,
-    name="optimize",
+    name="unblock",
 )

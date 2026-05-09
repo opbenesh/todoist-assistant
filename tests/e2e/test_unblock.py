@@ -1,4 +1,4 @@
-"""E2E tests for /optimize — single-task on-demand breakdown flow."""
+"""E2E tests for /unblock — single-task on-demand breakdown flow."""
 
 from __future__ import annotations
 
@@ -15,21 +15,21 @@ _QUARANTINE_ID = "t_opt_quarantined"
 _QUARANTINE_ID2 = "t_opt_quarantined2"
 
 
-class TestOptimizeTaskList:
+class TestUnblockTaskList:
     def test_shows_quarantined_task_list(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        """/optimize with a quarantined task shows an inline keyboard."""
+        """/unblock with a quarantined task shows an inline keyboard."""
         todoist.seed(
             tasks=[
                 sd.task("Stalled project", task_id=_QUARANTINE_ID, labels=["quarantined"]),
             ]
         )
-        bot.send_message("/optimize")
+        bot.send_message("/unblock")
         resp = bot.wait_responses(2, timeout=15)  # "Fetching…" + list
         assert any(r.get("reply_markup") for r in resp), "Expected inline keyboard with task list"
 
     def test_no_tasks(self, bot: BotClient) -> None:
-        """/optimize with empty inbox shows a 'no quarantined tasks' message."""
-        bot.send_message("/optimize")
+        """/unblock with empty inbox shows a 'no quarantined tasks' message."""
+        bot.send_message("/unblock")
         resp = bot.wait_responses(2, timeout=15)
         text = " ".join(r.get("text", "") for r in resp).lower()
         assert "no" in text and "quarantine" in text or "no tasks" in text, (
@@ -44,7 +44,7 @@ class TestOptimizeTaskList:
                 sd.task("Aged task", task_id=_AGED_ID, labels=["age3"]),
             ]
         )
-        bot.send_message("/optimize")
+        bot.send_message("/unblock")
         resp = bot.wait_responses(2, timeout=15)
         text = " ".join(r.get("text", "") for r in resp).lower()
         assert "quarantine" in text, (
@@ -64,7 +64,7 @@ class TestOptimizeTaskList:
                 sd.task("Quarantined task", task_id=_QUARANTINE_ID, labels=["quarantined"]),
             ]
         )
-        bot.send_message("/optimize")
+        bot.send_message("/unblock")
         resp = bot.wait_responses(2, timeout=15)
         keyboard_resp = next((r for r in resp if r.get("reply_markup")), None)
         assert keyboard_resp, "Expected task list keyboard"
@@ -76,16 +76,16 @@ class TestOptimizeTaskList:
             f"Expected quarantined task in list, got: {buttons}"
         )
         assert not any("Regular task" in b for b in buttons), (
-            f"Non-quarantined task should not appear in optimize list, got: {buttons}"
+            f"Non-quarantined task should not appear in unblock list, got: {buttons}"
         )
 
 
-class TestOptimizeBreakdown:
+class TestUnblockBreakdown:
     def _start_and_pick(self, bot: BotClient, todoist: TodoistInspector) -> None:
         todoist.seed(
             tasks=[sd.task("Plan the project", task_id=_QUARANTINE_ID, labels=["quarantined"])]
         )
-        bot.send_message("/optimize")
+        bot.send_message("/unblock")
         bot.wait_responses(2, timeout=15)  # "Fetching…" + list
         # Pick the only task by pressing its button
         pressed = bot.press_button_labeled_any("Plan the project", timeout=8)
@@ -134,7 +134,7 @@ class TestOptimizeBreakdown:
                 ),
             ]
         )
-        bot.send_message("/optimize")
+        bot.send_message("/unblock")
         bot.wait_responses(2, timeout=15)
         pressed = bot.press_button_labeled_any("Aged task", timeout=8)
         assert pressed, "Could not find aged task in list"
@@ -165,12 +165,12 @@ class TestOptimizeBreakdown:
         assert "quarantined" not in created_labels, "New task should not inherit quarantined label"
 
 
-class TestOptimizeProject:
+class TestUnblockProject:
     """Tests for project creation and task numbering during breakdown."""
 
     def _pick_task(self, bot: BotClient, todoist: TodoistInspector, title: str) -> None:
         todoist.seed(tasks=[sd.task(title, task_id=_QUARANTINE_ID, labels=["quarantined"])])
-        bot.send_message("/optimize")
+        bot.send_message("/unblock")
         bot.wait_responses(2, timeout=15)
         pressed = bot.press_button_labeled_any(title[:20], timeout=8)
         assert pressed, f"Could not press button for task: {title!r}"

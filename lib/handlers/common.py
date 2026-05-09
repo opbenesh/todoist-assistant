@@ -9,10 +9,10 @@ _PHASE_LABELS = {
     0: "brainstorm prompt",
     1: "brainstorm input",
     2: "brainstorm review",
-    3: "optimize prompt",
-    4: "optimize reviewing",
-    5: "optimize brainstorm input",
-    6: "optimize brainstorm review",
+    3: "unblock prompt",
+    4: "unblock reviewing",
+    5: "unblock brainstorm input",
+    6: "unblock brainstorm review",
     7: "triage",
     8: "resume confirm",
     9: "triage timeslot",
@@ -26,7 +26,7 @@ HELP_TEXT = """
 /completed — list recently completed tasks
 /plan — generate a timeblocked plan for today
 /digest — get today's morning digest
-/optimize — review and improve task hygiene
+/unblock — break down a stuck task into actionable steps
 /deepdive — deep-dive analysis on a single task
 /insights — pattern insights: habits, workload, clusters
 /project — project-level plan and next actions

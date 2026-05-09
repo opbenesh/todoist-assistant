@@ -386,7 +386,7 @@ def get_projects_info() -> tuple[dict[str, str], str | None]:
     return _projects_cache
 
 
-def get_tasks_to_optimize(
+def get_tasks_to_unblock(
     projects: dict[str, str] | None = None,
     exclude_ids: frozenset[str] = frozenset(),
 ) -> list[dict]:
@@ -394,7 +394,7 @@ def get_tasks_to_optimize(
 
     Untriaged criteria (any one triggers): p4 priority, Inbox project, no due date,
     or title longer than 60 chars.
-    Tasks in exclude_ids (recently optimized) are skipped.
+    Tasks in exclude_ids (recently unblocked) are skipped.
     """
     if projects is None:
         projects = get_all_projects()

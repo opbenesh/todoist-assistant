@@ -87,7 +87,7 @@ Example input: "wash all dishes, take the garbage out, clean the fridge, maybe d
 Example output: ["Wash all dishes", "Take the garbage out", "Clean the fridge",
   "Deal with kzradio"]"""
 
-_BREAKDOWN_OPTIMIZE_SYSTEM = """You are a task breakdown assistant helping convert a \
+_BREAKDOWN_UNBLOCK_SYSTEM = """You are a task breakdown assistant helping convert a \
 non-actionable task into the minimum number of concrete, atomic, actionable subtasks.
 
 Rules:
@@ -362,9 +362,7 @@ async def generate_insights(
     return await asyncio.to_thread(_call, SONNET, _INSIGHTS_SYSTEM, content, 1000)
 
 
-async def breakdown_tasks_for_optimize(
-    original_task: dict, user_plan: str
-) -> tuple[list[str], str]:
+async def breakdown_tasks_for_unblock(original_task: dict, user_plan: str) -> tuple[list[str], str]:
     """Propose minimum atomic breakdown tasks and a project slug using Haiku.
 
     Returns (tasks, project_slug). tasks is a list of title strings with emoji prefix.
@@ -375,7 +373,7 @@ async def breakdown_tasks_for_optimize(
         default=str,
     )
     content = f"Original task: {task_summary}\n\nUser's plan: {user_plan}"
-    raw = await asyncio.to_thread(_call, HAIKU, _BREAKDOWN_OPTIMIZE_SYSTEM, content, 400)
+    raw = await asyncio.to_thread(_call, HAIKU, _BREAKDOWN_UNBLOCK_SYSTEM, content, 400)
     try:
         data = json.loads(_strip_fences(raw))
         if isinstance(data, dict):
@@ -384,5 +382,5 @@ async def breakdown_tasks_for_optimize(
             return tasks, slug
         return [], ""
     except json.JSONDecodeError as exc:
-        logger.warning("breakdown_tasks_for_optimize: invalid JSON: %s — raw: %s", exc, raw)
+        logger.warning("breakdown_tasks_for_unblock: invalid JSON: %s — raw: %s", exc, raw)
         return [], ""

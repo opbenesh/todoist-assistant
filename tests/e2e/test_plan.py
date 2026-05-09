@@ -245,11 +245,11 @@ class TestPlanSessionPersistence:
             ]
         )
 
-        # Start plan, skip brainstorm, wait for optimize prompt to confirm session saved
+        # Start plan, skip brainstorm, wait for unblock prompt to confirm session saved
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)
         _skip_bs(bot)
-        bot.wait_responses(1, timeout=10)  # optimize prompt — ensures session flushed to disk
+        bot.wait_responses(1, timeout=10)  # unblock prompt — ensures session flushed to disk
 
         # Verify session was saved (check state file)
         state_file = Path(staging_app["state_file"])

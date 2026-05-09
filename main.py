@@ -15,8 +15,8 @@ from lib.handlers.brainstorm import brainstorm_handler
 from lib.handlers.capture import list_handler
 from lib.handlers.common import help_cmd, session_cmd, start_cmd
 from lib.handlers.insights import insights_handler
-from lib.handlers.optimize import optimize_conversation_handler
 from lib.handlers.plan import has_active_plan_session, plan_handler
+from lib.handlers.unblock import unblock_conversation_handler
 from lib.interaction_log import LoggedBot, log_error, log_incoming
 from lib.obsidian import read_tasks_section  # noqa: F401 — ensure vault is accessible
 from lib.scheduler import attach_scheduler, configure
@@ -54,7 +54,7 @@ def _load_profile() -> dict:
 _COMMANDS = [
     BotCommand("list", "Show today's tasks"),
     BotCommand("plan", "Generate a timeblocked plan for today"),
-    BotCommand("optimize", "Review and improve task hygiene"),
+    BotCommand("unblock", "Break down a stuck task into actionable steps"),
     BotCommand("insights", "Pattern insights: habits, workload, clusters"),
     BotCommand("brainstorm", "Extract tasks from free-form text"),
     BotCommand("help", "Show available commands"),
@@ -134,7 +134,7 @@ def register_handlers(app: Application) -> None:
         CallbackQueryHandler(_stale_plan_cb, pattern="^(plan_triage:|plan_timeslot:)"),
         group=1,
     )
-    app.add_handler(optimize_conversation_handler)
+    app.add_handler(unblock_conversation_handler)
     app.add_handler(insights_handler)
 
 

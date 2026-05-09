@@ -26,4 +26,4 @@ Interactions → `data/interactions.jsonl`.
 - Handlers live in lib/handlers/. Register new ones in main.py (register_handlers) and add a BotCommand entry.
 
 ## Commands index
-/list, /plan, /optimize, /insights, /brainstorm, /cancel, /session
+/list, /plan, /unblock, /insights, /brainstorm, /cancel, /session

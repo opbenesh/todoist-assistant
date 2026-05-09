@@ -76,18 +76,18 @@ class TaskStore:
     def last_sync_ts(self, value: float) -> None:
         self._data["last_sync_ts"] = value
 
-    def mark_optimized(self, task_id: str) -> None:
-        """Record that a task was handled in an optimize session."""
-        ids = self._data.setdefault("optimized_task_ids", {})
+    def mark_unblocked(self, task_id: str) -> None:
+        """Record that a task was handled in an unblock session."""
+        ids = self._data.setdefault("unblocked_task_ids", {})
         ids[task_id] = time.time()
         cutoff = time.time() - 24 * 3600
-        self._data["optimized_task_ids"] = {k: v for k, v in ids.items() if v > cutoff}
+        self._data["unblocked_task_ids"] = {k: v for k, v in ids.items() if v > cutoff}
         self.save()
 
-    def recently_optimized_ids(self, cutoff_hours: int = 24) -> set[str]:
+    def recently_unblocked_ids(self, cutoff_hours: int = 24) -> set[str]:
         """Return task IDs handled within the last cutoff_hours."""
         cutoff = time.time() - cutoff_hours * 3600
-        return {k for k, v in self._data.get("optimized_task_ids", {}).items() if v > cutoff}
+        return {k for k, v in self._data.get("unblocked_task_ids", {}).items() if v > cutoff}
 
     def save_plan_session(self, phase: int, session_data: dict) -> None:
         """Persist a planning session checkpoint."""
