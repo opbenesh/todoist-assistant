@@ -40,20 +40,6 @@ Structure: one-sentence greeting, bullet list of tasks grouped by priority,
 a suggested morning focus.
 Maximum 200 words. Today is {today}, {weekday}."""
 
-_PLAN_SYSTEM = """You are a personal productivity coach creating a realistic daily plan.
-
-Each task has a "due_date" (when it was scheduled for today) and optionally a "deadline"
-(hard cutoff date).
-Use duration_minutes and the time blocks to judge realistic capacity.
-
-Return ONLY a valid JSON object with exactly one key:
-- "plan_markdown": string — the human-readable plan in Markdown with ## Morning / ## Afternoon /
-  ## Evening headers listing tasks across time blocks, plus a brief focus note.
-
-Return ONLY valid JSON, no prose, no code fences.
-Today is {today}, {weekday}.
-Schedule context: morning {morning}, afternoon {afternoon}, evening {evening}."""
-
 _WEEKLY_REVIEW_SYSTEM = """You are a thoughtful productivity advisor writing a weekly review.
 Identify patterns, celebrate wins, and surface recurring blockers.
 Use Markdown. Be honest but constructive. Maximum 400 words."""
@@ -337,28 +323,6 @@ async def generate_project_plan(project_name: str, tasks: list[dict]) -> str:
     system = _PROJECT_PLAN_SYSTEM.format(**_today_fmt())
     content = f"Project: {project_name}\n\nTasks:\n{json.dumps(tasks, default=str)}"
     return await asyncio.to_thread(_call, SONNET, system, content, 800)
-
-
-async def generate_plan(tasks: list[dict], settings=None) -> str:
-    """Generate a timeblocked daily plan using Sonnet. Returns plan markdown."""
-    morning = settings.morning_block if settings else "09:00-12:00"
-    afternoon = settings.afternoon_block if settings else "12:00-17:00"
-    evening = settings.evening_block if settings else "17:00-21:00"
-    system = _PLAN_SYSTEM.format(
-        **_today_fmt(), morning=morning, afternoon=afternoon, evening=evening
-    )
-    tasks_with_duration = [
-        {**t, "duration_minutes": t.get("duration_minutes") or 30} for t in tasks
-    ]
-    user_content = f"Tasks:\n{json.dumps(tasks_with_duration, default=str)}"
-    raw = await asyncio.to_thread(_call, SONNET, system, user_content, 1000)
-
-    try:
-        data = json.loads(_strip_fences(raw))
-        return str(data.get("plan_markdown") or "")
-    except (json.JSONDecodeError, KeyError, TypeError) as exc:
-        logger.warning("generate_plan: failed to parse JSON response: %s", exc)
-        return raw
 
 
 async def brainstorm_extract_tasks(text: str) -> list[str]:
