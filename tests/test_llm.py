@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lib.llm import propose_enrichment, restore_links
+from lib.llm import brainstorm_extract_tasks, propose_enrichment, restore_links
 
 
 def _mock_response(text: str):
@@ -193,3 +193,33 @@ def test_restore_links_preserves_new_links_in_proposed():
     proposed = "Task with [new](https://new.com)"
     expected = "Task with [new](https://new.com) [old](https://old.com)"
     assert restore_links(original, proposed) == expected
+
+
+# ---------------------------------------------------------------------------
+# brainstorm_extract_tasks
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_brainstorm_extract_tasks_returns_list():
+    payload = json.dumps(["Buy groceries", "Call the dentist"])
+    with _patch_call(payload):
+        result = await brainstorm_extract_tasks("buy groceries, call the dentist")
+    assert result == ["Buy groceries", "Call the dentist"]
+
+
+@pytest.mark.asyncio
+async def test_brainstorm_extract_tasks_returns_empty_on_invalid_json():
+    with _patch_call("not json"):
+        result = await brainstorm_extract_tasks("something")
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_brainstorm_extract_tasks_preserves_hebrew():
+    """LLM must return Hebrew titles unchanged — no translation."""
+    hebrew_tasks = ["לקנות חלב", "לשלוח מייל לעמית"]
+    payload = json.dumps(hebrew_tasks)
+    with _patch_call(payload):
+        result = await brainstorm_extract_tasks("לקנות חלב, לשלוח מייל לעמית")
+    assert result == hebrew_tasks, f"Hebrew titles must be preserved, got: {result}"
