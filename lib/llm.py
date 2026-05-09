@@ -105,11 +105,6 @@ Example: {"project_slug": "tax-filing", "tasks": ["📄 Gather documents", "📄
 Return ONLY valid JSON object, no prose, no markdown fences.
 Original task context will be provided alongside the user's free-form plan."""
 
-_BREAKDOWN_SYSTEM = """You are a task planning assistant.
-Given a task, break it down into 2–5 concrete, actionable subtasks.
-Return a JSON array of strings, each a short subtask title (under 60 chars).
-Return ONLY valid JSON array, no prose, no markdown fences."""
-
 _DEEPDIVE_SYSTEM = """You are a personal productivity coach doing a deep-dive on a single task.
 Provide:
 1. **Clarified goal & success criteria** — what done looks like
@@ -291,26 +286,6 @@ async def generate_nudge(overdue: list[dict]) -> str:
     """Generate a short motivating nudge for overdue tasks using Haiku."""
     content = f"Overdue tasks:\n{json.dumps(overdue, default=str)}"
     return await asyncio.to_thread(_call, HAIKU, _NUDGE_SYSTEM, content, 150)
-
-
-def propose_breakdown(task: Task) -> list[str]:
-    """Sync: break a task into 2–5 subtask titles using Haiku.
-
-    Returns list of subtask title strings, empty on failure.
-    Call via asyncio.to_thread at the call site.
-    """
-    content = f"Task: {task.title}"
-    if task.notes:
-        content += f"\nNotes: {task.notes}"
-    raw_json = _call(HAIKU, _BREAKDOWN_SYSTEM, content, 300)
-    try:
-        data = json.loads(_strip_fences(raw_json))
-        if isinstance(data, list):
-            return [s for s in data if isinstance(s, str) and s][:5]
-        return []
-    except json.JSONDecodeError as exc:
-        logger.warning("Breakdown LLM returned invalid JSON: %s — raw: %s", exc, raw_json)
-        return []
 
 
 async def generate_deepdive(task: dict) -> str:
