@@ -45,17 +45,22 @@ def _get_obsidian_tasks(raw_lines: list[str]) -> dict[str, bool]:
     return obsidian_tasks
 
 
-def _fetch_todoist_state() -> TodoistState:
-    today_tasks = todoist.get_today_tasks()
+async def _async_fetch_todoist_state() -> TodoistState:
+    today_tasks, all_tasks, completed_today = await asyncio.gather(
+        asyncio.to_thread(todoist.get_today_tasks),
+        asyncio.to_thread(todoist.get_all_tasks),
+        asyncio.to_thread(todoist.get_completed_tasks, since_days=1),
+    )
+
     todoist_tasks = {t["title"]: t for t in today_tasks}
-
-    all_tasks = todoist.get_all_tasks()
     all_todoist_titles = {t["title"] for t in all_tasks}
-
-    completed_today = todoist.get_completed_tasks(since_days=1)
     completed_by_title = {t["title"]: t for t in completed_today}
 
     return TodoistState(todoist_tasks, all_todoist_titles, completed_by_title)
+
+
+def _fetch_todoist_state() -> TodoistState:
+    return asyncio.run(_async_fetch_todoist_state())
 
 
 def _process_obsidian_task(
