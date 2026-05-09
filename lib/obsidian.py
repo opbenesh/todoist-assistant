@@ -211,11 +211,6 @@ def append_digest(content: str, day: date | None = None) -> None:
     _append_section("Morning Digest", content, day)
 
 
-def append_plan(content: str, day: date | None = None) -> None:
-    """Append the daily plan to today's daily note."""
-    _append_section("Daily Plan", content, day)
-
-
 def read_task_guidelines() -> str:
     """Read task hygiene guidelines from vault/Assistant/task-guidelines.md.
 
@@ -230,9 +225,12 @@ def read_task_guidelines() -> str:
 
 def write_insight(filename: str, content: str) -> None:
     """Write content to vault/Assistant/<filename>."""
+    safe_name = Path(filename).name
+    if safe_name != filename or not safe_name:
+        raise ValueError(f"Invalid insight filename: {filename!r}")
     assistant_dir = VAULT / "Assistant"
     assistant_dir.mkdir(exist_ok=True)
-    path = assistant_dir / filename
+    path = assistant_dir / safe_name
     _atomic_write(path, content)
 
 
