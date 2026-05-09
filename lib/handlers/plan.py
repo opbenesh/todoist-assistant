@@ -450,10 +450,18 @@ async def bs_next_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("[plan] phase=triage chat=%s", chat_id)
-    (tasks, (projects, inbox_id)) = await asyncio.gather(
-        asyncio.to_thread(todoist.get_triage_tasks),
-        asyncio.to_thread(todoist.get_projects_info),
-    )
+    try:
+        (tasks, (projects, inbox_id)) = await asyncio.gather(
+            asyncio.to_thread(todoist.get_triage_tasks),
+            asyncio.to_thread(todoist.get_projects_info),
+        )
+    except Exception as exc:
+        logger.error("[plan/triage] Todoist fetch failed: %s", exc)
+        await context.bot.send_message(
+            chat_id,
+            "Couldn't reach Todoist — please try /plan again in a moment.",
+        )
+        return
     logger.info("[plan/triage] fetched %d tasks", len(tasks))
 
     # For each project in the triage set, fetch all incomplete tasks to determine
@@ -465,9 +473,17 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
         if t.get("project_id") and t["project_id"] != inbox_id
     }
     if project_ids:
-        ptask_lists = await asyncio.gather(
-            *[asyncio.to_thread(todoist.get_tasks_by_project, pid) for pid in project_ids]
-        )
+        try:
+            ptask_lists = await asyncio.gather(
+                *[asyncio.to_thread(todoist.get_tasks_by_project, pid) for pid in project_ids]
+            )
+        except Exception as exc:
+            logger.error("[plan/triage] project task fetch failed: %s", exc)
+            await context.bot.send_message(
+                chat_id,
+                "Couldn't reach Todoist — please try /plan again in a moment.",
+            )
+            return
         project_tasks = dict(zip(project_ids, ptask_lists))
         first_ids = {pid: ptasks[0]["id"] for pid, ptasks in project_tasks.items() if ptasks}
         project_counts = {pid: len(ptasks) for pid, ptasks in project_tasks.items()}
@@ -497,10 +513,32 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
         tasks = [t for t in tasks if t["id"] not in already_done]
         logger.info("[plan/triage] already-done filter: %d→%d tasks", _n, len(tasks))
     if not tasks:
-        logger.info("[plan/triage] no tasks remain — skipping to generate")
-        await context.bot.send_message(chat_id, "No tasks to triage — moving to planning.")
-        tasks_today = await asyncio.to_thread(todoist.get_today_tasks)
-        await _finalize_planning(chat_id, context, tasks_today)
+        logger.info("[plan/triage] no tasks remain — sending summary")
+        await context.bot.send_message(chat_id, "No tasks to triage.")
+        try:
+            tasks_today, (projects, inbox_id) = await asyncio.gather(
+                asyncio.to_thread(todoist.get_today_tasks),
+                asyncio.to_thread(todoist.get_projects_info),
+            )
+        except Exception as exc:
+            logger.error("[plan/triage] fetch failed: %s", exc)
+            await context.bot.send_message(
+                chat_id,
+                "Couldn't reach Todoist — please try /plan again in a moment.",
+            )
+            return
+        lines = obsidian.build_tasks_section(
+            tasks_today, projects, inbox_id,
+            _settings.morning_block, _settings.afternoon_block, _settings.evening_block,
+        )
+        await asyncio.to_thread(obsidian.write_tasks_section, lines)
+        store.clear_plan_session()
+        _sessions.pop(chat_id, None)
+        await context.bot.send_message(
+            chat_id,
+            _format_plan_summary(lines, len(tasks_today), 0, 0),
+            parse_mode="Markdown",
+        )
         return
     session.triage_tasks = tasks
     session.triage_index = 0
@@ -894,6 +932,25 @@ async def _bulk_bump_ages(tasks: list[tuple[str, list[str]]]) -> None:
     await asyncio.gather(*[_bump(tid, lbls) for tid, lbls in tasks])
 
 
+def _format_plan_summary(lines: list[str], remaining: int, completed: int, deferred: int) -> str:
+    parts = ["*📅 Today's Plan*"]
+    for line in lines:
+        if line.startswith("### "):
+            parts.append(f"\n*{line[4:]}*")
+        elif line.startswith("- [ ] "):
+            parts.append(f"• {line[6:]}")
+    if not any(p.startswith("•") for p in parts):
+        parts.append("\n_Nothing scheduled for today._")
+    stat = f"_{remaining} task{'s' if remaining != 1 else ''}"
+    if completed:
+        stat += f" · {completed} completed"
+    if deferred:
+        stat += f" · {deferred} deferred"
+    stat += "_"
+    parts.append(f"\n{stat}")
+    return "\n".join(parts)
+
+
 async def _finish_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("[plan] triage complete chat=%s", chat_id)
     session = _sessions.get(chat_id)
@@ -915,7 +972,7 @@ async def _finish_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> No
 
     store.clear_plan_session()
 
-    # Persist today's task list to daily note, then chain to plan + digest
+    # Persist today's task list to daily note, then send grouped summary
     tasks_today, (projects, inbox_id) = await asyncio.gather(
         asyncio.to_thread(todoist.get_today_tasks),
         asyncio.to_thread(todoist.get_projects_info),
@@ -929,31 +986,17 @@ async def _finish_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> No
         _settings.evening_block,
     )
     await asyncio.to_thread(obsidian.write_tasks_section, lines)
-    await _finalize_planning(chat_id, context, tasks_today)
 
-
-# ---------------------------------------------------------------------------
-# Phase 4: Plan generation + Digest
-# ---------------------------------------------------------------------------
-
-
-async def _finalize_planning(
-    chat_id: int, context: ContextTypes.DEFAULT_TYPE, tasks_today: list[dict]
-) -> None:
-    logger.info("[plan] phase=generate chat=%s", chat_id)
-    await context.bot.send_message(chat_id, "Generating your plan…")
-    try:
-        plan_md, digest = await asyncio.gather(
-            llm.generate_plan(tasks_today, _settings),
-            llm.generate_digest(tasks_today),
-        )
-        await context.bot.send_message(chat_id, plan_md, parse_mode="Markdown")
-        await context.bot.send_message(chat_id, f"📅 *Digest*\n\n{digest}", parse_mode="Markdown")
-    except Exception as exc:
-        logger.error("Plan/digest generation failed: %s", exc)
-        await context.bot.send_message(chat_id, "Failed to generate plan. Please try again.")
-    finally:
-        _sessions.pop(chat_id, None)
+    processed = session.triage_processed if session else []
+    completed = sum(1 for _, action, _ in processed if action == "complete")
+    _DEFER_ACTIONS = {"postpone", "quarantine", "delete"}
+    deferred = sum(1 for _, action, _ in processed if action in _DEFER_ACTIONS)
+    _sessions.pop(chat_id, None)
+    await context.bot.send_message(
+        chat_id,
+        _format_plan_summary(lines, len(tasks_today), completed, deferred),
+        parse_mode="Markdown",
+    )
 
 
 # ---------------------------------------------------------------------------

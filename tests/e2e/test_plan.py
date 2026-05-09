@@ -58,8 +58,8 @@ class TestPlanSkipAll:
                 "afternoon", timeout=2
             ) or bot.press_button_labeled_any("evening", timeout=2)
 
-        # Plan generation — wait for plan message to arrive via Telegram
-        bot.wait_responses(1, timeout=15)
+        # Summary message — no LLM, so near-instant
+        bot.wait_responses(1, timeout=5)
 
     def test_plan_no_tasks(self, bot: BotClient) -> None:
         """/plan with empty inbox should complete and send a response."""
@@ -67,8 +67,8 @@ class TestPlanSkipAll:
         bot.wait_responses(1, timeout=10)  # "Starting your planning session."
         _skip_bs(bot)
 
-        # No tasks to triage — bot should still respond (plan generated or "nothing to triage")
-        final = bot.wait_responses(1, timeout=20)
+        # No tasks to triage — bot responds with summary
+        final = bot.wait_responses(1, timeout=10)
         assert final, "Expected bot to respond after /plan with no tasks"
 
 
