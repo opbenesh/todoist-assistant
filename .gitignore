@@ -7,3 +7,5 @@ data/*.jsonl
 .ruff_cache/
 .pytest_cache/
 docs/
+.env~
+*.swp
