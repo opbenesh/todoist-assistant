@@ -17,7 +17,7 @@ import httpx
 import pytest
 
 from tests.e2e.conftest import APP_DIR, _wait_bot_ready
-from tests.e2e.constants import BS_SKIP, BS_START
+from tests.e2e.constants import ADD_TO_PLAN, BS_SKIP, BS_START
 from tests.e2e.helpers import BotClient, LLMInspector, TodoistInspector
 from tests.staging import seed_data as sd
 
@@ -309,6 +309,99 @@ class TestPlanSessionPersistence:
             new_proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             new_proc.kill()
+
+
+class TestAddToPlan:
+    def test_already_planned_shows_add_button(
+        self,
+        bot: BotClient,
+        staging_app: dict,
+    ) -> None:
+        """/plan when day is already planned shows 'Add to plan' button."""
+        from datetime import date
+
+        # Write a real tasks section to make is_day_planned() return True
+        vault_dir = staging_app["vault_dir"]
+        daily_dir = vault_dir / "Daily"
+        daily_dir.mkdir(parents=True, exist_ok=True)
+        note_path = daily_dir / f"{date.today().isoformat()}.md"
+        note_path.write_text(
+            "# Daily Note\n\n## Tasks\n\n- [ ] Existing task\n",
+            encoding="utf-8",
+        )
+
+        bot.send_message("/plan")
+        resp = bot.wait_responses(1, timeout=10)
+        assert resp, "Bot did not respond to /plan"
+        text = resp[0].get("text", "").lower()
+        assert "already planned" in text, f"Expected 'already planned' message, got: {text!r}"
+        markup = resp[0].get("reply_markup") or {}
+        if isinstance(markup, str):
+            import json
+            markup = json.loads(markup)
+        flat = [btn.get("text", "") for row in markup.get("inline_keyboard", []) for btn in row]
+        assert any("add" in b.lower() for b in flat), (
+            f"Expected 'Add to plan' button, got buttons: {flat}"
+        )
+
+    def test_add_to_plan_skips_already_triaged(
+        self,
+        bot: BotClient,
+        todoist: TodoistInspector,
+        staging_app: dict,
+    ) -> None:
+        """'Add to plan' skips task IDs recorded in today's triaged set."""
+        import json
+        from datetime import date
+
+        # Pre-seed today_triaged state so the original task won't appear in triage
+        state_file = staging_app["state_file"]
+        state: dict = {}
+        if state_file.exists():
+            state = json.loads(state_file.read_text(encoding="utf-8"))
+        state["today_triaged"] = {
+            "date": date.today().isoformat(),
+            "task_ids": ["t_orig"],
+        }
+        state_file.write_text(json.dumps(state), encoding="utf-8")
+
+        # Write vault note so is_day_planned() returns True
+        vault_dir = staging_app["vault_dir"]
+        note_path = vault_dir / "Daily" / f"{date.today().isoformat()}.md"
+        note_path.write_text(
+            "# Daily\n\n## Tasks\n\n- [ ] Existing planned task\n",
+            encoding="utf-8",
+        )
+
+        # Seed both tasks — only t_new should appear in triage
+        todoist.seed(
+            tasks=[
+                sd.task("Original task", due_today=True, task_id="t_orig"),
+                sd.task("New task after plan", due_today=True, task_id="t_new"),
+            ]
+        )
+
+        # /plan should show "already planned" with "Add to plan" button
+        bot.send_message("/plan")
+        resp = bot.wait_responses(1, timeout=10)
+        assert resp, "Bot did not respond"
+        assert "already planned" in resp[0].get("text", "").lower()
+
+        # Click "Add to plan"
+        msg_id = resp[0].get("message_id", 1)
+        bot.press_button(ADD_TO_PLAN, message_id=msg_id)
+        bot.wait_responses(1, timeout=8)  # "Adding to today's plan."
+        _skip_bs(bot)  # skip brainstorm → advances to triage
+
+        # Triage header + first task card
+        triage_msgs = bot.wait_responses(2, timeout=10)
+        triage_text = " ".join(r.get("text", "") for r in triage_msgs)
+        assert "New task after plan" in triage_text, (
+            f"Expected new task in triage, got: {triage_text!r}"
+        )
+        assert "Original task" not in triage_text, (
+            f"Original (already-triaged) task must not appear in add-to-plan triage: {triage_text!r}"
+        )
 
 
 # ---------------------------------------------------------------------------

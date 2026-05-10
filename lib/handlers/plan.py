@@ -39,6 +39,7 @@ BS_REVIEW = 2
 TRIAGING = 3
 RESUME_CONFIRM = 4
 TRIAGE_TIMESLOT = 5
+ALREADY_PLANNED = 6
 
 # ---------------------------------------------------------------------------
 # Callback data constants
@@ -52,6 +53,7 @@ _BS_CONTINUE = "pf:bs_continue"
 _BS_NEXT = "pf:bs_next"
 
 _RESTART = "pf:restart"
+_ADD_TO_PLAN = "pf:add_to_plan"
 
 _TODOIST_TASK_URL = "https://todoist.com/app/task/{id}"
 
@@ -210,9 +212,6 @@ async def _show_phase_ui(chat_id: int, context: ContextTypes.DEFAULT_TYPE, phase
 
 async def plan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat_id = update.effective_chat.id
-    if await asyncio.to_thread(obsidian.is_day_planned):
-        await update.message.reply_text("Today is already planned.")
-        return ConversationHandler.END
 
     persisted = store.load_plan_session()
     if persisted:
@@ -233,6 +232,15 @@ async def plan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             await _show_resume_header(chat_id, context, phase, session)
             await _show_phase_ui(chat_id, context, phase)
             return phase
+
+    if await asyncio.to_thread(obsidian.is_day_planned):
+        await update.message.reply_text(
+            "Today is already planned.",
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("➕ Add to plan", callback_data=_ADD_TO_PLAN)]]
+            ),
+        )
+        return ALREADY_PLANNED
 
     logger.info("[plan] session started for chat %s", chat_id)
     _sessions[chat_id] = PlanFlowSession()
@@ -264,18 +272,34 @@ async def _show_brainstorm_prompt(chat_id: int, context: ContextTypes.DEFAULT_TY
 
 
 async def restart_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Reset to a fresh session, carrying over already-triaged IDs to prevent re-triaging."""
+    """Reset to a completely fresh session, clearing all persisted plan state."""
     query = update.callback_query
     await query.answer()
     chat_id = query.message.chat_id
     await query.edit_message_reply_markup(reply_markup=None)
 
     store.clear_plan_session()
+    store.clear_today_triaged()
     session = PlanFlowSession()
     _sessions[chat_id] = session
     store.save_plan_session(BRAINSTORM_PROMPT, session.to_dict())
     logger.info("[plan] restarted fresh for chat %s", chat_id)
     await context.bot.send_message(chat_id, "Starting fresh.")
+    await _show_brainstorm_prompt(chat_id, context)
+    return BRAINSTORM_PROMPT
+
+
+async def add_to_plan_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Start a new brainstorm+triage session appended to an already-planned day."""
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    await query.edit_message_reply_markup(reply_markup=None)
+
+    logger.info("[plan] add-to-plan triggered for chat %s", chat_id)
+    _sessions[chat_id] = PlanFlowSession()
+    _checkpoint(chat_id, BRAINSTORM_PROMPT)
+    await context.bot.send_message(chat_id, "Adding to today's plan.")
     await _show_brainstorm_prompt(chat_id, context)
     return BRAINSTORM_PROMPT
 
@@ -507,11 +531,12 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
     session.projects = projects
     session.project_incomplete_counts = project_counts
-    already_done = {tid for tid, _, _ in session.triage_processed}
-    if already_done:
+    skip_ids = {tid for tid, _, _ in session.triage_processed}
+    skip_ids.update(store.get_today_triaged())
+    if skip_ids:
         _n = len(tasks)
-        tasks = [t for t in tasks if t["id"] not in already_done]
-        logger.info("[plan/triage] already-done filter: %d→%d tasks", _n, len(tasks))
+        tasks = [t for t in tasks if t["id"] not in skip_ids]
+        logger.info("[plan/triage] already-processed filter: %d→%d tasks", _n, len(tasks))
     if not tasks:
         logger.info("[plan/triage] no tasks remain — sending summary")
         await context.bot.send_message(chat_id, "No tasks to triage.")
@@ -970,6 +995,10 @@ async def _finish_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> No
             await _bulk_bump_ages(age_tasks)
             logger.info("[plan/triage] bumped age for %d tasks", len(age_tasks))
 
+    if session:
+        processed_ids = [tid for tid, _, _ in session.triage_processed]
+        if processed_ids:
+            store.update_today_triaged(processed_ids)
     store.clear_plan_session()
 
     # Persist today's task list to daily note, then send grouped summary
@@ -1021,6 +1050,10 @@ _restart_handler = CallbackQueryHandler(restart_cb, pattern=f"^{_RESTART}$")
 plan_handler = ConversationHandler(
     entry_points=[CommandHandler("plan", plan_cmd, WHITELIST_FILTER)],
     states={
+        ALREADY_PLANNED: [
+            CallbackQueryHandler(add_to_plan_cb, pattern=f"^{_ADD_TO_PLAN}$"),
+            _restart_handler,
+        ],
         BRAINSTORM_PROMPT: [
             CallbackQueryHandler(bs_prompt_cb, pattern=f"^({_BS_START}|{_BS_SKIP})$"),
             _restart_handler,

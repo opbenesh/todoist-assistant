@@ -7,6 +7,7 @@ duplicated or hardcoded as magic values across test files.
 # Plan flow callback data (mirrors lib/handlers/plan.py)
 BS_SKIP = "pf:bs_skip"
 BS_START = "pf:bs_start"
+ADD_TO_PLAN = "pf:add_to_plan"
 
 # Todoist priority numeric values.
 # Todoist's scale is inverted: p1 (urgent) = 4, p4 (none) = 1.

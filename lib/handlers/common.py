@@ -9,13 +9,10 @@ _PHASE_LABELS = {
     0: "brainstorm prompt",
     1: "brainstorm input",
     2: "brainstorm review",
-    3: "optimize prompt",
-    4: "optimize reviewing",
-    5: "optimize brainstorm input",
-    6: "optimize brainstorm review",
-    7: "triage",
-    8: "resume confirm",
-    9: "triage timeslot",
+    3: "triage",
+    4: "resume confirm",
+    5: "triage timeslot",
+    6: "already planned",
 }
 
 HELP_TEXT = """

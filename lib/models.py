@@ -132,6 +132,31 @@ class TaskStore:
             known.pop(task_id, None)
             self.save()
 
+    def get_today_triaged(self) -> set[str]:
+        """Return task IDs already triaged in today's plan sessions."""
+        self.load()
+        entry = self._data.get("today_triaged")
+        if not entry:
+            return set()
+        if entry.get("date") != date.today().isoformat():
+            return set()
+        return set(entry.get("task_ids", []))
+
+    def update_today_triaged(self, task_ids: list[str]) -> None:
+        """Merge task IDs into today's triaged set."""
+        existing = self.get_today_triaged()
+        existing.update(task_ids)
+        self._data["today_triaged"] = {
+            "date": date.today().isoformat(),
+            "task_ids": list(existing),
+        }
+        self.save()
+
+    def clear_today_triaged(self) -> None:
+        """Remove today's triaged task IDs (used on explicit restart)."""
+        self._data.pop("today_triaged", None)
+        self.save()
+
 
 def _resolve_state_path() -> Path:
     if os.getenv("CLI_MODE"):
