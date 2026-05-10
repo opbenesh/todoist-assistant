@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
 import time as _time
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
@@ -54,10 +55,12 @@ def attach_scheduler(app: Application) -> None:
         chat_id=TELEGRAM_USER_ID,
         name="plan_reminder",
     )
+    nag_jitter_secs = random.randint(0, 29 * 60)  # 0–29 min jitter so not always on the hour
+    nag_minute, nag_second = divmod(nag_jitter_secs, 60)
     jq.run_repeating(
         plan_nag_job,
         interval=3600,
-        first=time(10, 0, tzinfo=tz),
+        first=time(10, nag_minute, nag_second, tzinfo=tz),
         chat_id=TELEGRAM_USER_ID,
         name="plan_nag",
     )

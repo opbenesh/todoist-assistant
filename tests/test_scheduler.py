@@ -73,6 +73,33 @@ def test_scheduler_uses_user_timezone():
     assert sched._settings.timezone == "Asia/Tokyo"
 
 
+def test_plan_nag_jitter_applied():
+    """plan_nag first-fire time uses a random jitter so it's not always :00."""
+    from unittest.mock import MagicMock, patch
+    from datetime import time
+    from zoneinfo import ZoneInfo
+
+    import lib.scheduler as sched
+
+    settings = UserSettings(timezone="UTC")
+    sched.configure(settings)
+
+    mock_jq = MagicMock()
+    mock_app = MagicMock()
+    mock_app.job_queue = mock_jq
+
+    # Force a known jitter: 7 minutes and 43 seconds = 463 seconds
+    with patch("lib.scheduler.random.randint", return_value=463):
+        sched.attach_scheduler(mock_app)
+
+    # Find the run_repeating call for plan_nag
+    nag_call = next(
+        c for c in mock_jq.run_repeating.call_args_list if c.kwargs.get("name") == "plan_nag"
+    )
+    tz = ZoneInfo("UTC")
+    assert nag_call.kwargs["first"] == time(10, 7, 43, tzinfo=tz)
+
+
 # ---------------------------------------------------------------------------
 # Weekly review writes to vault
 # ---------------------------------------------------------------------------
