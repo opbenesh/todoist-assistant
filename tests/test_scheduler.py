@@ -196,7 +196,7 @@ def test_check_todoist_changes_new_task(tmp_path: Path) -> None:
     from lib.scheduler import _check_todoist_changes
 
     store = _make_store(tmp_path, known={})  # initialized but empty
-    active = [{"id": "t2", "title": "New task"}]
+    active = [{"id": "t2", "title": "New task", "project_id": "p1"}]
 
     with (
         patch("lib.scheduler.store", store),
@@ -204,7 +204,7 @@ def test_check_todoist_changes_new_task(tmp_path: Path) -> None:
     ):
         completed, deleted, new_tasks = _check_todoist_changes()
 
-    assert new_tasks == ["New task"]
+    assert new_tasks == [{"id": "t2", "title": "New task", "project_id": "p1"}]
     assert completed == []
     assert deleted == []
 
@@ -215,7 +215,7 @@ def test_check_todoist_changes_recurring_no_double_notify(tmp_path: Path) -> Non
 
     store = _make_store(tmp_path, known={"t_old": "Stand-up"})
     # New recurring instance has a different ID but same title
-    active = [{"id": "t_new", "title": "Stand-up"}]
+    active = [{"id": "t_new", "title": "Stand-up", "project_id": "p1"}]
 
     with (
         patch("lib.scheduler.store", store),
@@ -285,3 +285,56 @@ async def test_todoist_sync_job_silent_when_no_changes() -> None:
         await todoist_sync_job(context)
 
     context.bot.send_message.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_todoist_sync_job_groups_new_tasks_by_project() -> None:
+    """Multiple new tasks from the same project appear on one line, not separately."""
+    from lib.scheduler import todoist_sync_job
+
+    context = MagicMock()
+    context.bot.send_message = AsyncMock()
+
+    new_tasks = [
+        {"id": "t1", "title": "Step 1", "project_id": "p_work"},
+        {"id": "t2", "title": "Step 2", "project_id": "p_work"},
+        {"id": "t3", "title": "Personal thing", "project_id": "p_personal"},
+    ]
+    projects = {"p_work": "Work", "p_personal": "Personal"}
+
+    with (
+        patch("lib.scheduler._check_todoist_changes", return_value=([], [], new_tasks)),
+        patch("lib.scheduler.todoist.get_all_projects", return_value=projects),
+    ):
+        await todoist_sync_job(context)
+
+    context.bot.send_message.assert_awaited_once()
+    text = context.bot.send_message.call_args.kwargs["text"]
+    # Work tasks grouped on one line
+    assert "New in Todoist (Work): Step 1, Step 2" in text
+    # Personal task on its own line
+    assert "New in Todoist (Personal): Personal thing" in text
+    # Only 2 lines total for new tasks (not 3 separate items)
+    new_lines = [line for line in text.splitlines() if "New in Todoist" in line]
+    assert len(new_lines) == 2
+
+
+@pytest.mark.asyncio
+async def test_todoist_sync_job_single_new_task_shows_project() -> None:
+    """A single new task is shown with its project name."""
+    from lib.scheduler import todoist_sync_job
+
+    context = MagicMock()
+    context.bot.send_message = AsyncMock()
+
+    new_tasks = [{"id": "t1", "title": "Buy milk", "project_id": "p_inbox"}]
+    projects = {"p_inbox": "Inbox"}
+
+    with (
+        patch("lib.scheduler._check_todoist_changes", return_value=([], [], new_tasks)),
+        patch("lib.scheduler.todoist.get_all_projects", return_value=projects),
+    ):
+        await todoist_sync_job(context)
+
+    text = context.bot.send_message.call_args.kwargs["text"]
+    assert "New in Todoist (Inbox): Buy milk" in text
