@@ -82,6 +82,8 @@ Rules:
 - Fix obvious typos and capitalise the first word only
 - Omit vague filler phrases ("maybe", "probably") but include the task if there's real intent
 - Titles under 80 characters each
+- Treat comma-separated items as separate tasks — never merge, combine, or consolidate them \
+(e.g. "plan may, plan june, plan july" → three tasks, never "plan may-july")
 - Return ONLY a valid JSON array of strings, no prose, no markdown fences.
 Example input: "wash all dishes, take the garbage out, clean the fridge, maybe deal with kzradio"
 Example output: ["Wash all dishes", "Take the garbage out", "Clean the fridge",

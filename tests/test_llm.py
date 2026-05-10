@@ -223,3 +223,21 @@ async def test_brainstorm_extract_tasks_preserves_hebrew():
     with _patch_call(payload):
         result = await brainstorm_extract_tasks("לקנות חלב, לשלוח מייל לעמית")
     assert result == hebrew_tasks, f"Hebrew titles must be preserved, got: {result}"
+
+
+def test_brainstorm_prompt_forbids_consolidation():
+    """_BRAINSTORM_SYSTEM must explicitly forbid merging comma-separated tasks.
+
+    Without this rule the LLM may turn "plan may, plan june, plan july" into
+    a single "plan may-july" instead of three separate tasks.
+    """
+    from lib.llm import _BRAINSTORM_SYSTEM
+
+    lowered = _BRAINSTORM_SYSTEM.lower()
+    assert any(
+        phrase in lowered
+        for phrase in ["do not merge", "never merge", "do not consolidate", "never consolidate"]
+    ), (
+        "_BRAINSTORM_SYSTEM must contain an explicit rule forbidding the LLM from merging "
+        "or consolidating comma-separated tasks (e.g. 'never merge', 'do not consolidate')"
+    )
