@@ -8,6 +8,12 @@ duplicated or hardcoded as magic values across test files.
 BS_SKIP = "pf:bs_skip"
 BS_START = "pf:bs_start"
 
+# Unblock-within-plan callback data
+UB_UNBLOCK = "pf:ub_unblock"
+UB_SKIP = "pf:ub_skip"
+UB_ANOTHER = "pf:ub_another"
+UB_CONTINUE = "pf:ub_continue"
+
 # Todoist priority numeric values.
 # Todoist's scale is inverted: p1 (urgent) = 4, p4 (none) = 1.
 TODOIST_P1 = 4

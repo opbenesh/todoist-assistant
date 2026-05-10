@@ -180,7 +180,8 @@ class TestUnblockProject:
         """After user describes plan, a project name confirmation message appears."""
         self._pick_task(bot, todoist, "Plan the project")
         bot.send_message("Research first, then write a draft")
-        resp = bot.wait_responses(1, timeout=15)
+        # "Breaking down task…" + project confirm
+        resp = bot.wait_responses(2, timeout=15)
         assert resp, "No response after plan input"
         text = (resp[-1].get("text") or "").lower()
         assert "#proj-" in text, f"Expected project suggestion with #proj- prefix, got: {text!r}"
@@ -190,7 +191,7 @@ class TestUnblockProject:
         """Pressing ✅ Confirm creates the project and starts proposals."""
         self._pick_task(bot, todoist, "Plan the project")
         bot.send_message("Research first, then write a draft")
-        bot.wait_responses(1, timeout=15)  # project confirm msg
+        bot.wait_responses(2, timeout=15)  # "Breaking down task…" + project confirm msg
         bot.press_button_labeled_any("✅ Confirm", timeout=5)
 
         # Should see "Project created" + first proposal
@@ -208,7 +209,7 @@ class TestUnblockProject:
         """Replying with a name instead of confirming uses the custom name."""
         self._pick_task(bot, todoist, "Plan the project")
         bot.send_message("Research first, then write a draft")
-        bot.wait_responses(1, timeout=15)  # project confirm msg
+        bot.wait_responses(2, timeout=15)  # "Breaking down task…" + project confirm msg
         bot.send_message("my-custom-plan")
         bot.wait_responses(2, timeout=15)  # project created + first proposal
 
@@ -222,7 +223,7 @@ class TestUnblockProject:
         """Accepted subtasks are created inside the new project."""
         self._pick_task(bot, todoist, "Plan the project")
         bot.send_message("Research first, then write a draft")
-        bot.wait_responses(1, timeout=15)
+        bot.wait_responses(2, timeout=15)  # "Breaking down task…" + project confirm
         bot.press_button_labeled_any("✅ Confirm", timeout=5)
         bot.wait_responses(2, timeout=15)  # project created + first proposal
 
@@ -252,7 +253,7 @@ class TestUnblockProject:
         """Accepted subtask titles include a sequential number after the emoji."""
         self._pick_task(bot, todoist, "Plan the project")
         bot.send_message("Research first, then write a draft")
-        bot.wait_responses(1, timeout=15)
+        bot.wait_responses(2, timeout=15)  # "Breaking down task…" + project confirm
         bot.press_button_labeled_any("✅ Confirm", timeout=5)
         bot.wait_responses(2, timeout=15)  # project created + first proposal
 

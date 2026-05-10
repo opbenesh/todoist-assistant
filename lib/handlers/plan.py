@@ -349,6 +349,7 @@ async def bs_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     if not session:
         return ConversationHandler.END
 
+    await update.message.reply_text("Extracting tasks…")
     try:
         proposed = await llm.brainstorm_extract_tasks(update.message.text.strip())
     except Exception as exc:

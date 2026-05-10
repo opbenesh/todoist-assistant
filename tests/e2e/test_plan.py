@@ -185,7 +185,8 @@ class TestPlanBrainstorm:
         llm.fail_next(count=1)
         bot.send_message("trim nails, credit card bonus, revive foodie 1.0")
 
-        resp = bot.wait_responses(1, timeout=10)
+        # "Extracting tasks…" + error message
+        resp = bot.wait_responses(2, timeout=10)
         assert resp, "Bot did not respond after LLM error"
         text = " ".join(r.get("text", "") for r in resp).lower()
         assert "try again" in text, f"Expected retry message, got: {text!r}"
@@ -196,7 +197,8 @@ class TestPlanBrainstorm:
 
         # Session must still be alive — user can re-submit and get task proposals
         bot.send_message("trim nails, credit card bonus")
-        resp2 = bot.wait_responses(1, timeout=10)
+        # "Extracting tasks…" + first task proposal
+        resp2 = bot.wait_responses(2, timeout=10)
         assert resp2, "No response after retry — session appears dead"
         text2 = " ".join(r.get("text", "") for r in resp2).lower()
         assert "task" in text2 or any(r.get("reply_markup") for r in resp2), (
@@ -215,14 +217,16 @@ class TestPlanBrainstorm:
         # Make LLM return empty extraction
         llm.set_next_response("[]")
         bot.send_message("Nothing")
-        resp2 = bot.wait_responses(1, timeout=10)
+        # "Extracting tasks…" + "Couldn't find tasks" with Skip button
+        resp2 = bot.wait_responses(2, timeout=10)
         assert resp2, "Expected 'Couldn't find tasks' message"
         assert any("skip" in r.get("text", "").lower() or r.get("has_keyboard") for r in resp2), (
             "Expected Skip button after zero-extraction"
         )
 
         # Tap Skip — this is the bug path: conversation is in BS_INPUT state
-        skip_msg_id = resp2[0].get("message_id", msg_id) if resp2 else msg_id
+        # Use last response which contains the Skip button
+        skip_msg_id = resp2[-1].get("message_id", msg_id) if resp2 else msg_id
         bot.press_button(BS_SKIP, message_id=skip_msg_id)
         resp3 = bot.wait_responses(1, timeout=10)
         assert resp3, "Bot did not respond after Skip in BS_INPUT state"
