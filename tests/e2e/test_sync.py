@@ -124,6 +124,38 @@ class TestSyncVaultToTodoist:
         assert op is not None, "uncomplete was not called after task unchecked in vault"
 
 
+class TestTodoistCompletionUpdatesVault:
+    def test_todoist_external_completion_checks_obsidian(
+        self,
+        todoist: TodoistInspector,
+        staging_app: dict,
+    ) -> None:
+        """Task completed directly in Todoist → sync checks it off in Obsidian."""
+        vault_dir = Path(staging_app["vault_dir"])
+
+        todoist.seed(tasks=[sd.task("Buy groceries", due_today=True, task_id="t_ext_complete")])
+
+        # Write daily note with task unchecked; let one sync cycle settle the baseline
+        _write_daily_note(vault_dir, f"# {_TODAY}\n\n## Tasks\n\n- [ ] Buy groceries\n")
+        time.sleep(_SYNC_WAIT)
+
+        # Complete the task externally in Todoist
+        todoist.complete_externally("t_ext_complete")
+
+        # Wait for the next sync to propagate the completion to the note
+        deadline = time.monotonic() + _SYNC_WAIT
+        while time.monotonic() < deadline:
+            note = _read_daily_note(vault_dir)
+            if "[x]" in note and "buy groceries" in note.lower():
+                return
+            time.sleep(0.4)
+
+        note = _read_daily_note(vault_dir)
+        assert "[x]" in note and "buy groceries" in note.lower(), (
+            f"Expected checkbox checked after Todoist completion. Note:\n{note}"
+        )
+
+
 class TestSyncEdgeCases:
     def test_rescheduled_task_not_duplicated(
         self,

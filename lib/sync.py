@@ -120,8 +120,8 @@ def _process_obsidian_task(
         logger.debug("Task '%s' checked in Obsidian but absent from Todoist — skipping", title)
         updated_line = format_task_line(title, obs_checked)
     elif title in todoist_state.completed_today and not obs_checked:
-        # Task was recently completed but user unchecked it — uncomplete
         if note_changed:
+            # Obsidian wins: user unchecked a completed task → uncomplete in Todoist
             task = todoist_state.completed_today[title]
             uncomplete_ids.append(task["id"])
             audit.log(
@@ -133,7 +133,12 @@ def _process_obsidian_task(
             )
             dirty = True
             logger.debug("Obsidian unchecks completed task '%s'", title)
-        updated_line = format_task_line(title, obs_checked)
+            updated_line = format_task_line(title, False)
+        else:
+            # Todoist wins: task completed externally → check box in Obsidian
+            dirty = True
+            logger.debug("Todoist wins for '%s': completed externally", title)
+            updated_line = format_task_line(title, True)
     else:
         # Unchecked task not in Todoist at all — create it
         task = Task(title=title)

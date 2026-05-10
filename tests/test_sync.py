@@ -42,6 +42,7 @@ def _run_sync(
     obsidian_lines: list[str],
     today_tasks: list[dict],
     all_tasks: list[dict] | None = None,
+    completed_tasks: list[dict] | None = None,
     note_newer: bool = True,
     is_day_planned: bool = True,
     batch_side_effect=None,
@@ -52,6 +53,8 @@ def _run_sync(
     """
     if all_tasks is None:
         all_tasks = today_tasks[:]
+    if completed_tasks is None:
+        completed_tasks = []
 
     import pathlib
     import tempfile
@@ -76,7 +79,7 @@ def _run_sync(
             patch("lib.sync.read_tasks_section", return_value=obsidian_lines),
             patch("lib.sync.todoist.get_today_tasks", return_value=today_tasks),
             patch("lib.sync.todoist.get_all_tasks", return_value=all_tasks),
-            patch("lib.sync.todoist.get_completed_tasks", return_value=[]),
+            patch("lib.sync.todoist.get_completed_tasks", return_value=completed_tasks),
             patch("lib.sync.todoist.create_todoist_task", return_value="new-id") as mock_create,
             patch(
                 "lib.sync.todoist.batch_update_task_status",
@@ -246,6 +249,23 @@ def test_sync_skips_when_not_planned():
     create.assert_not_called()
     batch_update.assert_not_called()
     assert written == []
+
+
+def test_branch_completed_todoist_wins_checks_obsidian():
+    """Task completed externally in Todoist, note not newer → Todoist wins, checkbox updated."""
+    completed = [{"id": "id-exercise", "title": "Exercise", "completed_at": "", "project_id": ""}]
+    written, create, batch_update = _run_sync(
+        obsidian_lines=["- [ ] Exercise"],
+        today_tasks=[],
+        all_tasks=[],
+        completed_tasks=completed,
+        note_newer=False,
+    )
+    create.assert_not_called()
+    batch_update.assert_not_called()
+    assert any("[x]" in line and "Exercise" in line for line in written), (
+        f"Expected checked checkbox in written lines: {written}"
+    )
 
 
 def test_batch_failure_prevents_note_write():
