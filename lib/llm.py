@@ -22,6 +22,13 @@ _client = anthropic.Anthropic(api_key=ANTHROPIC_KEY, base_url=_config.ANTHROPIC_
 
 _VALID_LABELS = {"work", "personal", "health", "finance", "home"}
 
+_TASK_RULES = """\
+- Start each task with a verb where natural
+- Preserve the original language — NEVER translate; if input is Hebrew, output Hebrew
+- Fix obvious typos; capitalise the first word only
+- Prefix every task title with ONE context-appropriate emoji
+- Keep titles under 80 characters"""
+
 _ENRICHMENT_SYSTEM = """You are a task enrichment assistant.
 Given a raw task title, return a JSON object with these exact fields:
 - "title": string (cleaned/clarified task title, fix typos)
@@ -73,42 +80,32 @@ _DEFAULT_GUIDELINES = (
     "A task is untriaged if: priority is p4, project is Inbox, or no due date is set."
 )
 
-_BRAINSTORM_SYSTEM = """You are a task extraction assistant.
+_BRAINSTORM_SYSTEM = f"""You are a task extraction assistant.
 The user will write free-form text describing what they want or need to do.
 Extract every distinct actionable task and return them as a JSON array of short, clean task titles.
 Rules:
-- Each title should be clear and actionable (start with a verb where natural)
-- Preserve the original language — NEVER translate; if the input is Hebrew, output Hebrew titles
-- Fix obvious typos and capitalise the first word only
+{_TASK_RULES}
 - Omit vague filler phrases ("maybe", "probably") but include the task if there's real intent
-- Titles under 80 characters each
 - Return ONLY a valid JSON array of strings, no prose, no markdown fences.
-Example input: "wash all dishes, take the garbage out, clean the fridge, maybe deal with kzradio"
-Example output: ["Wash all dishes", "Take the garbage out", "Clean the fridge",
-  "Deal with kzradio"]"""
+Example input: "wash all dishes, take the garbage out, maybe deal with kzradio"
+Example output: ["🍽️ Wash all dishes", "🗑️ Take the garbage out", "📻 Deal with kzradio"]"""
 
-_BREAKDOWN_UNBLOCK_SYSTEM = """You are a task breakdown assistant helping convert a \
-non-actionable task into the minimum number of concrete, atomic, actionable subtasks.
+_BREAKDOWN_UNBLOCK_SYSTEM = f"""You are a task breakdown assistant helping convert a \
+non-actionable task into concrete, atomic, actionable subtasks.
 
 Rules:
-- Lean strongly toward ONE subtask unless the work genuinely requires separate atomic steps
-- Each subtask must be actionable: specific, achievable, unambiguous
-- Pick ONE context-appropriate emoji for the parent task and start EVERY subtask title with it
-- Subtask titles under 80 chars each
+{_TASK_RULES}
+- Each subtask must be specific, achievable, and unambiguous
+- Use the SAME emoji for every subtask (the one chosen for this task context)
 - Derive a short project slug: lowercase, hyphen-separated, 2–4 words, no special characters
 
 Return a JSON object with exactly two keys:
 - "project_slug": string (e.g. "tax-filing", "website-redesign")
 - "tasks": array of strings (the subtask titles)
 
-Example: {"project_slug": "tax-filing", "tasks": ["📄 Gather documents", "📄 Submit online"]}
+Example: {{"project_slug": "tax-filing", "tasks": ["📄 Gather documents", "📄 Submit online"]}}
 Return ONLY valid JSON object, no prose, no markdown fences.
 Original task context will be provided alongside the user's free-form plan."""
-
-_BREAKDOWN_SYSTEM = """You are a task planning assistant.
-Given a task, break it down into 2–5 concrete, actionable subtasks.
-Return a JSON array of strings, each a short subtask title (under 60 chars).
-Return ONLY valid JSON array, no prose, no markdown fences."""
 
 _DEEPDIVE_SYSTEM = """You are a personal productivity coach doing a deep-dive on a single task.
 Provide:
@@ -291,26 +288,6 @@ async def generate_nudge(overdue: list[dict]) -> str:
     """Generate a short motivating nudge for overdue tasks using Haiku."""
     content = f"Overdue tasks:\n{json.dumps(overdue, default=str)}"
     return await asyncio.to_thread(_call, HAIKU, _NUDGE_SYSTEM, content, 150)
-
-
-def propose_breakdown(task: Task) -> list[str]:
-    """Sync: break a task into 2–5 subtask titles using Haiku.
-
-    Returns list of subtask title strings, empty on failure.
-    Call via asyncio.to_thread at the call site.
-    """
-    content = f"Task: {task.title}"
-    if task.notes:
-        content += f"\nNotes: {task.notes}"
-    raw_json = _call(HAIKU, _BREAKDOWN_SYSTEM, content, 300)
-    try:
-        data = json.loads(_strip_fences(raw_json))
-        if isinstance(data, list):
-            return [s for s in data if isinstance(s, str) and s][:5]
-        return []
-    except json.JSONDecodeError as exc:
-        logger.warning("Breakdown LLM returned invalid JSON: %s — raw: %s", exc, raw_json)
-        return []
 
 
 async def generate_deepdive(task: dict) -> str:
