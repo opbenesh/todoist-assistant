@@ -331,6 +331,15 @@ def quarantine_task(task_id: str, current_labels: list[str]) -> None:
     """Add quarantined label to a task."""
     if "quarantined" not in current_labels:
         update_todoist_task(task_id, labels=current_labels + ["quarantined"])
+        store.set_quarantine_ts(task_id)
+
+
+def days_since_quarantined(task_id: str) -> int:
+    """Return days since task was quarantined (0 if no record)."""
+    ts = store.get_quarantine_ts(task_id)
+    if ts is None:
+        return 0
+    return max(0, int((time.time() - ts) / 86400))
 
 
 def strip_age_labels(task_id: str, current_labels: list[str] | None = None) -> None:
@@ -344,6 +353,7 @@ def strip_age_labels(task_id: str, current_labels: list[str] | None = None) -> N
     clean = [lbl for lbl in current_labels if not _is_age_label(lbl) and lbl != "quarantined"]
     if len(clean) != len(current_labels):
         update_todoist_task(task_id, labels=clean)
+    store.clear_quarantine_ts(task_id)
 
 
 def reset_next_project_task_age(project_id: str) -> None:

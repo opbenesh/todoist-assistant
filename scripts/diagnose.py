@@ -6,6 +6,7 @@ Usage:
     uv run python scripts/diagnose.py          # quick scan (~5s)
     uv run python scripts/diagnose.py --full   # full scan (~15s)
 """
+
 from __future__ import annotations
 
 import json
@@ -45,7 +46,9 @@ def _pm2_status() -> None:
     try:
         out = subprocess.run(
             ["pm2", "show", "assistant"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         ).stdout
         status = uptime = restarts = "?"
         for line in out.splitlines():
@@ -104,7 +107,9 @@ def _plan_log_lines() -> None:
     try:
         result = subprocess.run(
             ["grep", "-E", r"\[plan|\[sync|ERROR|WARNING", str(PM2_LOG)],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         lines = result.stdout.splitlines()[-30:]
         if lines:
@@ -169,6 +174,7 @@ def _recent_errors(n: int = 5) -> None:
 # Full mode extras
 # ---------------------------------------------------------------------------
 
+
 def _interactions_tail(n: int = 10) -> None:
     _section(f"LAST {n} INTERACTIONS")
     if not INTERACTIONS_LOG.exists():
@@ -221,11 +227,12 @@ def _todoist_list() -> None:
     try:
         os.environ.setdefault("TODOIST_KEY", "")  # will fail gracefully if missing
         import lib.todoist as todoist  # noqa: PLC0415
+
         tasks = todoist.get_today_tasks()
         if tasks:
             for t in tasks:
                 priority = t.get("priority", "p4")
-                due = (t.get("due_date") or "no date")
+                due = t.get("due_date") or "no date"
                 print(f"  [{priority}] {t['title']!r}  due={due}")
         else:
             print("(no tasks due today or overdue)")
@@ -260,6 +267,7 @@ def _vault_today() -> None:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     full = "--full" in sys.argv
