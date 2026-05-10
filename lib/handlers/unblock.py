@@ -156,6 +156,7 @@ async def brainstorm_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not session or not session.current_task:
         return ConversationHandler.END
 
+    await update.message.reply_text("Breaking down task…")
     user_text = update.message.text.strip()
     proposed, slug = await llm.breakdown_tasks_for_unblock(session.current_task, user_text)
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time as _time
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -40,6 +41,12 @@ TRIAGING = 3
 RESUME_CONFIRM = 4
 TRIAGE_TIMESLOT = 5
 
+UNBLOCK_PROMPT = 6
+UNBLOCK_PICKING = 7
+UNBLOCK_BRAINSTORM = 8
+UNBLOCK_PRJ_CONFIRM = 9
+UNBLOCK_REVIEW = 10
+
 # ---------------------------------------------------------------------------
 # Callback data constants
 # ---------------------------------------------------------------------------
@@ -52,6 +59,18 @@ _BS_CONTINUE = "pf:bs_continue"
 _BS_NEXT = "pf:bs_next"
 
 _RESTART = "pf:restart"
+
+_UB_UNBLOCK = "pf:ub_unblock"
+_UB_SKIP = "pf:ub_skip"
+_UB_PICK_PREFIX = "pf:ub_pick:"
+_UB_CONFIRM_PROJ = "pf:ub_confirm_proj"
+_UB_ACCEPT = "pf:ub_accept"
+_UB_REJECT = "pf:ub_reject"
+_UB_ANOTHER = "pf:ub_another"
+_UB_CONTINUE = "pf:ub_continue"
+
+_UB_MAX_LIST = 15
+_UB_SLUG_RE = re.compile(r"[^a-z0-9-]+")
 
 _TODOIST_TASK_URL = "https://todoist.com/app/task/{id}"
 
@@ -81,6 +100,15 @@ class PlanFlowSession:
     # resumption metadata
     last_user_action_ts: float = field(default_factory=_time.time)
     nudge_sent: bool = False
+
+    # unblock sub-session (ephemeral — not persisted)
+    ub_tasks: list = field(default_factory=list)
+    ub_task: dict | None = None
+    ub_proposals: list[str] = field(default_factory=list)
+    ub_proposal_index: int = 0
+    ub_project_slug: str | None = None
+    ub_project_id: str | None = None
+    ub_created: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -131,7 +159,9 @@ def _checkpoint(chat_id: int, phase: int) -> None:
         d = session.to_dict()
         logger.info(
             "[plan/checkpoint] phase=%d triage_tasks=%d triage_index=%d",
-            phase, len(d.get("triage_tasks", [])), d.get("triage_index", 0),
+            phase,
+            len(d.get("triage_tasks", [])),
+            d.get("triage_index", 0),
         )
         store.save_plan_session(phase, d)
 
@@ -155,6 +185,14 @@ def _phase_label(phase: int, session: PlanFlowSession) -> str:
         return (
             f"triage timeslot ({session.triage_index + 1}/{total})" if total else "triage timeslot"
         )
+    if phase in (
+        UNBLOCK_PROMPT,
+        UNBLOCK_PICKING,
+        UNBLOCK_BRAINSTORM,
+        UNBLOCK_PRJ_CONFIRM,
+        UNBLOCK_REVIEW,
+    ):
+        return "unblock"
     return "planning"
 
 
@@ -235,11 +273,20 @@ async def plan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             return phase
 
     logger.info("[plan] session started for chat %s", chat_id)
-    _sessions[chat_id] = PlanFlowSession()
+    session = PlanFlowSession()
+    _sessions[chat_id] = session
     _checkpoint(chat_id, BRAINSTORM_PROMPT)  # persist immediately so nag suppression takes effect
     await update.message.reply_text("Starting your planning session.")
-    await _show_brainstorm_prompt(chat_id, context)
-    return BRAINSTORM_PROMPT
+
+    quarantined = await asyncio.to_thread(todoist.get_quarantined_tasks)
+    if not quarantined:
+        await context.bot.send_message(chat_id, "✅ No quarantined tasks — on to planning.")
+        await _show_brainstorm_prompt(chat_id, context)
+        return BRAINSTORM_PROMPT
+
+    session.ub_tasks = quarantined[:_UB_MAX_LIST]
+    await _show_unblock_prompt(chat_id, context)
+    return UNBLOCK_PROMPT
 
 
 # ---------------------------------------------------------------------------
@@ -302,6 +349,7 @@ async def bs_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     if not session:
         return ConversationHandler.END
 
+    await update.message.reply_text("Extracting tasks…")
     try:
         proposed = await llm.brainstorm_extract_tasks(update.message.text.strip())
     except Exception as exc:
@@ -444,6 +492,370 @@ async def bs_next_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Phase 0: Unblock (optional, before brainstorm)
+# ---------------------------------------------------------------------------
+
+
+def _ub_slugify(text: str) -> str:
+    return _UB_SLUG_RE.sub("-", text.lower().strip()).strip("-")
+
+
+def _ub_number_title(title: str, n: int) -> str:
+    if " " in title and ord(title[0]) > 127:
+        emoji, rest = title.split(" ", 1)
+        return f"{emoji} {n} {rest}"
+    return f"{n} {title}"
+
+
+async def _show_unblock_prompt(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    session = _sessions.get(chat_id)
+    if not session or not session.ub_tasks:
+        return
+    tasks = session.ub_tasks
+    lines = [f"☣️ {len(tasks)} quarantined task{'s' if len(tasks) != 1 else ''}:\n"]
+    for i, t in enumerate(tasks, 1):
+        days = todoist.days_since_quarantined(t["id"])
+        day_str = f"  ({days}d)" if days > 0 else ""
+        lines.append(f"{i}. {t['title']}{day_str}")
+    await context.bot.send_message(
+        chat_id,
+        "\n".join(lines),
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton("☣️ Unblock", callback_data=_UB_UNBLOCK),
+                    InlineKeyboardButton("⏭ Skip", callback_data=_UB_SKIP),
+                ]
+            ]
+        ),
+    )
+
+
+async def _ub_unblock_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session or not session.ub_tasks:
+        return ConversationHandler.END
+
+    await query.edit_message_reply_markup(reply_markup=None)
+    buttons = []
+    for t in session.ub_tasks:
+        label = t["title"]
+        if len(label) > 64:
+            label = label[:61] + "…"
+        buttons.append([InlineKeyboardButton(label, callback_data=f"{_UB_PICK_PREFIX}{t['id']}")])
+    await context.bot.send_message(
+        chat_id,
+        "Pick a task to break down:",
+        reply_markup=InlineKeyboardMarkup(buttons),
+    )
+    return UNBLOCK_PICKING
+
+
+async def _ub_skip_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    await query.edit_message_reply_markup(reply_markup=None)
+    _checkpoint(chat_id, BRAINSTORM_PROMPT)
+    await _show_brainstorm_prompt(chat_id, context)
+    return BRAINSTORM_PROMPT
+
+
+async def _ub_pick_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session:
+        return ConversationHandler.END
+
+    task_id = query.data[len(_UB_PICK_PREFIX) :]
+    task = next((t for t in session.ub_tasks if t["id"] == task_id), None)
+    if not task:
+        await query.answer("Task not found.", show_alert=True)
+        return UNBLOCK_PICKING
+
+    session.ub_task = task
+    await query.edit_message_reply_markup(reply_markup=None)
+    await context.bot.send_message(
+        chat_id,
+        f"What's your plan for *{task['title']}*?\n\nDescribe freely — I'll turn it into tasks:",
+        parse_mode="Markdown",
+    )
+    return UNBLOCK_BRAINSTORM
+
+
+async def _ub_brainstorm_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    chat_id = update.effective_chat.id
+    session = _sessions.get(chat_id)
+    if not session or not session.ub_task:
+        return ConversationHandler.END
+
+    user_text = update.message.text.strip()
+    try:
+        proposed, slug = await llm.breakdown_tasks_for_unblock(session.ub_task, user_text)
+    except Exception as exc:
+        logger.error("[plan/unblock] LLM breakdown failed: %s", exc)
+        await update.message.reply_text("Couldn't reach AI — try again, or /cancel to exit.")
+        return UNBLOCK_BRAINSTORM
+
+    if not proposed:
+        await update.message.reply_text(
+            "Couldn't extract tasks from that — try again, or /cancel to exit."
+        )
+        return UNBLOCK_BRAINSTORM
+
+    session.ub_proposals = proposed
+    session.ub_proposal_index = 0
+    session.ub_project_slug = slug or _ub_slugify(session.ub_task["title"])[:30]
+    await _ub_show_project_confirm(chat_id, context)
+    return UNBLOCK_PRJ_CONFIRM
+
+
+async def _ub_show_project_confirm(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    session = _sessions.get(chat_id)
+    if not session:
+        return
+    full_name = f"#proj-{session.ub_project_slug}"
+    await context.bot.send_message(
+        chat_id,
+        f"Suggested project: *{full_name}*\n\n"
+        "Reply with a different name to change it, or confirm:",
+        reply_markup=InlineKeyboardMarkup(
+            [[InlineKeyboardButton("✅ Confirm", callback_data=_UB_CONFIRM_PROJ)]]
+        ),
+        parse_mode="Markdown",
+    )
+
+
+async def _ub_confirm_proj_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session:
+        return ConversationHandler.END
+    await query.edit_message_reply_markup(reply_markup=None)
+    return await _ub_create_project_and_start(chat_id, context, session.ub_project_slug or "")
+
+
+async def _ub_proj_name_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    chat_id = update.effective_chat.id
+    session = _sessions.get(chat_id)
+    if not session:
+        return ConversationHandler.END
+    raw = update.message.text.strip()
+    if raw.lower().startswith("#proj-"):
+        raw = raw[6:]
+    session.ub_project_slug = _ub_slugify(raw)[:50] or session.ub_project_slug or "task"
+    return await _ub_create_project_and_start(chat_id, context, session.ub_project_slug)
+
+
+async def _ub_create_project_and_start(
+    chat_id: int, context: ContextTypes.DEFAULT_TYPE, slug: str
+) -> int:
+    session = _sessions.get(chat_id)
+    if not session:
+        return ConversationHandler.END
+    full_name = f"#proj-{slug}"
+    try:
+        project_id = await asyncio.to_thread(todoist.create_todoist_project, full_name)
+        session.ub_project_id = project_id
+        audit.log(
+            "create_project",
+            source="plan/unblock",
+            trigger="user_confirm",
+            project_id=project_id,
+            name=full_name,
+        )
+        logger.info("[plan/unblock] created project %s (%s)", full_name, project_id)
+    except Exception as exc:
+        logger.error("[plan/unblock] failed to create project '%s': %s", full_name, exc)
+        await context.bot.send_message(chat_id, f"Failed to create project: {exc}")
+        return ConversationHandler.END
+    await context.bot.send_message(
+        chat_id, f"Project *{full_name}* created.", parse_mode="Markdown"
+    )
+    await _ub_show_proposal(chat_id, context)
+    return UNBLOCK_REVIEW
+
+
+def _ub_proposal_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("✅ Accept", callback_data=_UB_ACCEPT),
+                InlineKeyboardButton("❌ Reject", callback_data=_UB_REJECT),
+            ]
+        ]
+    )
+
+
+async def _ub_show_proposal(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    session = _sessions.get(chat_id)
+    if not session:
+        return
+    if session.ub_proposal_index >= len(session.ub_proposals):
+        await _ub_finalize(chat_id, context)
+        return
+    title = session.ub_proposals[session.ub_proposal_index]
+    idx = session.ub_proposal_index + 1
+    total = len(session.ub_proposals)
+    await context.bot.send_message(
+        chat_id,
+        f"*Proposal {idx} of {total}*\n\n{title}",
+        reply_markup=_ub_proposal_keyboard(),
+        parse_mode="Markdown",
+    )
+
+
+async def _ub_accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session or session.ub_proposal_index >= len(session.ub_proposals):
+        return ConversationHandler.END
+
+    raw_title = session.ub_proposals[session.ub_proposal_index]
+    n = session.ub_created + 1
+    title = _ub_number_title(raw_title, n)
+
+    original = session.ub_task
+    original_title = original["title"]
+    task_url = _TODOIST_TASK_URL.format(id=original["id"])
+    notes = f"From: [{original_title}]({task_url})"
+    if original.get("notes"):
+        notes += f"\n\n{original['notes']}"
+
+    task = Task(title=title, notes=notes, priority=original.get("priority", "p4"), labels=[])
+    try:
+        task_id = await asyncio.to_thread(
+            todoist.create_todoist_task, task, project_id=session.ub_project_id
+        )
+        session.ub_created += 1
+        audit.log(
+            "create",
+            source="plan/unblock",
+            trigger="user_accept",
+            task_id=task_id,
+            title=title,
+            original_task_id=original["id"],
+            project_id=session.ub_project_id,
+        )
+        await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
+    except Exception as exc:
+        logger.error("[plan/unblock] failed to create task '%s': %s", title, exc)
+        await query.answer("Failed to create task.", show_alert=True)
+
+    session.ub_proposal_index += 1
+    is_last = session.ub_proposal_index >= len(session.ub_proposals)
+    await _ub_show_proposal(chat_id, context)
+    return UNBLOCK_PROMPT if is_last else UNBLOCK_REVIEW
+
+
+async def _ub_reject_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session or session.ub_proposal_index >= len(session.ub_proposals):
+        return ConversationHandler.END
+
+    title = session.ub_proposals[session.ub_proposal_index]
+    await query.edit_message_text(f"❌ _Rejected:_ {title}", parse_mode="Markdown")
+    session.ub_proposal_index += 1
+    is_last = session.ub_proposal_index >= len(session.ub_proposals)
+    await _ub_show_proposal(chat_id, context)
+    return UNBLOCK_PROMPT if is_last else UNBLOCK_REVIEW
+
+
+async def _ub_finalize(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    session = _sessions.get(chat_id)
+    if not session or not session.ub_task:
+        return
+
+    original = session.ub_task
+    original_id = original["id"]
+    try:
+        await asyncio.to_thread(todoist.delete_todoist_task, original_id)
+        audit.log(
+            "delete",
+            source="plan/unblock",
+            trigger="auto",
+            task_id=original_id,
+            title=original.get("title", ""),
+            note="deleted after breakdown in plan session",
+        )
+        logger.info("[plan/unblock] deleted original task %s", original_id)
+    except Exception as exc:
+        logger.error("[plan/unblock] failed to delete original task %s: %s", original_id, exc)
+
+    created = session.ub_created
+    project_name = f"#proj-{session.ub_project_slug}" if session.ub_project_slug else "project"
+    await context.bot.send_message(
+        chat_id,
+        f"✅ Broke down *{original['title']}* into {created} task{'s' if created != 1 else ''} "
+        f"in *{project_name}*, original deleted.",
+        parse_mode="Markdown",
+    )
+    # Reset sub-session fields for a potential next unblock
+    done_id = original_id
+    session.ub_task = None
+    session.ub_proposals = []
+    session.ub_proposal_index = 0
+    session.ub_project_slug = None
+    session.ub_project_id = None
+    session.ub_created = 0
+    session.ub_tasks = [t for t in session.ub_tasks if t["id"] != done_id]
+
+    await context.bot.send_message(
+        chat_id,
+        "Want to unblock another?",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton("☣️ Unblock another", callback_data=_UB_ANOTHER),
+                    InlineKeyboardButton("▶ Continue to triage", callback_data=_UB_CONTINUE),
+                ]
+            ]
+        ),
+    )
+
+
+async def _ub_another_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session:
+        return ConversationHandler.END
+    await query.edit_message_reply_markup(reply_markup=None)
+
+    if not session.ub_tasks:
+        await context.bot.send_message(chat_id, "✅ No more quarantined tasks — on to planning.")
+        _checkpoint(chat_id, BRAINSTORM_PROMPT)
+        await _show_brainstorm_prompt(chat_id, context)
+        return BRAINSTORM_PROMPT
+
+    await _show_unblock_prompt(chat_id, context)
+    return UNBLOCK_PROMPT
+
+
+async def _ub_continue_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    await query.edit_message_reply_markup(reply_markup=None)
+    _checkpoint(chat_id, BRAINSTORM_PROMPT)
+    await _show_brainstorm_prompt(chat_id, context)
+    return BRAINSTORM_PROMPT
+
+
+# ---------------------------------------------------------------------------
 # Phase 2: Triage (mandatory)
 # ---------------------------------------------------------------------------
 
@@ -468,9 +880,7 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
     # which step is first and how many remain. Inbox tasks are treated as
     # independent (no project), so exclude inbox_id from grouping.
     project_ids = {
-        t["project_id"]
-        for t in tasks
-        if t.get("project_id") and t["project_id"] != inbox_id
+        t["project_id"] for t in tasks if t.get("project_id") and t["project_id"] != inbox_id
     }
     if project_ids:
         try:
@@ -497,7 +907,9 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
         ]
         logger.info(
             "[plan/triage] project filter: %d→%d tasks (%d non-first-step excluded)",
-            _n, len(tasks), _n - len(tasks),
+            _n,
+            len(tasks),
+            _n - len(tasks),
         )
     else:
         project_counts = {}
@@ -528,8 +940,12 @@ async def _start_triage(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> Non
             )
             return
         lines = obsidian.build_tasks_section(
-            tasks_today, projects, inbox_id,
-            _settings.morning_block, _settings.afternoon_block, _settings.evening_block,
+            tasks_today,
+            projects,
+            inbox_id,
+            _settings.morning_block,
+            _settings.afternoon_block,
+            _settings.evening_block,
         )
         await asyncio.to_thread(obsidian.write_tasks_section, lines)
         store.clear_plan_session()
@@ -1021,6 +1437,26 @@ _restart_handler = CallbackQueryHandler(restart_cb, pattern=f"^{_RESTART}$")
 plan_handler = ConversationHandler(
     entry_points=[CommandHandler("plan", plan_cmd, WHITELIST_FILTER)],
     states={
+        UNBLOCK_PROMPT: [
+            CallbackQueryHandler(_ub_unblock_cb, pattern=f"^{_UB_UNBLOCK}$"),
+            CallbackQueryHandler(_ub_skip_cb, pattern=f"^{_UB_SKIP}$"),
+            CallbackQueryHandler(_ub_another_cb, pattern=f"^{_UB_ANOTHER}$"),
+            CallbackQueryHandler(_ub_continue_cb, pattern=f"^{_UB_CONTINUE}$"),
+        ],
+        UNBLOCK_PICKING: [
+            CallbackQueryHandler(_ub_pick_cb, pattern=f"^{_UB_PICK_PREFIX}"),
+        ],
+        UNBLOCK_BRAINSTORM: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, _ub_brainstorm_cb),
+        ],
+        UNBLOCK_PRJ_CONFIRM: [
+            CallbackQueryHandler(_ub_confirm_proj_cb, pattern=f"^{_UB_CONFIRM_PROJ}$"),
+            MessageHandler(filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, _ub_proj_name_cb),
+        ],
+        UNBLOCK_REVIEW: [
+            CallbackQueryHandler(_ub_accept_cb, pattern=f"^{_UB_ACCEPT}$"),
+            CallbackQueryHandler(_ub_reject_cb, pattern=f"^{_UB_REJECT}$"),
+        ],
         BRAINSTORM_PROMPT: [
             CallbackQueryHandler(bs_prompt_cb, pattern=f"^({_BS_START}|{_BS_SKIP})$"),
             _restart_handler,

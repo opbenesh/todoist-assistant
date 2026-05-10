@@ -132,6 +132,22 @@ class TaskStore:
             known.pop(task_id, None)
             self.save()
 
+    def set_quarantine_ts(self, task_id: str) -> None:
+        """Record when a task was quarantined."""
+        self._data.setdefault("quarantine_timestamps", {})[task_id] = time.time()
+        self.save()
+
+    def get_quarantine_ts(self, task_id: str) -> float | None:
+        """Return the quarantine timestamp for a task, or None."""
+        return self._data.get("quarantine_timestamps", {}).get(task_id)
+
+    def clear_quarantine_ts(self, task_id: str) -> None:
+        """Remove quarantine timestamp when a task is unblocked/deleted/completed."""
+        ts = self._data.get("quarantine_timestamps")
+        if ts is not None and task_id in ts:
+            del ts[task_id]
+            self.save()
+
 
 def _resolve_state_path() -> Path:
     if os.getenv("CLI_MODE"):

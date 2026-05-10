@@ -141,7 +141,7 @@ async def _show_task(
     title = session.proposed[session.index]
     idx = session.index + 1
     total = len(session.proposed)
-    text = f"*Task {idx} of {total}*\n\n📝 {title}"
+    text = f"*Task {idx} of {total}*\n\n{title}"
     await context.bot.send_message(
         chat_id, text, reply_markup=_review_keyboard(), parse_mode="Markdown"
     )
@@ -197,6 +197,8 @@ async def reject_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     title = session.proposed[session.index]
     session.rejected += 1
     session.index += 1
+    logger.info("[brainstorm] rejected task: %s", title)
+    audit.log("reject", source="brainstorm", trigger="user_reject", title=title)
     await query.edit_message_text(f"❌ _Rejected:_ {title}", parse_mode="Markdown")
     await _show_task(chat_id, context)
     return REVIEWING_TASK

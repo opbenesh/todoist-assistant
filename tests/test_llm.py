@@ -6,7 +6,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lib.llm import brainstorm_extract_tasks, propose_enrichment, restore_links
+from lib.llm import (
+    _BRAINSTORM_SYSTEM,
+    _BREAKDOWN_UNBLOCK_SYSTEM,
+    _TASK_RULES,
+    brainstorm_extract_tasks,
+    propose_enrichment,
+    restore_links,
+)
 
 
 def _mock_response(text: str):
@@ -177,7 +184,9 @@ def test_restore_links_all_links_missing():
 def test_restore_links_some_links_missing():
     original = "Review [PR 123](https://example.com/1) and [Issue 456](https://example.com/2)"
     proposed = "Review [PR 123](https://example.com/1) and Issue 456"
-    expected = "Review [PR 123](https://example.com/1) and Issue 456 [Issue 456](https://example.com/2)"
+    expected = (
+        "Review [PR 123](https://example.com/1) and Issue 456 [Issue 456](https://example.com/2)"
+    )
     assert restore_links(original, proposed) == expected
 
 
@@ -202,10 +211,10 @@ def test_restore_links_preserves_new_links_in_proposed():
 
 @pytest.mark.asyncio
 async def test_brainstorm_extract_tasks_returns_list():
-    payload = json.dumps(["Buy groceries", "Call the dentist"])
+    payload = json.dumps(["🛒 Buy groceries", "📞 Call the dentist"])
     with _patch_call(payload):
         result = await brainstorm_extract_tasks("buy groceries, call the dentist")
-    assert result == ["Buy groceries", "Call the dentist"]
+    assert result == ["🛒 Buy groceries", "📞 Call the dentist"]
 
 
 @pytest.mark.asyncio
@@ -218,8 +227,29 @@ async def test_brainstorm_extract_tasks_returns_empty_on_invalid_json():
 @pytest.mark.asyncio
 async def test_brainstorm_extract_tasks_preserves_hebrew():
     """LLM must return Hebrew titles unchanged — no translation."""
-    hebrew_tasks = ["לקנות חלב", "לשלוח מייל לעמית"]
+    hebrew_tasks = ["🥛 לקנות חלב", "📧 לשלוח מייל לעמית"]
     payload = json.dumps(hebrew_tasks)
     with _patch_call(payload):
         result = await brainstorm_extract_tasks("לקנות חלב, לשלוח מייל לעמית")
     assert result == hebrew_tasks, f"Hebrew titles must be preserved, got: {result}"
+
+
+# ---------------------------------------------------------------------------
+# Shared _TASK_RULES constraints
+# ---------------------------------------------------------------------------
+
+
+def test_task_rules_in_brainstorm_prompt():
+    assert _TASK_RULES in _BRAINSTORM_SYSTEM
+
+
+def test_task_rules_in_unblock_prompt():
+    assert _TASK_RULES in _BREAKDOWN_UNBLOCK_SYSTEM
+
+
+@pytest.mark.asyncio
+async def test_brainstorm_extract_tasks_returns_emoji_prefixed():
+    payload = json.dumps(["🛒 Buy groceries", "📞 Call the dentist"])
+    with _patch_call(payload):
+        result = await brainstorm_extract_tasks("buy groceries, call the dentist")
+    assert all(any(ord(c) > 127 for c in t[:2]) for t in result), "Expected emoji prefix"
