@@ -27,11 +27,14 @@ PICKING = 0
 BRAINSTORM_INPUT = 1
 PROJECT_CONFIRM = 2
 BRAINSTORM_REVIEW = 3
+TASK_ACTION = 4
 
 _PICK_PREFIX = "opt_pick:"
 _CONFIRM_PROJECT_CB = "opt:confirm_proj"
 _ACCEPT_CB = "opt:accept"
 _REJECT_CB = "opt:reject"
+_BREAKDOWN_CB = "opt:breakdown"
+_DONE_CB = "opt:done"
 
 _MAX_LIST = 15
 _TODOIST_TASK_URL = "https://todoist.com/app/task/{id}"
@@ -139,10 +142,75 @@ async def pick_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.edit_message_reply_markup(reply_markup=None)
     await context.bot.send_message(
         chat_id,
+        f"*{task['title']}*\n\nWhat would you like to do?",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton("🔨 Break down", callback_data=_BREAKDOWN_CB),
+                    InlineKeyboardButton("✅ Mark done", callback_data=_DONE_CB),
+                ]
+            ]
+        ),
+        parse_mode="Markdown",
+    )
+    return TASK_ACTION
+
+
+# ---------------------------------------------------------------------------
+# Task action
+# ---------------------------------------------------------------------------
+
+
+async def breakdown_action_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session or not session.current_task:
+        return ConversationHandler.END
+
+    task = session.current_task
+    await query.edit_message_reply_markup(reply_markup=None)
+    await context.bot.send_message(
+        chat_id,
         f"What's your plan for *{task['title']}*?\n\nDescribe freely — I'll turn it into tasks:",
         parse_mode="Markdown",
     )
     return BRAINSTORM_INPUT
+
+
+async def done_action_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session or not session.current_task:
+        return ConversationHandler.END
+
+    task = session.current_task
+    task_id = task["id"]
+    labels = task.get("labels") or []
+    try:
+        await asyncio.gather(
+            asyncio.to_thread(todoist.strip_age_labels, task_id, labels),
+            asyncio.to_thread(todoist.complete_todoist_task, task_id),
+        )
+        audit.log(
+            "complete",
+            source="unblock",
+            trigger="user_complete",
+            task_id=task_id,
+            title=task.get("title", ""),
+        )
+        logger.info("[unblock] completed task %s directly", task_id)
+        await query.edit_message_text(f"✅ _Completed:_ {task['title']}", parse_mode="Markdown")
+    except Exception as exc:
+        logger.error("[unblock] failed to complete task %s: %s", task_id, exc)
+        await query.answer("Failed to complete task.", show_alert=True)
+        return TASK_ACTION
+
+    _sessions.pop(chat_id, None)
+    return ConversationHandler.END
 
 
 # ---------------------------------------------------------------------------
@@ -410,6 +478,10 @@ unblock_conversation_handler = ConversationHandler(
     states={
         PICKING: [
             CallbackQueryHandler(pick_cb, pattern=f"^{_PICK_PREFIX}"),
+        ],
+        TASK_ACTION: [
+            CallbackQueryHandler(breakdown_action_cb, pattern=f"^{_BREAKDOWN_CB}$"),
+            CallbackQueryHandler(done_action_cb, pattern=f"^{_DONE_CB}$"),
         ],
         BRAINSTORM_INPUT: [
             MessageHandler(filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, brainstorm_input_cb),

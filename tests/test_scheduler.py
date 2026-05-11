@@ -75,8 +75,8 @@ def test_scheduler_uses_user_timezone():
 
 def test_plan_nag_jitter_applied():
     """plan_nag first-fire time uses a random jitter so it's not always :00."""
-    from unittest.mock import MagicMock, patch
     from datetime import time
+    from unittest.mock import MagicMock, patch
     from zoneinfo import ZoneInfo
 
     import lib.scheduler as sched

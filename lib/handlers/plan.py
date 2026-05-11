@@ -43,9 +43,10 @@ TRIAGE_TIMESLOT = 5
 
 UNBLOCK_PROMPT = 6
 UNBLOCK_PICKING = 7
-UNBLOCK_BRAINSTORM = 8
-UNBLOCK_PRJ_CONFIRM = 9
-UNBLOCK_REVIEW = 10
+UNBLOCK_ACTION = 8
+UNBLOCK_BRAINSTORM = 9
+UNBLOCK_PRJ_CONFIRM = 10
+UNBLOCK_REVIEW = 11
 
 # ---------------------------------------------------------------------------
 # Callback data constants
@@ -63,6 +64,8 @@ _RESTART = "pf:restart"
 _UB_UNBLOCK = "pf:ub_unblock"
 _UB_SKIP = "pf:ub_skip"
 _UB_PICK_PREFIX = "pf:ub_pick:"
+_UB_BREAKDOWN = "pf:ub_breakdown"
+_UB_DONE = "pf:ub_done"
 _UB_CONFIRM_PROJ = "pf:ub_confirm_proj"
 _UB_ACCEPT = "pf:ub_accept"
 _UB_REJECT = "pf:ub_reject"
@@ -188,6 +191,7 @@ def _phase_label(phase: int, session: PlanFlowSession) -> str:
     if phase in (
         UNBLOCK_PROMPT,
         UNBLOCK_PICKING,
+        UNBLOCK_ACTION,
         UNBLOCK_BRAINSTORM,
         UNBLOCK_PRJ_CONFIRM,
         UNBLOCK_REVIEW,
@@ -277,16 +281,8 @@ async def plan_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     _sessions[chat_id] = session
     _checkpoint(chat_id, BRAINSTORM_PROMPT)  # persist immediately so nag suppression takes effect
     await update.message.reply_text("Starting your planning session.")
-
-    quarantined = await asyncio.to_thread(todoist.get_quarantined_tasks)
-    if not quarantined:
-        await context.bot.send_message(chat_id, "✅ No quarantined tasks — on to planning.")
-        await _show_brainstorm_prompt(chat_id, context)
-        return BRAINSTORM_PROMPT
-
-    session.ub_tasks = quarantined[:_UB_MAX_LIST]
-    await _show_unblock_prompt(chat_id, context)
-    return UNBLOCK_PROMPT
+    await _show_brainstorm_prompt(chat_id, context)
+    return BRAINSTORM_PROMPT
 
 
 # ---------------------------------------------------------------------------
@@ -308,6 +304,22 @@ async def _show_brainstorm_prompt(chat_id: int, context: ContextTypes.DEFAULT_TY
         ),
         parse_mode="Markdown",
     )
+
+
+async def _transition_after_brainstorm(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """After brainstorm, move to unblock if quarantined tasks exist, otherwise triage."""
+    session = _sessions.get(chat_id)
+    if not session:
+        return ConversationHandler.END
+    if not session.ub_tasks:
+        quarantined = await asyncio.to_thread(todoist.get_quarantined_tasks)
+        session.ub_tasks = quarantined[:_UB_MAX_LIST]
+    if session.ub_tasks:
+        await _show_unblock_prompt(chat_id, context)
+        return UNBLOCK_PROMPT
+    _checkpoint(chat_id, TRIAGING)
+    await _start_triage(chat_id, context)
+    return TRIAGING
 
 
 async def restart_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -338,9 +350,7 @@ async def bs_prompt_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         _checkpoint(chat_id, BS_INPUT)  # first save — user has engaged
         return BS_INPUT
     logger.info("[plan] phase=brainstorm skipped chat=%s", chat_id)
-    _checkpoint(chat_id, TRIAGING)
-    await _start_triage(chat_id, context)
-    return TRIAGING
+    return await _transition_after_brainstorm(chat_id, context)
 
 
 async def bs_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -486,9 +496,7 @@ async def bs_next_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.answer()
     chat_id = query.message.chat_id
     await query.edit_message_reply_markup(reply_markup=None)
-    _checkpoint(chat_id, TRIAGING)
-    await _start_triage(chat_id, context)
-    return TRIAGING
+    return await _transition_after_brainstorm(chat_id, context)
 
 
 # ---------------------------------------------------------------------------
@@ -559,9 +567,9 @@ async def _ub_skip_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     await query.answer()
     chat_id = query.message.chat_id
     await query.edit_message_reply_markup(reply_markup=None)
-    _checkpoint(chat_id, BRAINSTORM_PROMPT)
-    await _show_brainstorm_prompt(chat_id, context)
-    return BRAINSTORM_PROMPT
+    _checkpoint(chat_id, TRIAGING)
+    await _start_triage(chat_id, context)
+    return TRIAGING
 
 
 async def _ub_pick_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -582,10 +590,84 @@ async def _ub_pick_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     await query.edit_message_reply_markup(reply_markup=None)
     await context.bot.send_message(
         chat_id,
+        f"*{task['title']}*\n\nWhat would you like to do?",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton("🔨 Break down", callback_data=_UB_BREAKDOWN),
+                    InlineKeyboardButton("✅ Mark done", callback_data=_UB_DONE),
+                ]
+            ]
+        ),
+        parse_mode="Markdown",
+    )
+    return UNBLOCK_ACTION
+
+
+async def _ub_breakdown_action_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session or not session.ub_task:
+        return ConversationHandler.END
+
+    task = session.ub_task
+    await query.edit_message_reply_markup(reply_markup=None)
+    await context.bot.send_message(
+        chat_id,
         f"What's your plan for *{task['title']}*?\n\nDescribe freely — I'll turn it into tasks:",
         parse_mode="Markdown",
     )
     return UNBLOCK_BRAINSTORM
+
+
+async def _ub_done_action_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.message.chat_id
+    session = _sessions.get(chat_id)
+    if not session or not session.ub_task:
+        return ConversationHandler.END
+
+    task = session.ub_task
+    task_id = task["id"]
+    labels = task.get("labels") or []
+    try:
+        await asyncio.gather(
+            asyncio.to_thread(todoist.strip_age_labels, task_id, labels),
+            asyncio.to_thread(todoist.complete_todoist_task, task_id),
+        )
+        audit.log(
+            "complete",
+            source="plan/unblock",
+            trigger="user_complete",
+            task_id=task_id,
+            title=task.get("title", ""),
+        )
+        logger.info("[plan/unblock] completed task %s directly", task_id)
+        await query.edit_message_text(f"✅ _Completed:_ {task['title']}", parse_mode="Markdown")
+    except Exception as exc:
+        logger.error("[plan/unblock] failed to complete task %s: %s", task_id, exc)
+        await query.answer("Failed to complete task.", show_alert=True)
+        return UNBLOCK_ACTION
+
+    done_id = task_id
+    session.ub_task = None
+    session.ub_tasks = [t for t in session.ub_tasks if t["id"] != done_id]
+    await context.bot.send_message(
+        chat_id,
+        "Want to unblock another?",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton("☣️ Unblock another", callback_data=_UB_ANOTHER),
+                    InlineKeyboardButton("▶ Continue to triage", callback_data=_UB_CONTINUE),
+                ]
+            ]
+        ),
+    )
+    return UNBLOCK_PROMPT
 
 
 async def _ub_brainstorm_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -836,10 +918,10 @@ async def _ub_another_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await query.edit_message_reply_markup(reply_markup=None)
 
     if not session.ub_tasks:
-        await context.bot.send_message(chat_id, "✅ No more quarantined tasks — on to planning.")
-        _checkpoint(chat_id, BRAINSTORM_PROMPT)
-        await _show_brainstorm_prompt(chat_id, context)
-        return BRAINSTORM_PROMPT
+        await context.bot.send_message(chat_id, "✅ No more quarantined tasks.")
+        _checkpoint(chat_id, TRIAGING)
+        await _start_triage(chat_id, context)
+        return TRIAGING
 
     await _show_unblock_prompt(chat_id, context)
     return UNBLOCK_PROMPT
@@ -850,9 +932,9 @@ async def _ub_continue_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     await query.answer()
     chat_id = query.message.chat_id
     await query.edit_message_reply_markup(reply_markup=None)
-    _checkpoint(chat_id, BRAINSTORM_PROMPT)
-    await _show_brainstorm_prompt(chat_id, context)
-    return BRAINSTORM_PROMPT
+    _checkpoint(chat_id, TRIAGING)
+    await _start_triage(chat_id, context)
+    return TRIAGING
 
 
 # ---------------------------------------------------------------------------
@@ -1445,6 +1527,10 @@ plan_handler = ConversationHandler(
         ],
         UNBLOCK_PICKING: [
             CallbackQueryHandler(_ub_pick_cb, pattern=f"^{_UB_PICK_PREFIX}"),
+        ],
+        UNBLOCK_ACTION: [
+            CallbackQueryHandler(_ub_breakdown_action_cb, pattern=f"^{_UB_BREAKDOWN}$"),
+            CallbackQueryHandler(_ub_done_action_cb, pattern=f"^{_UB_DONE}$"),
         ],
         UNBLOCK_BRAINSTORM: [
             MessageHandler(filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, _ub_brainstorm_cb),
