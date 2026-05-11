@@ -13,6 +13,12 @@ UB_UNBLOCK = "pf:ub_unblock"
 UB_SKIP = "pf:ub_skip"
 UB_ANOTHER = "pf:ub_another"
 UB_CONTINUE = "pf:ub_continue"
+UB_BREAKDOWN = "pf:ub_breakdown"
+UB_DONE = "pf:ub_done"
+
+# Standalone /unblock command callback data
+OPT_BREAKDOWN = "opt:breakdown"
+OPT_DONE = "opt:done"
 
 # Todoist priority numeric values.
 # Todoist's scale is inverted: p1 (urgent) = 4, p4 (none) = 1.

@@ -17,7 +17,7 @@ import httpx
 import pytest
 
 from tests.e2e.conftest import APP_DIR, _wait_bot_ready
-from tests.e2e.constants import BS_SKIP, BS_START, UB_ANOTHER, UB_SKIP, UB_UNBLOCK
+from tests.e2e.constants import BS_SKIP, BS_START, UB_ANOTHER, UB_BREAKDOWN, UB_SKIP, UB_UNBLOCK
 from tests.e2e.helpers import BotClient, LLMInspector, TodoistInspector
 from tests.staging import seed_data as sd
 
@@ -142,8 +142,7 @@ class TestPlanBrainstorm:
         """Brainstorm phase: user types tasks → they get created in Todoist."""
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)  # "Starting your planning session."
-        # Wait for "✅ No quarantined tasks" + brainstorm prompt; start from the latter
-        resp1 = bot.wait_responses(2, timeout=10)
+        resp1 = bot.wait_responses(1, timeout=10)  # brainstorm prompt
         msg_id = resp1[-1].get("message_id", 1) if resp1 else 1
         bot.press_button(BS_START, message_id=msg_id)
         resp2 = bot.wait_responses(1, timeout=8)
@@ -177,7 +176,7 @@ class TestPlanBrainstorm:
         """LLM API error during brainstorm must show a retry message, not a dead end."""
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)  # "Starting your planning session."
-        resp1 = bot.wait_responses(2, timeout=10)  # "✅ No quarantined tasks" + brainstorm prompt
+        resp1 = bot.wait_responses(1, timeout=10)  # brainstorm prompt
         msg_id = resp1[-1].get("message_id", 1) if resp1 else 1
         bot.press_button(BS_START, message_id=msg_id)
         bot.wait_responses(1, timeout=8)  # "What's on your mind?"
@@ -209,7 +208,7 @@ class TestPlanBrainstorm:
         """Skip button shown after zero-extraction input should advance to triage."""
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)  # "Starting your planning session."
-        resp1 = bot.wait_responses(2, timeout=10)  # "✅ No quarantined tasks" + brainstorm prompt
+        resp1 = bot.wait_responses(1, timeout=10)  # brainstorm prompt
         msg_id = resp1[-1].get("message_id", 1) if resp1 else 1
         bot.press_button(BS_START, message_id=msg_id)
         bot.wait_responses(1, timeout=8)  # "What's on your mind?"
@@ -326,68 +325,88 @@ class TestPlanUnblock:
         return task_id
 
     def _start_and_open_list(self, bot: BotClient, todoist: TodoistInspector) -> int:
-        """Seed one quarantined task, /plan, open the task list. Returns brainstorm msg_id."""
+        """Seed one quarantined task, /plan, skip brainstorm, open the unblock task list."""
         self._seed_quarantined(todoist)
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        resp_bs = bot.wait_responses(1, timeout=10)  # brainstorm prompt
+        msg_id_bs = resp_bs[-1].get("message_id", 1) if resp_bs else 1
+        bot.press_button(BS_SKIP, message_id=msg_id_bs)
         resp = bot.wait_responses(1, timeout=10)  # unblock prompt
         msg_id = resp[0].get("message_id", 1) if resp else 1
         bot.press_button(UB_UNBLOCK, message_id=msg_id)
         bot.wait_responses(1, timeout=5)  # "Pick a task to break down:"
         return msg_id
 
-    def test_unblock_prompt_shown_at_start(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        """When quarantined tasks exist, /plan opens with the ☣️ unblock prompt."""
+    def test_unblock_prompt_shown_after_brainstorm(
+        self, bot: BotClient, todoist: TodoistInspector
+    ) -> None:
+        """When quarantined tasks exist, /plan shows the ☣️ unblock prompt after brainstorm."""
         self._seed_quarantined(todoist)
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        resp_bs = bot.wait_responses(1, timeout=10)  # brainstorm prompt
+        msg_id = resp_bs[-1].get("message_id", 1) if resp_bs else 1
+        bot.press_button(BS_SKIP, message_id=msg_id)
         resp = bot.wait_responses(1, timeout=10)
-        assert resp, "Expected unblock prompt"
+        assert resp, "Expected unblock prompt after brainstorm skip"
         text = " ".join(r.get("text", "") for r in resp)
         assert "☣️" in text, f"Expected ☣️ emoji in unblock prompt, got: {text!r}"
         assert "quarantined" in text.lower(), f"Expected 'quarantined' in prompt: {text!r}"
 
     def test_unblock_prompt_skipped_when_none(self, bot: BotClient) -> None:
-        """No quarantined tasks → one-liner then brainstorm prompt (no unblock step)."""
+        """No quarantined tasks → brainstorm prompt shown directly, no unblock step."""
         bot.send_message("/plan")
         bot.wait_responses(1, timeout=10)  # "Starting your planning session."
-        resp = bot.wait_responses(2, timeout=10)  # "✅ No quarantined tasks" + brainstorm prompt
-        assert resp, "Expected messages after /plan with no quarantined tasks"
-        text = " ".join(r.get("text", "") for r in resp)
-        assert "no quarantined" in text.lower(), f"Expected no-quarantined notice: {text!r}"
+        resp = bot.wait_responses(1, timeout=10)  # brainstorm prompt
+        assert resp, "Expected brainstorm prompt after /plan with no quarantined tasks"
         assert any(r.get("reply_markup") for r in resp), "Expected brainstorm keyboard"
+        text = " ".join(r.get("text", "") for r in resp)
+        assert "☣️" not in text, f"Unexpected unblock prompt when no quarantined tasks: {text!r}"
 
-    def test_unblock_skip_goes_to_brainstorm(
+    def test_unblock_skip_goes_to_triage(
         self, bot: BotClient, todoist: TodoistInspector
     ) -> None:
-        """Pressing [Skip] on the unblock prompt goes straight to brainstorm."""
+        """Pressing [Skip] on the unblock prompt goes straight to triage."""
         self._seed_quarantined(todoist)
+        todoist.seed(tasks=[sd.task("Something due", due_today=True, task_id="t_due")])
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=10)
+        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        resp_bs = bot.wait_responses(1, timeout=10)  # brainstorm prompt
+        msg_id_bs = resp_bs[-1].get("message_id", 1) if resp_bs else 1
+        bot.press_button(BS_SKIP, message_id=msg_id_bs)
         resp = bot.wait_responses(1, timeout=10)  # unblock prompt
         msg_id = resp[0].get("message_id", 1) if resp else 1
         bot.press_button(UB_SKIP, message_id=msg_id)
-        resp2 = bot.wait_responses(1, timeout=10)
+        resp2 = bot.wait_responses(1, timeout=10)  # triage header
         assert resp2, "Bot did not respond after Skip"
-        assert any(r.get("reply_markup") for r in resp2), "Expected brainstorm keyboard after Skip"
+        text = " ".join(r.get("text", "") for r in resp2).lower()
+        assert "triage" in text or any(r.get("reply_markup") for r in resp2), (
+            f"Expected triage after unblock Skip, got: {text!r}"
+        )
 
     def test_unblock_task_titles_shown_in_prompt(
         self, bot: BotClient, todoist: TodoistInspector
     ) -> None:
-        """Task titles appear in the ☣️ quarantine prompt."""
+        """Task titles appear in the ☣️ quarantine prompt (shown after brainstorm)."""
         self._seed_quarantined(todoist, title="Write quarterly report")
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=10)
-        resp = bot.wait_responses(1, timeout=10)
+        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        resp_bs = bot.wait_responses(1, timeout=10)  # brainstorm prompt
+        msg_id = resp_bs[-1].get("message_id", 1) if resp_bs else 1
+        bot.press_button(BS_SKIP, message_id=msg_id)
+        resp = bot.wait_responses(1, timeout=10)  # unblock prompt
         text = " ".join(r.get("text", "") for r in resp)
         assert "Write quarterly report" in text, f"Task title missing from prompt: {text!r}"
 
     def test_unblock_full_flow_then_continue(
         self, bot: BotClient, todoist: TodoistInspector
     ) -> None:
-        """Full unblock flow: pick → plan → confirm project → accept subtask → continue to triage."""
+        """Full unblock flow: pick → break down → confirm project → accept subtask → continue to triage."""
         self._start_and_open_list(bot, todoist)
         bot.press_button_labeled_any("Fix CI", timeout=5)
+        bot.wait_responses(1, timeout=5)  # action buttons
+        bot.press_button(UB_BREAKDOWN)
         bot.wait_responses(1, timeout=5)  # "What's your plan?"
         bot.send_message("Research the issue then write a targeted fix")
         bot.wait_responses(1, timeout=10)  # project confirm
@@ -424,13 +443,18 @@ class TestPlanUnblock:
         task_id = "t_orig_del"
         todoist.seed(tasks=[sd.task("Old stuck task", task_id=task_id, labels=["quarantined"])])
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=10)
-        resp = bot.wait_responses(1, timeout=10)
+        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        resp_bs = bot.wait_responses(1, timeout=10)  # brainstorm prompt
+        msg_id_bs = resp_bs[-1].get("message_id", 1) if resp_bs else 1
+        bot.press_button(BS_SKIP, message_id=msg_id_bs)
+        resp = bot.wait_responses(1, timeout=10)  # unblock prompt
         msg_id = resp[0].get("message_id", 1) if resp else 1
         bot.press_button(UB_UNBLOCK, message_id=msg_id)
-        bot.wait_responses(1, timeout=5)
+        bot.wait_responses(1, timeout=5)  # task list
         bot.press_button_labeled_any("Old stuck", timeout=5)
-        bot.wait_responses(1, timeout=5)
+        bot.wait_responses(1, timeout=5)  # action buttons
+        bot.press_button(UB_BREAKDOWN)
+        bot.wait_responses(1, timeout=5)  # "What's your plan?"
         bot.send_message("break it into pieces")
         bot.wait_responses(1, timeout=10)
         bot.press_button_labeled_any("Confirm", timeout=5)
@@ -458,7 +482,9 @@ class TestPlanUnblock:
         """Accepted subtasks are created in the new project with no age/quarantine labels."""
         self._start_and_open_list(bot, todoist)
         bot.press_button_labeled_any("Fix CI", timeout=5)
-        bot.wait_responses(1, timeout=5)
+        bot.wait_responses(1, timeout=5)  # action buttons
+        bot.press_button(UB_BREAKDOWN)
+        bot.wait_responses(1, timeout=5)  # "What's your plan?"
         bot.send_message("investigate, patch, verify")
         bot.wait_responses(1, timeout=10)
         bot.press_button_labeled_any("Confirm", timeout=5)
@@ -493,13 +519,18 @@ class TestPlanUnblock:
             ]
         )
         bot.send_message("/plan")
-        bot.wait_responses(1, timeout=10)
-        resp = bot.wait_responses(1, timeout=10)
+        bot.wait_responses(1, timeout=10)  # "Starting your planning session."
+        resp_bs = bot.wait_responses(1, timeout=10)  # brainstorm prompt
+        msg_id_bs = resp_bs[-1].get("message_id", 1) if resp_bs else 1
+        bot.press_button(BS_SKIP, message_id=msg_id_bs)
+        resp = bot.wait_responses(1, timeout=10)  # unblock prompt
         msg_id = resp[0].get("message_id", 1) if resp else 1
         bot.press_button(UB_UNBLOCK, message_id=msg_id)
-        bot.wait_responses(1, timeout=5)
+        bot.wait_responses(1, timeout=5)  # task list
         bot.press_button_labeled_any("Task A", timeout=5)
-        bot.wait_responses(1, timeout=5)
+        bot.wait_responses(1, timeout=5)  # action buttons
+        bot.press_button(UB_BREAKDOWN)
+        bot.wait_responses(1, timeout=5)  # "What's your plan?"
         bot.send_message("handle it step by step")
         bot.wait_responses(1, timeout=10)
         bot.press_button_labeled_any("Confirm", timeout=5)
@@ -540,6 +571,8 @@ class TestPlanUnblock:
         """LLM failure during breakdown shows error message; session stays alive."""
         self._start_and_open_list(bot, todoist)
         bot.press_button_labeled_any("Fix CI", timeout=5)
+        bot.wait_responses(1, timeout=5)  # action buttons
+        bot.press_button(UB_BREAKDOWN)
         bot.wait_responses(1, timeout=5)  # "What's your plan?"
 
         llm.fail_next(count=1)
@@ -564,12 +597,7 @@ class TestPlanUnblock:
 
 
 def _skip_bs(bot: BotClient) -> None:
-    """Wait for the brainstorm prompt then inject the skip callback directly.
-
-    With no quarantined tasks, plan_cmd emits two messages before the brainstorm
-    prompt: "Starting..." (consumed by the caller) → "✅ No quarantined tasks" →
-    brainstorm prompt.  We consume both here and press BS_SKIP on the last one.
-    """
-    resp = bot.wait_responses(2, timeout=10)  # "✅ No quarantined tasks" + brainstorm prompt
+    """Wait for the brainstorm prompt then press Skip."""
+    resp = bot.wait_responses(1, timeout=10)  # brainstorm prompt
     msg_id = resp[-1].get("message_id", 1) if resp else 1
     bot.press_button(BS_SKIP, message_id=msg_id)

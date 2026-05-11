@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from tests.e2e.constants import OPT_BREAKDOWN
 from tests.e2e.helpers import BotClient, TodoistInspector
 from tests.staging import seed_data as sd
 
@@ -92,11 +93,15 @@ class TestUnblockBreakdown:
         assert pressed, "Could not press task button in list"
 
     def test_breakdown_flow(self, bot: BotClient, todoist: TodoistInspector) -> None:
-        """Pick a task → describe plan → confirm project → accept 1 proposal → original deleted."""
+        """Pick a task → break down → describe plan → confirm project → accept 1 proposal → original deleted."""
         self._start_and_pick(bot, todoist)
 
+        action_resp = bot.wait_responses(1, timeout=8)
+        assert action_resp, "No action buttons after picking task"
+        bot.press_button(OPT_BREAKDOWN)
+
         prompt = bot.wait_responses(1, timeout=8)
-        assert prompt, "No plan prompt after picking task"
+        assert prompt, "No plan prompt after choosing Break down"
         assert "plan" in (prompt[-1].get("text") or "").lower()
 
         bot.send_message("Research first, then write a draft")
@@ -139,6 +144,8 @@ class TestUnblockBreakdown:
         pressed = bot.press_button_labeled_any("Aged task", timeout=8)
         assert pressed, "Could not find aged task in list"
 
+        bot.wait_responses(1, timeout=8)  # action buttons
+        bot.press_button(OPT_BREAKDOWN)
         bot.wait_responses(1, timeout=8)  # plan prompt
         bot.send_message("Split into two parts")
         bot.wait_responses(1, timeout=15)  # project confirm
@@ -174,6 +181,8 @@ class TestUnblockProject:
         bot.wait_responses(2, timeout=15)
         pressed = bot.press_button_labeled_any(title[:20], timeout=8)
         assert pressed, f"Could not press button for task: {title!r}"
+        bot.wait_responses(1, timeout=8)  # action buttons
+        bot.press_button(OPT_BREAKDOWN)
         bot.wait_responses(1, timeout=8)  # plan prompt
 
     def test_project_confirmation_shown(self, bot: BotClient, todoist: TodoistInspector) -> None:
