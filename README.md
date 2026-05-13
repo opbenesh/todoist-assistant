@@ -8,7 +8,7 @@
 
 A personal Telegram bot that connects [Todoist](https://todoist.com) and [Obsidian](https://obsidian.md), using Claude to help plan days, break down blocked tasks, and surface insights.
 
-**Single-user, personal tool.** Not a hosted service — designed to run on your own machine against your own accounts.
+**Single-user, personal tool.** Run on your own machine against your own accounts.
 
 ## Commands
 
