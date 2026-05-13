@@ -15,10 +15,9 @@ A personal Telegram bot that connects [Todoist](https://todoist.com) and [Obsidi
 | Command | Description |
 |---|---|
 | `/plan` | Time-block your day: brainstorm → triage → write a plan to your Obsidian daily note |
-| `/unblock` | Break a stuck task into subtasks using AI |
-| `/brainstorm` | Free-form brainstorm on any topic → optional Todoist capture |
-| `/insights` | Weekly digest of completed tasks and productivity patterns |
-| `/list` | Capture tasks to Todoist from a free-form message |
+| `/unblock` | Break a stuck task into actionable subtasks |
+| `/brainstorm` | Free-form brainstorm → Todoist capture |
+| `/insights` | Weekly digest of completed tasks and usage patterns |
 | `/session` | Review the current planning session state |
 
 ## Stack
