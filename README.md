@@ -1,5 +1,11 @@
 # Assistant
 
+[![CI](https://github.com/opbenesh/todoist-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/opbenesh/todoist-assistant/actions/workflows/ci.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+
 A personal Telegram bot that connects [Todoist](https://todoist.com) and [Obsidian](https://obsidian.md), using Claude to help plan days, break down blocked tasks, and surface insights.
 
 **Single-user, personal tool.** Not a hosted service — designed to run on your own machine against your own accounts.
