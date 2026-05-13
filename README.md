@@ -1,6 +1,6 @@
 # Assistant
 
-[![CI](https://github.com/opbenesh/todoist-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/opbenesh/todoist-assistant/actions/workflows/ci.yml)
+[![CI](https://github.com/opbenesh/assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/opbenesh/assistant/actions/workflows/ci.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
