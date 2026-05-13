@@ -17,6 +17,8 @@ Use app.job_queue for all scheduled jobs (PTB bundles APScheduler via [job-queue
 
 ## Testing
 **Bug workflow:** add a failing e2e test first, confirm it fails, fix, confirm it passes.
+- E2E infra: `tests/staging/` has fake Telegram/Todoist/LLM servers; tests launch real `main.py` as subprocess with temp vault + isolated state.
+- Helpers: `BotClient` (inject messages, await replies), `TodoistInspector`, `LLMInspector`.
 
 ## Logging
 Interactions → `data/interactions.jsonl`.
@@ -25,5 +27,12 @@ Interactions → `data/interactions.jsonl`.
 - Todoist completed tasks: use `GET /api/v1/tasks?filter=completed` (the old /tasks/completed/get_all endpoint is gone).
 - Handlers live in lib/handlers/. Register new ones in main.py (register_handlers) and add a BotCommand entry.
 
+## Handlers
+- Multi-step flows (plan, unblock, brainstorm): `ConversationHandler` with numeric state constants.
+- Session state: module-level `_sessions: dict[int, SessionClass]`; persist across restarts via `TaskStore`.
+
 ## Commands index
 /list, /plan, /unblock, /insights, /brainstorm, /cancel, /session
+
+## Workflow
+- In plan mode, ask ≥10 clarifying questions before finalizing.
