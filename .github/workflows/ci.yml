@@ -4,6 +4,10 @@ on:
   pull_request:
   push:
     branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.env.example'
 
 jobs:
   test:
