@@ -19,10 +19,13 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-_LOG_PATH = Path(__file__).parent.parent / "data" / "audit.jsonl"
+_LOG_PATH = Path(
+    os.environ.get("AUDIT_PATH") or (Path(__file__).parent.parent / "data" / "audit.jsonl")
+)
 logger = logging.getLogger(__name__)
 
 

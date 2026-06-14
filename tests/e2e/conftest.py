@@ -198,6 +198,8 @@ def staging_app(
         "ANTHROPIC_BASE_URL": llm_url,
         "VAULT_PATH": str(vault_dir),
         "STATE_PATH": str(state_file),
+        "AUDIT_PATH": str(tmp_path / "audit.jsonl"),
+        "INTERACTIONS_PATH": str(tmp_path / "interactions.jsonl"),
         "OBSIDIAN_POLL_SECONDS": "2",  # fast sync for tests
         "OBSIDIAN_SYNC_FIRST_SECONDS": "2",  # first sync fires quickly in tests
         "TODOIST_POLL_SECONDS": "2",  # fast Todoist sync for tests

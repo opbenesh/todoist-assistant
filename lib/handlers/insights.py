@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 async def insights_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     await update.message.reply_text("Generating insights… (this may take a moment)")
 
     try:

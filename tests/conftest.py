@@ -1,9 +1,19 @@
 from __future__ import annotations
 
+import os
+import tempfile
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from todoist_api_python.api import TodoistAPI
+
+# Redirect logs/state to temp files during tests to avoid polluting production logs/state
+_pid = os.getpid()
+_tmp_dir = Path(tempfile.gettempdir())
+os.environ.setdefault("AUDIT_PATH", str(_tmp_dir / f"test_audit_{_pid}.jsonl"))
+os.environ.setdefault("INTERACTIONS_PATH", str(_tmp_dir / f"test_interactions_{_pid}.jsonl"))
+os.environ.setdefault("STATE_PATH", str(_tmp_dir / f"test_state_{_pid}.json"))
 
 
 @pytest.fixture

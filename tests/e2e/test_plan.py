@@ -364,9 +364,7 @@ class TestPlanUnblock:
         text = " ".join(r.get("text", "") for r in resp)
         assert "☣️" not in text, f"Unexpected unblock prompt when no quarantined tasks: {text!r}"
 
-    def test_unblock_skip_goes_to_triage(
-        self, bot: BotClient, todoist: TodoistInspector
-    ) -> None:
+    def test_unblock_skip_goes_to_triage(self, bot: BotClient, todoist: TodoistInspector) -> None:
         """Pressing [Skip] on the unblock prompt goes straight to triage."""
         self._seed_quarantined(todoist)
         todoist.seed(tasks=[sd.task("Something due", due_today=True, task_id="t_due")])

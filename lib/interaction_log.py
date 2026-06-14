@@ -14,7 +14,10 @@ from typing import Any
 from telegram import Update
 from telegram.ext import ExtBot
 
-_LOG_PATH = Path(__file__).parent.parent / "data" / "interactions.jsonl"
+_LOG_PATH = Path(
+    os.environ.get("INTERACTIONS_PATH")
+    or (Path(__file__).parent.parent / "data" / "interactions.jsonl")
+)
 _MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 
 logger = logging.getLogger(__name__)
@@ -102,12 +105,12 @@ def log_error(update: Update | None, exc: Exception | None) -> None:
 class LoggedBot(ExtBot):
     """ExtBot subclass that logs all outgoing messages to interactions.jsonl."""
 
-    async def send_message(self, chat_id: Any, text: str | None = None, **kwargs: Any) -> Any:
-        result = await super().send_message(chat_id, text=text, **kwargs)
+    async def send_message(self, chat_id: Any, text: str | None = None, **kwargs: Any) -> Any:  # type: ignore
+        result = await super().send_message(chat_id, text=text, **kwargs)  # type: ignore
         log_outgoing("send_message", chat_id, text, **kwargs)
         return result
 
-    async def edit_message_text(self, text: str, **kwargs: Any) -> Any:
+    async def edit_message_text(self, text: str, **kwargs: Any) -> Any:  # type: ignore
         result = await super().edit_message_text(text, **kwargs)
         log_outgoing(
             "edit_message_text",
@@ -117,7 +120,7 @@ class LoggedBot(ExtBot):
         )
         return result
 
-    async def answer_callback_query(self, callback_query_id: str, **kwargs: Any) -> Any:
+    async def answer_callback_query(self, callback_query_id: str, **kwargs: Any) -> Any:  # type: ignore
         result = await super().answer_callback_query(callback_query_id, **kwargs)
         filtered = {k: v for k, v in kwargs.items() if k != "text"}
         log_outgoing("answer_callback_query", None, kwargs.get("text"), **filtered)

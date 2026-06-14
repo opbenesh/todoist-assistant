@@ -48,6 +48,7 @@ _sessions: dict[int, BrainstormSession] = {}
 
 
 async def brainstorm_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    assert update.message is not None and update.effective_chat is not None
     _sessions[update.effective_chat.id] = BrainstormSession()
     await update.message.reply_text(
         "Brainstorm mode — tell me what's on your plate. "
@@ -63,6 +64,8 @@ async def brainstorm_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def input_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    assert update.message is not None and update.effective_chat is not None
+    assert update.message.text is not None
     chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if session is None:
@@ -161,8 +164,9 @@ async def _show_wrapup(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None
 
 async def accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    assert query is not None and update.effective_chat is not None
     await query.answer()
-    chat_id = query.message.chat_id
+    chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if session is None or session.index >= len(session.proposed):
         return ConversationHandler.END
@@ -188,8 +192,9 @@ async def accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def reject_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    assert query is not None and update.effective_chat is not None
     await query.answer()
-    chat_id = query.message.chat_id
+    chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if session is None or session.index >= len(session.proposed):
         return ConversationHandler.END
@@ -206,6 +211,7 @@ async def reject_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def continue_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    assert query is not None
     await query.answer()
     await query.edit_message_text("Keep going — what else is on your mind?")
     return WAITING_INPUT
@@ -213,8 +219,9 @@ async def continue_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 async def done_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    assert query is not None and update.effective_chat is not None
     await query.answer()
-    chat_id = query.message.chat_id
+    chat_id = update.effective_chat.id
     session = _sessions.pop(chat_id, None)
     created = session.created if session else 0
     await query.edit_message_text(
@@ -229,6 +236,7 @@ async def done_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    assert update.message is not None and update.effective_chat is not None
     _sessions.pop(update.effective_chat.id, None)
     await update.message.reply_text("Brainstorm cancelled.")
     return ConversationHandler.END
@@ -240,8 +248,8 @@ async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 brainstorm_handler = ConversationHandler(
-    entry_points=[CommandHandler("brainstorm", brainstorm_cmd, WHITELIST_FILTER)],
-    states={
+    entry_points=[CommandHandler("brainstorm", brainstorm_cmd, WHITELIST_FILTER)],  # type: ignore
+    states={  # type: ignore
         WAITING_INPUT: [
             MessageHandler(filters.TEXT & ~filters.COMMAND & WHITELIST_FILTER, input_received),
         ],
@@ -252,7 +260,7 @@ brainstorm_handler = ConversationHandler(
             CallbackQueryHandler(done_cb, pattern=f"^{_DONE_CB}$"),
         ],
     },
-    fallbacks=[CommandHandler("cancel", cancel_cmd, WHITELIST_FILTER)],
+    fallbacks=[CommandHandler("cancel", cancel_cmd, WHITELIST_FILTER)],  # type: ignore
     per_chat=True,
     per_message=False,  # single conversation state per chat, not per message
     conversation_timeout=600,

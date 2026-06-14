@@ -158,13 +158,13 @@ def create_todoist_project(name: str) -> str:
 
 
 def get_today_tasks() -> list[dict]:
-    """Return tasks due today or overdue, excluding quarantined tasks."""
+    """Return tasks due today or overdue, excluding quarantined and ignored tasks."""
     paginator = _api.filter_tasks(query="today | overdue")
     return [
         _task_to_dict(t)
         for page in paginator
         for t in page
-        if "quarantined" not in (t.labels or [])
+        if "quarantined" not in (t.labels or []) and not _is_ignored(t.labels)
     ]
 
 
@@ -178,7 +178,8 @@ def get_triage_tasks() -> list[dict]:
             if t.id not in seen and not t.is_completed:
                 seen.add(t.id)
                 d = _task_to_dict(t)
-                if "quarantined" not in (d.get("labels") or []):
+                lbls = d.get("labels")
+                if "quarantined" not in (lbls or []) and not _is_ignored(lbls):
                     result.append(d)
     return result
 
@@ -186,7 +187,7 @@ def get_triage_tasks() -> list[dict]:
 def get_overdue_tasks() -> list[dict]:
     """Return only overdue tasks (due before today)."""
     paginator = _api.filter_tasks(query="overdue")
-    return [_task_to_dict(t) for page in paginator for t in page]
+    return [_task_to_dict(t) for page in paginator for t in page if not _is_ignored(t.labels)]
 
 
 def get_all_tasks() -> list[dict]:
@@ -196,7 +197,7 @@ def get_all_tasks() -> list[dict]:
     result = []
     for page in paginator:
         for t in page:
-            if t.id not in seen:
+            if t.id not in seen and not _is_ignored(t.labels):
                 seen.add(t.id)
                 result.append(_task_to_dict(t))
     return result
@@ -211,7 +212,7 @@ def get_task_by_id(task_id: str) -> dict:
 def get_tasks_by_project(project_id: str) -> list[dict]:
     """Return all active tasks in a given project."""
     paginator = _api.get_tasks(project_id=project_id)
-    return [_task_to_dict(t) for page in paginator for t in page]
+    return [_task_to_dict(t) for page in paginator for t in page if not _is_ignored(t.labels)]
 
 
 def get_completed_tasks(since_days: int = 7) -> list[dict]:
@@ -305,6 +306,11 @@ def batch_update_task_status(complete_ids: list[str], uncomplete_ids: list[str])
 # ---------------------------------------------------------------------------
 
 MAX_TRIAGE_AGE = 3
+_IGNORE_LABEL = "assistant-ignore"
+
+
+def _is_ignored(labels: list[str] | None) -> bool:
+    return _IGNORE_LABEL in (labels or [])
 
 
 def _is_age_label(lbl: str) -> bool:
@@ -366,7 +372,7 @@ def reset_next_project_task_age(project_id: str) -> None:
 def get_quarantined_tasks() -> list[dict]:
     """Return all tasks with quarantined label."""
     paginator = _api.filter_tasks(query="label:quarantined")
-    return [_task_to_dict(t) for page in paginator for t in page]
+    return [_task_to_dict(t) for page in paginator for t in page if not _is_ignored(t.labels)]
 
 
 def get_all_projects() -> dict[str, str]:
@@ -413,7 +419,7 @@ def get_tasks_to_unblock(
     seen: set[str] = set()
     for page in paginator:
         for t in page:
-            if t.id in seen or t.id in exclude_ids:
+            if t.id in seen or t.id in exclude_ids or _is_ignored(t.labels):
                 continue
             seen.add(t.id)
             d = _task_to_dict(t)

@@ -36,14 +36,17 @@ HELP_TEXT = """
 
 
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     await update.message.reply_text("Assistant ready. Use /help to see available commands.")
 
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     await update.message.reply_text(HELP_TEXT, parse_mode="Markdown")
 
 
 async def session_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     persisted = store.load_plan_session()
     if not persisted:
         await update.message.reply_text("No active plan session.")

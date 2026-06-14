@@ -92,6 +92,7 @@ def _number_title(title: str, n: int) -> str:
 
 
 async def unblock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    assert update.message is not None and update.effective_chat is not None
     chat_id = update.effective_chat.id
     await update.message.reply_text("Fetching tasks…")
 
@@ -126,8 +127,10 @@ async def unblock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 async def pick_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    assert query is not None and update.effective_chat is not None
+    assert query.data is not None
     await query.answer()
-    chat_id = query.message.chat_id
+    chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if not session:
         return ConversationHandler.END
@@ -163,8 +166,9 @@ async def pick_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def breakdown_action_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    assert query is not None and update.effective_chat is not None
     await query.answer()
-    chat_id = query.message.chat_id
+    chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if not session or not session.current_task:
         return ConversationHandler.END
@@ -181,8 +185,9 @@ async def breakdown_action_cb(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def done_action_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    assert query is not None and update.effective_chat is not None
     await query.answer()
-    chat_id = query.message.chat_id
+    chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if not session or not session.current_task:
         return ConversationHandler.END
@@ -219,6 +224,8 @@ async def done_action_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def brainstorm_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    assert update.message is not None and update.effective_chat is not None
+    assert update.message.text is not None
     chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if not session or not session.current_task:
@@ -269,8 +276,9 @@ async def _show_project_confirm(chat_id: int, context: ContextTypes.DEFAULT_TYPE
 
 async def confirm_project_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    assert query is not None and update.effective_chat is not None
     await query.answer()
-    chat_id = query.message.chat_id
+    chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if not session:
         return ConversationHandler.END
@@ -280,6 +288,8 @@ async def confirm_project_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def project_name_input_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    assert update.message is not None and update.effective_chat is not None
+    assert update.message.text is not None
     chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if not session:
@@ -361,8 +371,9 @@ async def _show_proposal(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    assert query is not None and update.effective_chat is not None
     await query.answer()
-    chat_id = query.message.chat_id
+    chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if not session or session.proposal_index >= len(session.proposed):
         return ConversationHandler.END
@@ -372,6 +383,7 @@ async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
     title = _number_title(raw_title, n)
 
     original = session.current_task
+    assert original is not None
     original_title = original["title"]
     task_url = _TODOIST_TASK_URL.format(id=original["id"])
     notes = f"From: [{original_title}]({task_url})"
@@ -407,8 +419,9 @@ async def accept_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def reject_proposal_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    assert query is not None and update.effective_chat is not None
     await query.answer()
-    chat_id = query.message.chat_id
+    chat_id = update.effective_chat.id
     session = _sessions.get(chat_id)
     if not session or session.proposal_index >= len(session.proposed):
         return ConversationHandler.END
@@ -463,6 +476,7 @@ async def _finalize_breakdown(chat_id: int, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    assert update.message is not None and update.effective_chat is not None
     _sessions.pop(update.effective_chat.id, None)
     await update.message.reply_text("Unblock cancelled.")
     return ConversationHandler.END
@@ -474,8 +488,8 @@ async def cancel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 unblock_conversation_handler = ConversationHandler(
-    entry_points=[CommandHandler("unblock", unblock_cmd, WHITELIST_FILTER)],
-    states={
+    entry_points=[CommandHandler("unblock", unblock_cmd, WHITELIST_FILTER)],  # type: ignore
+    states={  # type: ignore
         PICKING: [
             CallbackQueryHandler(pick_cb, pattern=f"^{_PICK_PREFIX}"),
         ],
@@ -497,7 +511,7 @@ unblock_conversation_handler = ConversationHandler(
             CallbackQueryHandler(reject_proposal_cb, pattern=f"^{_REJECT_CB}$"),
         ],
     },
-    fallbacks=[CommandHandler("cancel", cancel_cmd, WHITELIST_FILTER)],
+    fallbacks=[CommandHandler("cancel", cancel_cmd, WHITELIST_FILTER)],  # type: ignore
     per_chat=True,
     per_message=False,
     conversation_timeout=600,

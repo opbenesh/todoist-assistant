@@ -10,6 +10,7 @@ from lib.handlers.auth import WHITELIST_FILTER
 
 
 async def list_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     tasks = await asyncio.to_thread(todoist.get_today_tasks)
     if not tasks:
         await update.message.reply_text("No tasks for today.")

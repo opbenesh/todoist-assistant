@@ -40,6 +40,7 @@ def get_settings() -> UserSettings:
 
 def attach_scheduler(app: Application) -> None:
     jq = app.job_queue
+    assert jq is not None
     tz = ZoneInfo(_settings.timezone)
 
     jq.run_daily(
@@ -130,6 +131,9 @@ async def plan_nag_job(context) -> None:
             phase, session_data = persisted
             last_ts = session_data.get("last_user_action_ts", 0)
             if date.fromtimestamp(last_ts) < date.today():
+                logger.info("[scheduler] auto-expiring stale plan session from %s", date.fromtimestamp(last_ts))
+                store.clear_plan_session()
+                store.save()
                 persisted = None  # stale session from a previous day — don't suppress nags
         if persisted:
             phase, session_data = persisted
@@ -143,8 +147,7 @@ async def plan_nag_job(context) -> None:
                 )
                 session_data["nudge_sent"] = True
                 store.save_plan_session(phase, session_data)
-                return
-            # Nudge already sent; fall through to normal nag below.
+            return
 
         tz = ZoneInfo(_settings.timezone)
         hour = datetime.now(tz).hour
