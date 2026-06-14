@@ -136,6 +136,34 @@ class TestPlanTriageActions:
         labels = op.get("changes", {}).get("labels", [])
         assert "quarantined" in labels, f"quarantined label not set, got: {labels}"
 
+    def test_triage_task_title_with_markdown_symbols(
+        self, bot: BotClient, todoist: TodoistInspector
+    ) -> None:
+        """Tasks with titles containing unescaped markdown characters (like URLs with underscores, brackets) are presented without causing telegram parse errors."""
+        todoist.seed(
+            tasks=[
+                sd.task(
+                    "[תשלום אגרת חברות לקצה](https://www.gov.il/he/service/company_partnership_annual_payment)",
+                    due_today=True,
+                    task_id="t_markdown",
+                ),
+            ]
+        )
+
+        bot.send_message("/plan")
+        bot.wait_responses(1, timeout=10)
+        _skip_bs(bot)
+
+        # Verify the triage prompt is successfully sent and contains the escaped task title
+        resp = bot.wait_responses(2, timeout=15)  # "📋 Triage..." and the task description card
+        text = " ".join(r.get("text", "") for r in resp)
+        assert "Triage" in text
+        assert "תשלום אגרת חברות לקצה" in text
+
+        # Press button to verify it proceeds without issues
+        pressed = bot.press_button_labeled_any("Postpone", timeout=10)
+        assert pressed, "Postpone button not found in triage keyboard"
+
 
 class TestPlanBrainstorm:
     def test_brainstorm_creates_tasks(self, bot: BotClient, todoist: TodoistInspector) -> None:

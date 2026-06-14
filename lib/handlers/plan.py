@@ -24,6 +24,7 @@ import lib.llm as llm
 import lib.obsidian as obsidian
 import lib.todoist as todoist
 from lib.handlers.auth import WHITELIST_FILTER
+from lib.markdown_utils import escape_markdown
 from lib.models import PRIORITY_TO_TODOIST, Task, store
 from lib.scheduler import _settings
 
@@ -241,7 +242,7 @@ async def _show_phase_ui(chat_id: int, context: ContextTypes.DEFAULT_TYPE, phase
                 prio = session.triage_pending_priority or "P?"
                 await context.bot.send_message(
                     chat_id,
-                    f"*{task['title']}*\n_Priority: {prio} — when should this run?_",
+                    f"*{escape_markdown(task['title'])}*\n_Priority: {prio} — when should this run?_",
                     reply_markup=_timeslot_keyboard(valid_slots),
                     parse_mode="Markdown",
                 )
@@ -463,7 +464,7 @@ async def bs_accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         audit.log(
             "create", source="plan/brainstorm", trigger="user_accept", task_id=task_id, title=title
         )
-        await query.edit_message_text(f"✅ _Created:_ {title}", parse_mode="Markdown")
+        await query.edit_message_text(f"✅ _Created:_ {escape_markdown(title)}", parse_mode="Markdown")
     except Exception as exc:
         logger.error("[plan/bs] failed to create '%s': %s", title, exc)
         await query.answer("Failed to create task.", show_alert=True)
@@ -484,7 +485,7 @@ async def bs_reject_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         return ConversationHandler.END
 
     title = session.bs_proposed[session.bs_index]
-    await query.edit_message_text(f"❌ _Rejected:_ {title}", parse_mode="Markdown")
+    await query.edit_message_text(f"❌ _Rejected:_ {escape_markdown(title)}", parse_mode="Markdown")
     logger.info("[plan/bs] rejected %r (index %d)", title, session.bs_index)
     session.bs_index += 1
     _checkpoint(chat_id, BS_REVIEW)
@@ -1189,7 +1190,7 @@ async def _show_triage_task(chat_id: int, context: ContextTypes.DEFAULT_TYPE) ->
 
     await context.bot.send_message(
         chat_id,
-        f"*Task {idx} of {total}*\n\n{task['title']}\n_{meta}_",
+        f"*Task {idx} of {total}*\n\n{escape_markdown(task['title'])}\n_{escape_markdown(meta)}_",
         reply_markup=_triage_keyboard(age),
         parse_mode="Markdown",
     )
@@ -1220,7 +1221,7 @@ async def _handle_triage_priority(
     if valid_slots:
         session.triage_pending_priority = action
         await query.edit_message_text(
-            f"*{title}*\n_Priority: {action.upper()} — when should this run?_",
+            f"*{escape_markdown(title)}*\n_Priority: {action.upper()} — when should this run?_",
             reply_markup=_timeslot_keyboard(valid_slots),
             parse_mode="Markdown",
         )
