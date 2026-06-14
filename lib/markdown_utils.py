@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+
 def escape_markdown(text: str) -> str:
     """Escape legacy markdown characters (*, _, [, `) while preserving links [text](url)."""
     if not text:
@@ -18,6 +19,7 @@ def escape_markdown(text: str) -> str:
         else:
             escaped_parts.append(_escape_raw(part))
     return "".join(escaped_parts)
+
 
 def _escape_raw(text: str) -> str:
     text = text.replace("\\", "\\\\")

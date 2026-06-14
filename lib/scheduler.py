@@ -131,7 +131,10 @@ async def plan_nag_job(context) -> None:
             phase, session_data = persisted
             last_ts = session_data.get("last_user_action_ts", 0)
             if date.fromtimestamp(last_ts) < date.today():
-                logger.info("[scheduler] auto-expiring stale plan session from %s", date.fromtimestamp(last_ts))
+                logger.info(
+                    "[scheduler] auto-expiring stale plan session from %s",
+                    date.fromtimestamp(last_ts),
+                )
                 store.clear_plan_session()
                 store.save()
                 persisted = None  # stale session from a previous day — don't suppress nags

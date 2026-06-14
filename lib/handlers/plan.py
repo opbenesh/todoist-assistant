@@ -240,9 +240,13 @@ async def _show_phase_ui(chat_id: int, context: ContextTypes.DEFAULT_TYPE, phase
             valid_slots = _valid_timeslots()
             if valid_slots:
                 prio = session.triage_pending_priority or "P?"
+                msg = (
+                    f"*{escape_markdown(task['title'])}*\n"
+                    f"_Priority: {prio} — when should this run?_"
+                )
                 await context.bot.send_message(
                     chat_id,
-                    f"*{escape_markdown(task['title'])}*\n_Priority: {prio} — when should this run?_",
+                    msg,
                     reply_markup=_timeslot_keyboard(valid_slots),
                     parse_mode="Markdown",
                 )
@@ -464,7 +468,8 @@ async def bs_accept_cb(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         audit.log(
             "create", source="plan/brainstorm", trigger="user_accept", task_id=task_id, title=title
         )
-        await query.edit_message_text(f"✅ _Created:_ {escape_markdown(title)}", parse_mode="Markdown")
+        msg = f"✅ _Created:_ {escape_markdown(title)}"
+        await query.edit_message_text(msg, parse_mode="Markdown")
     except Exception as exc:
         logger.error("[plan/bs] failed to create '%s': %s", title, exc)
         await query.answer("Failed to create task.", show_alert=True)

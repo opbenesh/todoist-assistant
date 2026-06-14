@@ -441,6 +441,7 @@ async def test_plan_nag_job_auto_expires_stale_session() -> None:
 
     # Mock datetime to return 14:00 (inside 9-21 daytime window)
     from datetime import datetime
+
     mock_dt = MagicMock(wraps=datetime)
     mock_dt.now.return_value = datetime(2026, 6, 6, 14, 0, 0)
 
