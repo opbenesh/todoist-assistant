@@ -460,3 +460,45 @@ async def test_plan_nag_job_auto_expires_stale_session() -> None:
     # Stale session shouldn't suppress the generic nag, so we should get one
     context.bot.send_message.assert_awaited_once()
     assert "still haven't planned your day" in context.bot.send_message.call_args.kwargs["text"]
+
+
+# ---------------------------------------------------------------------------
+# reminder_settings checks in jobs
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_plan_reminder_job_suppressed_when_off() -> None:
+    from lib.scheduler import plan_reminder_job, store
+
+    context = MagicMock()
+    context.bot.send_message = AsyncMock()
+
+    original = store.reminder_settings
+    store.reminder_settings = "off"
+    try:
+        with patch("lib.scheduler.obsidian.is_day_planned", return_value=False):
+            await plan_reminder_job(context)
+    finally:
+        store.reminder_settings = original
+
+    context.bot.send_message.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_plan_nag_job_suppressed_when_daily_or_off() -> None:
+    from lib.scheduler import plan_nag_job, store
+
+    original = store.reminder_settings
+    try:
+        for mode in ("daily", "off"):
+            context = MagicMock()
+            context.bot.send_message = AsyncMock()
+            store.reminder_settings = mode
+
+            with patch("lib.scheduler.obsidian.is_day_planned", return_value=False):
+                await plan_nag_job(context)
+
+            context.bot.send_message.assert_not_awaited()
+    finally:
+        store.reminder_settings = original

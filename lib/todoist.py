@@ -116,6 +116,7 @@ def build_user_settings(todoist_data: dict, profile: dict) -> UserSettings:
         evening_block=profile.get("evening_block", "17:00-21:00"),
         default_project=profile.get("default_project", "Inbox"),
         stale_task_days=int(profile.get("stale_task_days", 3)),
+        reminder_settings=store.reminder_settings,
     )
 
 

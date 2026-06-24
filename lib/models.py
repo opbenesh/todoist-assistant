@@ -69,6 +69,15 @@ class TaskStore:
         self._data["sync_cursor"] = value
 
     @property
+    def reminder_settings(self) -> str:
+        return self._data.get("reminder_settings", "hourly")
+
+    @reminder_settings.setter
+    def reminder_settings(self, value: str) -> None:
+        self._data["reminder_settings"] = value
+        self.save()
+
+    @property
     def last_sync_ts(self) -> float | None:
         return self._data.get("last_sync_ts")
 

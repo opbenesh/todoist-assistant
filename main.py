@@ -16,6 +16,7 @@ from lib.handlers.capture import list_handler
 from lib.handlers.common import help_cmd, session_cmd, start_cmd
 from lib.handlers.insights import insights_handler
 from lib.handlers.plan import has_active_plan_session, plan_handler
+from lib.handlers.settings import settings_callback_handler, settings_handler
 from lib.handlers.unblock import unblock_conversation_handler
 from lib.interaction_log import LoggedBot, log_error, log_incoming
 from lib.obsidian import read_tasks_section  # noqa: F401 — ensure vault is accessible
@@ -59,6 +60,7 @@ _COMMANDS = [
     BotCommand("brainstorm", "Extract tasks from free-form text"),
     BotCommand("help", "Show available commands"),
     BotCommand("session", "Show current plan session state"),
+    BotCommand("settings", "Configure bot settings and reminders"),
     BotCommand("cancel", "Cancel current operation"),
 ]
 
@@ -136,6 +138,8 @@ def register_handlers(app: Application) -> None:
     )
     app.add_handler(unblock_conversation_handler)
     app.add_handler(insights_handler)
+    app.add_handler(settings_handler)
+    app.add_handler(settings_callback_handler)
 
 
 def main() -> None:

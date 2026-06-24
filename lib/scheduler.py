@@ -109,6 +109,9 @@ async def weekly_review_job(context) -> None:
 
 async def plan_reminder_job(context) -> None:
     try:
+        if store.reminder_settings == "off":
+            logger.info("[scheduler] plan reminder suppressed (settings=off)")
+            return
         if not await asyncio.to_thread(obsidian.is_day_planned):
             await context.bot.send_message(
                 chat_id=TELEGRAM_USER_ID,
@@ -120,6 +123,9 @@ async def plan_reminder_job(context) -> None:
 
 async def plan_nag_job(context) -> None:
     try:
+        if store.reminder_settings in ("daily", "off"):
+            logger.info("[scheduler] plan nag suppressed (settings=%s)", store.reminder_settings)
+            return
         if await asyncio.to_thread(obsidian.is_day_planned):
             return
 

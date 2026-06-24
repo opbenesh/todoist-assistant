@@ -55,3 +55,4 @@ class UserSettings:
     evening_block: str = "17:00-21:00"
     default_project: str = "Inbox"
     stale_task_days: int = 3
+    reminder_settings: str = "hourly"

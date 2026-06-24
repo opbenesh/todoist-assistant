@@ -31,6 +31,7 @@ HELP_TEXT = """
 /insights — pattern insights: habits, workload, clusters
 /project — project-level plan and next actions
 /brainstorm — extract tasks from free-form text
+/settings — configure bot settings and reminders
 /cancel — cancel current operation
 """.strip()
 
