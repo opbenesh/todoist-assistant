@@ -12,6 +12,13 @@ dependencies = [
     "urllib3>=2.7.0",
 ]
 
+[project.scripts]
+send-message = "send_msg:main"
+
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
 [dependency-groups]
 dev = [
     "pytest",
@@ -47,3 +54,7 @@ TELEGRAM_BOT_KEY = "test_key"
 TODOIST_KEY = "test_key"
 ANTHROPIC_KEY = "test_key"
 TELEGRAM_USER_ID = "123"
+
+[tool.setuptools]
+py-modules = ["send_msg"]
+packages = ["lib"]

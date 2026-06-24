@@ -9,3 +9,4 @@ data/*.jsonl
 docs/
 .env~
 *.swp
+*.egg-info/

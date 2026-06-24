@@ -1,0 +1,49 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/ubuntu/dev/assistant/.claude/hooks/turn_timer.py start"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/ubuntu/dev/assistant/.claude/hooks/turn_timer.py stop"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/ubuntu/dev/assistant/.claude/hooks/turn_timer.py stop"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/ubuntu/dev/assistant/.claude/hooks/pre-commit.sh"
+          },
+          {
+            "type": "command",
+            "command": "/home/ubuntu/dev/assistant/.claude/hooks/pre-push.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
